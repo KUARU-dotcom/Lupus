@@ -166,7 +166,7 @@ All AST nodes serialize to deterministic JSON, enabling:
 
 ## Roadmap
 
-- [x] Language specification v1.2 (EBNF, types, FFI, tests, AST)
+- [x] Language specification v0.1 (EBNF, types, FFI, tests, AST)
 - [ ] Lexer and parser with AST construction
 - [ ] Type checker (Hindley-Milner)
 - [ ] Interpreter (tree-walk)
