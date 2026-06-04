@@ -166,7 +166,7 @@ lupus ast example.lupus
 
 ## Roadmap
 
-- [x] Спецификация языка v0.1 (EBNF, типы, FFI, тесты, AST)
+- [x] Спецификация языка v1.0 (EBNF, типы, FFI, тесты, AST)
 - [ ] Лексер и парсер с построением AST
 - [ ] Тайпчекер (Hindley-Milner)
 - [ ] Интерпретатор (tree-walk)
