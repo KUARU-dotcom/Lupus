@@ -1,100 +1,30 @@
-# Lupus Language
+# Lupus Alpha v0.1
 
-**Lupus** is a programming language designed for LLMs (1.5B–7B parameters).  
-Its goal: reduce syntax errors, logic errors, and hallucinations when neural networks generate code.
+**Status:** Prototype for hypothesis testing  
+**Goal:** Verify that LLM (1.5B-7B) writes more accurate code in Lupus than in Python  
+**Limitations:** Only minimal language subset (no types, no async, no FFI)
 
----
+## What works
 
-## Versions and status
+- [x] Variables (`define`)
+- [x] Functions (`define (fn ...)`)
+- [x] Arithmetic (`+`, `-`, `*`, `/` — int only)
+- [x] Conditional operator (`if`)
+- [x] Loops (`while`)
+- [x] Lists (`list`, `nth`, `length`)
+- [x] Input/Output (`print`)
 
-| Document | Version | Status |
-|----------|---------|--------|
-| **Full specification (language vision)** | v1.0 | Frozen |
-| **Alpha prototype (implementation)** | v0.1 | In development |
+## What does NOT work (temporarily)
 
-> The v1.0 specification is frozen as a **language vision**. The current implementation (Alpha v0.1) covers only a basic subset.
-
----
-
-## Roles and contributors
-
-| Role | Contributor |
-|------|-------------|
-| **Language architect** | Kimi 2.6 Thinking |
-| **Implementation advisor** | DeepSeek R1 |
-| **Specification author (v1.0)** | Kimi 2.6 Thinking |
-| **Specification verification** | Gemini 3.1 Pro, Grok |
-| **Language designer** | KYARU (module design, naming, final approval) |
-| **Architecture review & evaluation** | Gemini 3.1 Pro, Grok 4.6, DeepSeek, Claude Sonnet 4.6, Kimi Agent 2.6 |
-
-> **Note on review:** No unanimous conclusion. 2 out of 5 reviewers (Claude Sonnet 4.6 and DeepSeek) find contradictions of varying severity — from minor inaccuracies to architectural concerns. The v1.0 specification is frozen as a vision; the current phase is prototyping and implementation.
-
----
-
-## Hypothesis
-
-**Expectation:** An LLM (1.5B–7B) will write code in Lupus with at least **20% fewer errors** (syntax, logic, hallucinations) compared to Python.
-
-**Validation method:**
-1. Measure LLM success rate on 100 tasks in Python.
-2. Measure LLM success rate on the same tasks in Lupus (Alpha v0.1).
-3. Compare results.
-
----
-
-## Roadmap
-
-### Phase 1 (current) — Alpha v0.1
-- Minimal Python-based interpreter.
-- No types, no async, no FFI, no modules.
-- Only basic constructs: `define`, `if`, `while`, `+`, `-`, `*`, `/`, `list`, `print`.
-- **Goal:** test the hypothesis.
-
-### If hypothesis is confirmed (+20% or higher)
-- Evolve the language toward v1.0:
-  - Static typing, `match`, `Option`/`Result`.
-  - Modules: `senko` (math), `texas` (net), `kaltsit` (file), `amiya` (async), `w` (test).
-  - FFI for calling Python.
-  - **Rewrite in Rust** (standalone binary, performance, memory safety).
-- Expand functionality, achieve independence from Python.
-
-### If hypothesis is not confirmed
-- Try redesigning the language (different paradigm, syntax).
-- If still unsuccessful — **freeze the experiment until 2027–2028**.
-- Rationale: by 2027–2028, LLMs will become more capable, new architectures will emerge, and the hypothesis can be retested with better data.
-
----
-
-## Why Lupus is not for humans
-
-Lupus syntax (prefix, minimalistic) is **ugly for humans** but **simpler for LLMs**:
-- No ambiguity.
-- No magic.
-- Minimal hallucinations.
-
-Lupus is a companion language for LLMs, not a Python replacement for humans.
-
----
-
-## Current development status
-
-**Alpha v0.1 (prototype):**
-- [x] v1.0 specification (vision) — frozen
-- [ ] Python interpreter (basic subset)
-- [ ] Examples: calculator, factorial, Fibonacci, list operations
-- [ ] Hypothesis validation using Qwen 1.5B
-
-**What is NOT in Alpha v0.1:**
-- ❌ Types and type checker
+- ❌ Static typing (everything is dynamic)
+- ❌ Modules (`senko`, `texas`, `kaltsit`)
+- ❌ Asynchronous (`async/spawn`, channels)
 - ❌ `match`, `if-let`, `cond`
 - ❌ `Option`, `Result`
-- ❌ Async and channels
-- ❌ FFI and modules (`senko`, `texas`, `kaltsit`)
-- ❌ Built-in tests
+- ❌ FFI (calling Python from Lupus)
+- ❌ Built-in tests (`test`)
 
----
-
-## Running the prototype (when ready)
+## How to run
 
 ```bash
 python lupus_proto.py examples/calc.lupus
