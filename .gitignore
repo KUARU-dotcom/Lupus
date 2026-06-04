@@ -126,5 +126,6 @@ dmypy.json
 *~
 .DS_Store
 
-# Project-specific
+# Lupus-specific
 *.lupus.bak
+*.lupus.tmp
