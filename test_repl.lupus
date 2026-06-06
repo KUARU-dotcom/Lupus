@@ -1,0 +1,10 @@
+;; Простой тест REPL режима
+(define x 42)
+(print (int->str x))
+
+(define (add a b) (+ a b))
+(print (int->str (add 10 20)))
+
+(if (> x 40)
+  (print "x больше 40")
+  (print "x меньше или равно 40"))

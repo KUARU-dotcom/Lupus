@@ -1,0 +1,45 @@
+;; list.lupus - Демонстрация работы со списками
+
+;; Создаем список целых чисел
+(define numbers (list 10 20 30 40 50))
+
+;; Выводим информацию о списке
+(print "Список создан: ")
+(print (int->str (nth numbers 0)))
+(print (int->str (nth numbers 1)))
+(print (int->str (nth numbers 2)))
+(print (int->str (nth numbers 3)))
+(print (int->str (nth numbers 4)))
+
+;; Выводим длину списка
+(print "Длина списка: ")
+(print (int->str (length numbers)))
+
+;; Функция для суммирования элементов списка
+(define (sum-list lst index total)
+  (if (= index (length lst))
+    total
+    (sum-list lst (+ index 1) (+ total (nth lst index)))))
+
+;; Вычисляем сумму элементов
+(define sum (sum-list numbers 0 0))
+(print "Сумма элементов: ")
+(print (int->str sum))
+
+;; Создаем новый список
+(define squares (list 1 4 9 16 25))
+(print "Первый элемент squares: ")
+(print (int->str (nth squares 0)))
+
+;; Функция для поиска элемента в списке
+(define (find-in-list lst value index)
+  (if (= index (length lst))
+    -1
+    (if (= (nth lst index) value)
+      index
+      (find-in-list lst value (+ index 1)))))
+
+;; Ищем элемент 9 в списке squares
+(define pos (find-in-list squares 9 0))
+(print "Позиция элемента 9 в squares: ")
+(print (int->str pos))

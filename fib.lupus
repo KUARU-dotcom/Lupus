@@ -1,0 +1,43 @@
+;; fib.lupus - Вычисление чисел Фибоначчи
+
+;; Рекурсивное определение чисел Фибоначчи
+(define (fib n)
+  (if (< n 2)
+    n
+    (+ (fib (- n 1)) (fib (- n 2)))))
+
+;; Вычисляем первые несколько чисел Фибоначчи
+(print "Числа Фибоначчи: ")
+
+(print (int->str (fib 0)))
+(print (int->str (fib 1)))
+(print (int->str (fib 2)))
+(print (int->str (fib 3)))
+(print (int->str (fib 4)))
+(print (int->str (fib 5)))
+(print (int->str (fib 6)))
+(print (int->str (fib 7)))
+(print (int->str (fib 8)))
+(print (int->str (fib 9)))
+
+;; Версия с использованием изменяемой переменной для подсчета
+(define-mutable counter 0)
+(define-mutable fib-num 0)
+
+(define (fib-print n)
+  (if (< n 10)
+    (begin
+      (set! fib-num (fib n))
+      (print "F(")
+      (print (int->str n))
+      (print ") = ")
+      (print (int->str fib-num))
+      (set! counter (+ counter 1))
+      (fib-print (+ n 1)))
+    (begin
+      (print "Всего вычислено: ")
+      (print (int->str counter)))))
+
+;; Печатаем формат F(n) = значение
+(print "Таблица Фибоначчи:")
+(fib-print 0)
