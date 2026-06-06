@@ -1,8 +1,8 @@
 # Lupus
 
-> **A programming language born from dialogue. By LLM — for LLM.**
+> **A programming language built in dialogue. From LLM — for LLM.**
 >
-> *Experiment: can an architect (LLM) design a language? Can a language created by an LLM actually work? Let's find out.*
+> *Experiment: can an LLM design a language? Will a language designed by an LLM work better for LLM?*
 
 ---
 
@@ -10,57 +10,54 @@
 
 **Lupus** is an experimental general-purpose programming language.
 
-**Version:** Alpha (v0.1)
-**Status:** Specification is ready. Interpreter is in development.
+**Version:** Alpha (v0.1) · **Status:** Interpreter prototype is ready.
 
-The experiment's hypothesis has three parts:
-1. Can an LLM design a full-fledged language — from grammar and type system to FFI and standard library?
-2. Can an LLM implement that language — interpreter, type checker, runtime?
-3. Can the resulting language solve real tasks — networking, files, async, ML?
+The experiment has three hypotheses:
 
-If all three hold, it proves that an LLM can be not just a tool, but an **architect**.
+1. Can an LLM design a complete language — from grammar and type system to FFI and standard library?
+2. Can an LLM implement that language — interpreter, typechecker, runtime?
+3. Will a small LLM (1.5B–7B parameters) make 20%+ fewer errors writing Lupus than Python?
 
----
-
-## Features
-
-- **Prefix syntax** — `(define x 42)`, `(+ 1 2)`. Clean, unambiguous AST without syntactic sugar.
-- **Static typing** — Hindley-Milner algorithm with Value Restriction. Types are inferred automatically, but can be annotated explicitly.
-- **Algebraic data types** — `Option`, `Result`, user-defined structs (`defstruct`) with generics support.
-- **Pattern matching** — full-featured, with exhaustiveness checking at compile time.
-- **Python FFI** — standard library modules (`math`, `net`, `file`, `async`) implemented as Python wrappers via FFI.
-- **Tensors** — built-in multidimensional arrays for ML experiments.
-- **Async** — threads, channels (`channel`), blocking and timeout `send`/`recv` operations.
-- **Built-in tests** — special form `(test "name" ...)`, isolated environments, JSON reports.
-- **Deterministic AST** — JSON serialization for passing between compiler layers and for training other models.
+If all three hold, it proves that LLMs can act not just as tools, but as **architects**.
 
 ---
 
 ## Quick Start
 
 ```bash
-# Installation (available after v0.1 release)
-pip install lupus-lang
+git clone https://github.com/KUARU-dotcom/Lupus
+cd Lupus
+git checkout prototype
 
-# Run a program
-lupus run example.lupus
-
-# Run tests
-lupus test example.lupus
-
-# Type-check without execution
-lupus check example.lupus
-
-# Output AST as JSON
-lupus ast example.lupus
+python lupus_proto.py examples/calc.lupus  # run a file
+python lupus_proto.py                       # interactive REPL
 ```
+
+**Requirements:** Python 3.10+, no dependencies.
+
+A full CLI (`lupus run`, `lupus check`, `lupus ast`) is planned for v0.2 in Rust.
+
+---
+
+## Features
+
+- **Prefix syntax** — `(define x 42)`, `(+ 1 2)`. Unambiguous AST, no syntactic sugar.
+- **Static typing** — Hindley-Milner with Value Restriction. Types inferred automatically.
+- **Algebraic types** — `Option`, `Result`, user-defined structs (`defstruct`) with generics.
+- **Pattern matching** — exhaustiveness checked at compile time.
+- **Python FFI** — standard library modules implemented as Python wrappers.
+- **Tensors** — built-in multi-dimensional arrays for ML experiments.
+- **Async** — threads, channels, `send`/`recv` with timeout.
+- **Built-in tests** — `(test "name" ...)` form, isolated environments, JSON reports.
+- **Deterministic AST** — JSON serialization for pipeline transfer and LLM training data.
 
 ---
 
 ## Code Examples
 
 ### Circle area calculator
-```lupus
+
+```lisp
 (import (senko math))
 
 (define-public (circle-area (radius float)) -> float
@@ -74,7 +71,8 @@ lupus ast example.lupus
 ```
 
 ### HTTP client
-```lupus
+
+```lisp
 (import (texas net) :as net)
 
 (define-public (fetch (host str) (path str)) -> (Result str str)
@@ -84,13 +82,14 @@ lupus ast example.lupus
         ((success _)
           (match (net/recv sock 8192)
             ((success response) (net/close sock) (success response))
-            ((failure err) (net/close sock) (failure err))))
+            ((failure err)      (net/close sock) (failure err))))
         ((failure err) (net/close sock) (failure err))))
     ((failure err) (failure err))))
 ```
 
 ### Async with channels
-```lupus
+
+```lisp
 (import (amiya async) :as async)
 
 (define-public (ticker (id str) (count int) (ch (channel str)))
@@ -111,16 +110,17 @@ lupus ast example.lupus
 ```
 
 ### Generics and data structures
-```lupus
+
+```lisp
 (defstruct (Node a)
   (value a)
-  (left (Option (Node a)))
+  (left  (Option (Node a)))
   (right (Option (Node a))))
 
 (define tree (Node 10 (some (Node 5 none none)) none))
 
 (match tree
-  ((Node v left right)
+  ((Node v _ _)
     (print (string-append "Root: " (int->str v)))))
 ```
 
@@ -132,9 +132,9 @@ lupus ast example.lupus
 ┌─────────────────────────────────────────┐
 │  CLI: run | test | check | ast          │
 ├─────────────────────────────────────────┤
-│  Frontend: Lexer -> Parser -> AST(JSON) │
+│  Frontend: Lexer → Parser → AST (JSON)  │
 ├─────────────────────────────────────────┤
-│  Middle-end: Typechecker -> Linter      │
+│  Middle-end: Typechecker → Linter       │
 ├─────────────────────────────────────────┤
 │  Backend: Interpreter (tree-walk) + FFI │
 ├─────────────────────────────────────────┤
@@ -142,12 +142,8 @@ lupus ast example.lupus
 └─────────────────────────────────────────┘
 ```
 
-All errors (lexical, syntax, type, runtime, FFI) are emitted in strict JSON format with locations, hints, and context.
-
-All AST nodes serialize to deterministic JSON, enabling:
-- passing AST between compiler layers;
-- using code as a dataset for LLM training;
-- reading AST from other implementations (e.g., in Rust).
+All errors are emitted as structured JSON with locations and hints.
+AST is serialized deterministically — for pipeline transfer and LLM training.
 
 ---
 
@@ -155,26 +151,34 @@ All AST nodes serialize to deterministic JSON, enabling:
 
 | Module | Prefix | Description |
 |--------|--------|-------------|
-| `core` | — | Auto-import. Arithmetic, lists, tuples, Map, strings, tensors, assert, print. |
-| `senko` | `math/` | Math: pi, e, sqrt, sin, cos, log, pow, abs, floor, ceil, round. |
+| `core` | — | Auto-imported. Arithmetic, lists, Map, strings, tensors, assert, print. |
+| `senko` | `math/` | Math: pi, e, sqrt, sin, cos, log, pow, abs, floor, ceil. |
 | `texas` | `net/` | Networking: TCP/UDP sockets, connect, listen, send, recv, close. |
 | `kaltsit` | `file/` | File system: read, write, append, exists, mkdir, list-dir. |
 | `amiya` | `async/` | Async: spawn, channel, send, recv, recv-timeout, wait. |
-| `w` | `test/` | Testing: assert-eq, assert-true, assert-false, run, run-all. |
+| `w` | `test/` | Testing: assert-eq, assert-true, run, run-all. |
+
+---
+
+## Branches
+
+| Branch | Contents |
+|--------|---------|
+| `main` | This file. Project overview and vision. |
+| `specification` | Full language specification v1.0 (EBNF, types, FFI, AST). |
+| `prototype` | Working Alpha v0.1 interpreter prototype in Python. |
 
 ---
 
 ## Roadmap
 
 - [x] Language specification v1.0 (EBNF, types, FFI, tests, AST)
-- [ ] Lexer and parser with AST construction
-- [ ] Type checker (Hindley-Milner)
-- [ ] Interpreter (tree-walk)
+- [x] Interpreter prototype (tree-walk) — `prototype` branch
+- [ ] Typechecker (Hindley-Milner)
 - [ ] FFI modules: senko (math), texas (net), kaltsit (file), amiya (async)
 - [ ] CLI: run, test, check, ast
-- [ ] Integration tests (all examples from the specification)
-- [ ] Test coverage >= 80% for core files
-- [ ] Documentation: tutorial, API reference
+- [ ] Experiment: 100 tasks, Lupus vs Python on small LLMs
+- [ ] Rust implementation (if experiment succeeds)
 
 ---
 
@@ -184,4 +188,4 @@ MIT
 
 ---
 
-*Created in dialogue. Verified in code.*
+*Built in dialogue. Verified in code.*
