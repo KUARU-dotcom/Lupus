@@ -1,0 +1,702 @@
+[
+  {
+    "id": 1,
+    "cat": "arithmetic",
+    "name": "Сложение",
+    "prompt": "Compute 7 + 15 and print the result.",
+    "expected": "22"
+  },
+  {
+    "id": 2,
+    "cat": "arithmetic",
+    "name": "Вычитание",
+    "prompt": "Compute 100 - 37 and print the result.",
+    "expected": "63"
+  },
+  {
+    "id": 3,
+    "cat": "arithmetic",
+    "name": "Умножение",
+    "prompt": "Compute 6 * 9 and print the result.",
+    "expected": "54"
+  },
+  {
+    "id": 4,
+    "cat": "arithmetic",
+    "name": "Деление",
+    "prompt": "Compute integer division of 17 by 4 and print the result.",
+    "expected": "4"
+  },
+  {
+    "id": 5,
+    "cat": "arithmetic",
+    "name": "Остаток",
+    "prompt": "Compute 17 mod 5 and print the result.",
+    "expected": "2"
+  },
+  {
+    "id": 6,
+    "cat": "arithmetic",
+    "name": "Квадрат",
+    "prompt": "Compute the square of 13 and print the result.",
+    "expected": "169"
+  },
+  {
+    "id": 7,
+    "cat": "arithmetic",
+    "name": "Куб",
+    "prompt": "Compute the cube of 4 and print the result.",
+    "expected": "64"
+  },
+  {
+    "id": 8,
+    "cat": "arithmetic",
+    "name": "Степень 2^10",
+    "prompt": "Compute 2 to the power of 10 and print the result.",
+    "expected": "1024"
+  },
+  {
+    "id": 9,
+    "cat": "arithmetic",
+    "name": "Степень 3^5",
+    "prompt": "Compute 3 to the power of 5 using a recursive function and print the result.",
+    "expected": "243"
+  },
+  {
+    "id": 10,
+    "cat": "arithmetic",
+    "name": "Макс двух чисел",
+    "prompt": "Print the larger of 17 and 42.",
+    "expected": "42"
+  },
+  {
+    "id": 11,
+    "cat": "logic",
+    "name": "Чётность 4",
+    "prompt": "Check if 4 is even. Print 'even' or 'odd'.",
+    "expected": "even"
+  },
+  {
+    "id": 12,
+    "cat": "logic",
+    "name": "Нечётность 7",
+    "prompt": "Check if 7 is even. Print 'even' or 'odd'.",
+    "expected": "odd"
+  },
+  {
+    "id": 13,
+    "cat": "logic",
+    "name": "Делимость на 3",
+    "prompt": "Check if 15 is divisible by 3. Print 'yes' or 'no'.",
+    "expected": "yes"
+  },
+  {
+    "id": 14,
+    "cat": "logic",
+    "name": "Не делится на 7",
+    "prompt": "Check if 10 is divisible by 7. Print 'yes' or 'no'.",
+    "expected": "no"
+  },
+  {
+    "id": 15,
+    "cat": "logic",
+    "name": "И",
+    "prompt": "Print 'ok' if both 5>3 and 10<20 are true, else print 'fail'.",
+    "expected": "ok"
+  },
+  {
+    "id": 16,
+    "cat": "logic",
+    "name": "ИЛИ",
+    "prompt": "Print 'ok' if 5>10 OR 3<7, else print 'fail'.",
+    "expected": "ok"
+  },
+  {
+    "id": 17,
+    "cat": "logic",
+    "name": "НЕ",
+    "prompt": "Print 'ok' if 5 is NOT equal to 3, else print 'fail'.",
+    "expected": "ok"
+  },
+  {
+    "id": 18,
+    "cat": "logic",
+    "name": "Знак числа",
+    "prompt": "Print 'positive' if 42 > 0, 'negative' if < 0, else 'zero'.",
+    "expected": "positive"
+  },
+  {
+    "id": 19,
+    "cat": "logic",
+    "name": "Знак нуля",
+    "prompt": "Print 'positive' if 0 > 0, 'negative' if < 0, else 'zero'.",
+    "expected": "zero"
+  },
+  {
+    "id": 20,
+    "cat": "logic",
+    "name": "Знак отрицательного",
+    "prompt": "Print 'positive' if -5 > 0, 'negative' if < 0, else 'zero'. Use (- 5) for -5.",
+    "expected": "negative"
+  },
+  {
+    "id": 21,
+    "cat": "loops",
+    "name": "Числа 1..5",
+    "prompt": "Print numbers 1 to 5, each on a new line.",
+    "expected": "1\n2\n3\n4\n5"
+  },
+  {
+    "id": 22,
+    "cat": "loops",
+    "name": "Обратный счёт 5..1",
+    "prompt": "Print numbers from 5 down to 1, each on a new line.",
+    "expected": "5\n4\n3\n2\n1"
+  },
+  {
+    "id": 23,
+    "cat": "loops",
+    "name": "Сумма 1..10",
+    "prompt": "Compute the sum of integers from 1 to 10 and print the result.",
+    "expected": "55"
+  },
+  {
+    "id": 24,
+    "cat": "loops",
+    "name": "Произведение 1..5",
+    "prompt": "Compute the product of integers from 1 to 5 and print the result.",
+    "expected": "120"
+  },
+  {
+    "id": 25,
+    "cat": "loops",
+    "name": "Чётные 2..10",
+    "prompt": "Print all even numbers from 2 to 10, each on a new line.",
+    "expected": "2\n4\n6\n8\n10"
+  },
+  {
+    "id": 26,
+    "cat": "loops",
+    "name": "Нечётные 1..9",
+    "prompt": "Print all odd numbers from 1 to 9, each on a new line.",
+    "expected": "1\n3\n5\n7\n9"
+  },
+  {
+    "id": 27,
+    "cat": "loops",
+    "name": "Сумма чётных 1..20",
+    "prompt": "Compute the sum of all even numbers from 1 to 20 and print the result.",
+    "expected": "110"
+  },
+  {
+    "id": 28,
+    "cat": "loops",
+    "name": "Сумма нечётных 1..9",
+    "prompt": "Compute the sum of all odd numbers from 1 to 9 and print the result.",
+    "expected": "25"
+  },
+  {
+    "id": 29,
+    "cat": "loops",
+    "name": "Квадраты 1..5",
+    "prompt": "Print the squares of numbers 1 to 5, each on a new line.",
+    "expected": "1\n4\n9\n16\n25"
+  },
+  {
+    "id": 30,
+    "cat": "loops",
+    "name": "Умнож. таблица 3",
+    "prompt": "Print 3*1, 3*2, 3*3, 3*4, 3*5. Each result on a new line.",
+    "expected": "3\n6\n9\n12\n15"
+  },
+  {
+    "id": 31,
+    "cat": "loops",
+    "name": "Степени 2: 1..8",
+    "prompt": "Print powers of 2 from 2^1 to 2^8, each on a new line.",
+    "expected": "2\n4\n8\n16\n32\n64\n128\n256"
+  },
+  {
+    "id": 32,
+    "cat": "loops",
+    "name": "Сумма квадратов",
+    "prompt": "Compute 1^2 + 2^2 + 3^2 + 4^2 and print the result.",
+    "expected": "30"
+  },
+  {
+    "id": 33,
+    "cat": "loops",
+    "name": "Счётчик делений",
+    "prompt": "Count how many numbers from 1 to 20 are divisible by 4. Print the count.",
+    "expected": "5"
+  },
+  {
+    "id": 34,
+    "cat": "loops",
+    "name": "Max в цикле",
+    "prompt": "Find the maximum of 3, 7, 2, 9, 1, 5 using a loop and print it.",
+    "expected": "9"
+  },
+  {
+    "id": 35,
+    "cat": "loops",
+    "name": "Цифровая сумма 12345",
+    "prompt": "Compute the sum of digits of 12345 (1+2+3+4+5) using a loop and print it.",
+    "expected": "15"
+  },
+  {
+    "id": 36,
+    "cat": "recursion",
+    "name": "Факториал 5",
+    "prompt": "Compute factorial(5) using a recursive function and print the result.",
+    "expected": "120"
+  },
+  {
+    "id": 37,
+    "cat": "recursion",
+    "name": "Факториал 7",
+    "prompt": "Compute factorial(7) using a recursive function and print the result.",
+    "expected": "5040"
+  },
+  {
+    "id": 38,
+    "cat": "recursion",
+    "name": "Фибоначчи F(7)",
+    "prompt": "Compute F(7) where F(0)=0,F(1)=1,F(n)=F(n-1)+F(n-2). Print the result.",
+    "expected": "13"
+  },
+  {
+    "id": 39,
+    "cat": "recursion",
+    "name": "Фибоначчи F(9)",
+    "prompt": "Compute F(9) where F(0)=0,F(1)=1,F(n)=F(n-1)+F(n-2). Print the result.",
+    "expected": "34"
+  },
+  {
+    "id": 40,
+    "cat": "recursion",
+    "name": "Сумма 1..N рекурс.",
+    "prompt": "Compute the sum of 1 to 10 using a recursive function and print the result.",
+    "expected": "55"
+  },
+  {
+    "id": 41,
+    "cat": "recursion",
+    "name": "Степень 2^8 рекурс.",
+    "prompt": "Compute 2^8 using a recursive function and print the result.",
+    "expected": "256"
+  },
+  {
+    "id": 42,
+    "cat": "recursion",
+    "name": "GCD(48, 18)",
+    "prompt": "Compute GCD of 48 and 18 using the Euclidean algorithm recursively. Print it.",
+    "expected": "6"
+  },
+  {
+    "id": 43,
+    "cat": "recursion",
+    "name": "НОД(100, 75)",
+    "prompt": "Compute GCD of 100 and 75 using the Euclidean algorithm recursively. Print it.",
+    "expected": "25"
+  },
+  {
+    "id": 44,
+    "cat": "recursion",
+    "name": "Цифр. сумма рекурс.",
+    "prompt": "Compute the sum of digits of 9876 recursively (9+8+7+6). Print the result.",
+    "expected": "30"
+  },
+  {
+    "id": 45,
+    "cat": "recursion",
+    "name": "Обратный отсчёт",
+    "prompt": "Define a recursive function that prints from N down to 1. Call it with N=5.",
+    "expected": "5\n4\n3\n2\n1"
+  },
+  {
+    "id": 46,
+    "cat": "recursion",
+    "name": "Счётчик рекурс.",
+    "prompt": "Define a recursive function count(n) that prints 1,2,...n. Call with n=4.",
+    "expected": "1\n2\n3\n4"
+  },
+  {
+    "id": 47,
+    "cat": "recursion",
+    "name": "Числа Трибоначчи",
+    "prompt": "Compute T(7) where T(0)=0,T(1)=1,T(2)=1,T(n)=T(n-1)+T(n-2)+T(n-3). Print.",
+    "expected": "24"
+  },
+  {
+    "id": 48,
+    "cat": "recursion",
+    "name": "Мощность 4^4",
+    "prompt": "Compute 4^4 using a recursive function and print the result.",
+    "expected": "256"
+  },
+  {
+    "id": 49,
+    "cat": "recursion",
+    "name": "Сумма чётных рекурс",
+    "prompt": "Recursively sum all even numbers from 2 to 10 (2+4+6+8+10). Print result.",
+    "expected": "30"
+  },
+  {
+    "id": 50,
+    "cat": "recursion",
+    "name": "Макс рекурс.",
+    "prompt": "Find the maximum of [3,1,4,1,5,9,2,6] using a recursive function. Print it.",
+    "expected": "9"
+  },
+  {
+    "id": 51,
+    "cat": "lists",
+    "name": "Длина списка",
+    "prompt": "Create list [1,2,3,4,5] and print its length.",
+    "expected": "5"
+  },
+  {
+    "id": 52,
+    "cat": "lists",
+    "name": "Первый элемент",
+    "prompt": "Create list [10,20,30] and print its first element.",
+    "expected": "10"
+  },
+  {
+    "id": 53,
+    "cat": "lists",
+    "name": "Последний элемент",
+    "prompt": "Create list [10,20,30] and print its last element.",
+    "expected": "30"
+  },
+  {
+    "id": 54,
+    "cat": "lists",
+    "name": "Третий элемент",
+    "prompt": "Create list [5,10,15,20,25] and print the element at index 2.",
+    "expected": "15"
+  },
+  {
+    "id": 55,
+    "cat": "lists",
+    "name": "Сумма списка рекурс.",
+    "prompt": "Compute the sum of [3,1,4,1,5,9] using a recursive function. Print result.",
+    "expected": "23"
+  },
+  {
+    "id": 56,
+    "cat": "lists",
+    "name": "Макс списка рекурс.",
+    "prompt": "Find the maximum of [3,1,4,1,5,9,2,6] using a recursive function. Print it.",
+    "expected": "9"
+  },
+  {
+    "id": 57,
+    "cat": "lists",
+    "name": "Мин списка рекурс.",
+    "prompt": "Find the minimum of [3,1,4,1,5,9,2,6] using a recursive function. Print it.",
+    "expected": "1"
+  },
+  {
+    "id": 58,
+    "cat": "lists",
+    "name": "Длина рекурс.",
+    "prompt": "Compute the length of [1,2,3,4,5,6,7] using a recursive function. Print it.",
+    "expected": "7"
+  },
+  {
+    "id": 59,
+    "cat": "lists",
+    "name": "Кол-во элементов > N",
+    "prompt": "Count how many elements in [3,7,2,9,1,5,8] are greater than 4. Print count.",
+    "expected": "4"
+  },
+  {
+    "id": 60,
+    "cat": "lists",
+    "name": "Содержит ли 7",
+    "prompt": "Check if [3,1,4,1,5,9] contains 7. Print 'yes' or 'no'.",
+    "expected": "no"
+  },
+  {
+    "id": 61,
+    "cat": "lists",
+    "name": "Содержит ли 5",
+    "prompt": "Check if [3,1,4,1,5,9] contains 5. Print 'yes' or 'no'.",
+    "expected": "yes"
+  },
+  {
+    "id": 62,
+    "cat": "lists",
+    "name": "Произведение списка",
+    "prompt": "Compute the product of [1,2,3,4,5] using a recursive function. Print result.",
+    "expected": "120"
+  },
+  {
+    "id": 63,
+    "cat": "lists",
+    "name": "Индекс элемента",
+    "prompt": "Find the index of value 9 in [3,7,2,9,1]. Print the 0-based index.",
+    "expected": "3"
+  },
+  {
+    "id": 64,
+    "cat": "lists",
+    "name": "Список квадратов",
+    "prompt": "Create list [1,4,9,16,25] by squaring [1..5]. Print the 4th element (index 3).",
+    "expected": "16"
+  },
+  {
+    "id": 65,
+    "cat": "lists",
+    "name": "Сумма двух списков",
+    "prompt": "Compute the sum of all elements of [1,2,3] plus all elements of [4,5,6]. Print.",
+    "expected": "21"
+  },
+  {
+    "id": 66,
+    "cat": "strings",
+    "name": "Конкатенация",
+    "prompt": "Print the concatenation of 'Hello' and ' World'.",
+    "expected": "Hello World"
+  },
+  {
+    "id": 67,
+    "cat": "strings",
+    "name": "Три части",
+    "prompt": "Print 'one' + '-' + 'two' + '-' + 'three' as one string.",
+    "expected": "one-two-three"
+  },
+  {
+    "id": 68,
+    "cat": "strings",
+    "name": "Число в строку",
+    "prompt": "Convert 42 to a string and print it.",
+    "expected": "42"
+  },
+  {
+    "id": 69,
+    "cat": "strings",
+    "name": "Строка + число",
+    "prompt": "Print 'Result: ' followed by the number 99 on one line.",
+    "expected": "Result: 99"
+  },
+  {
+    "id": 70,
+    "cat": "strings",
+    "name": "Повтор строки",
+    "prompt": "Print 'ha' 4 times on separate lines.",
+    "expected": "ha\nha\nha\nha"
+  },
+  {
+    "id": 71,
+    "cat": "strings",
+    "name": "Приветствие",
+    "prompt": "Define a function greet(name) that prints 'Hello, ' + name + '!'. Call with 'Lupus'.",
+    "expected": "Hello, Lupus!"
+  },
+  {
+    "id": 72,
+    "cat": "strings",
+    "name": "Сумма → строка",
+    "prompt": "Compute 3+4+5 and print the result as a string (not just the number).",
+    "expected": "12"
+  },
+  {
+    "id": 73,
+    "cat": "strings",
+    "name": "Факториал → строка",
+    "prompt": "Compute factorial(6) and print 'Result: ' followed by the value.",
+    "expected": "Result: 720"
+  },
+  {
+    "id": 74,
+    "cat": "strings",
+    "name": "Числа со строкой",
+    "prompt": "Print 'Step 1', 'Step 2', 'Step 3' each on a new line.",
+    "expected": "Step 1\nStep 2\nStep 3"
+  },
+  {
+    "id": 75,
+    "cat": "strings",
+    "name": "FizzBuzz 1..10 упрощ.",
+    "prompt": "For numbers 1-10: if divisible by 3 print 'Fizz', else print the number. One per line.",
+    "expected": "1\n2\nFizz\n4\n5\nFizz\n7\n8\nFizz\n10"
+  },
+  {
+    "id": 76,
+    "cat": "combined",
+    "name": "Простое число 7",
+    "prompt": "Check if 7 is prime. Print 'prime' or 'not prime'.",
+    "expected": "prime"
+  },
+  {
+    "id": 77,
+    "cat": "combined",
+    "name": "Простое число 9",
+    "prompt": "Check if 9 is prime. Print 'prime' or 'not prime'.",
+    "expected": "not prime"
+  },
+  {
+    "id": 78,
+    "cat": "combined",
+    "name": "Акерман(2,3)",
+    "prompt": "Compute Ackermann(2,3): A(0,n)=n+1, A(m,0)=A(m-1,1), A(m,n)=A(m-1,A(m,n-1)). Print.",
+    "expected": "9"
+  },
+  {
+    "id": 79,
+    "cat": "combined",
+    "name": "Коллатц шаги для 6",
+    "prompt": "Count Collatz steps for 6 (6→3→10→5→16→8→4→2→1 = 8 steps). Print the count.",
+    "expected": "8"
+  },
+  {
+    "id": 80,
+    "cat": "combined",
+    "name": "Замыкание счётчик",
+    "prompt": "Create a counter using a closure. Call it 3 times and print each result (1, 2, 3).",
+    "expected": "1\n2\n3"
+  },
+  {
+    "id": 81,
+    "cat": "combined",
+    "name": "Лямбда + вызов",
+    "prompt": "Define a lambda that doubles a number. Apply it to 21 and print the result.",
+    "expected": "42"
+  },
+  {
+    "id": 82,
+    "cat": "combined",
+    "name": "Высш. порядок: map",
+    "prompt": "Apply a doubling function to each of [1,2,3,4,5] and print each result on a new line.",
+    "expected": "2\n4\n6\n8\n10"
+  },
+  {
+    "id": 83,
+    "cat": "combined",
+    "name": "Высш. порядок: filter",
+    "prompt": "From [1..10] keep only numbers divisible by 3. Print each on a new line.",
+    "expected": "3\n6\n9"
+  },
+  {
+    "id": 84,
+    "cat": "combined",
+    "name": "Накопление fold",
+    "prompt": "Compute the sum of [1,2,3,4,5] using a fold/accumulator pattern. Print result.",
+    "expected": "15"
+  },
+  {
+    "id": 85,
+    "cat": "combined",
+    "name": "Взаимная рекурсия",
+    "prompt": "Define is-even and is-odd mutually recursive. Print is-even(4) as 'even'/'odd'.",
+    "expected": "even"
+  },
+  {
+    "id": 86,
+    "cat": "combined",
+    "name": "Отсчёт + строка",
+    "prompt": "Print 'T-3', 'T-2', 'T-1', 'Launch!' each on a new line.",
+    "expected": "T-3\nT-2\nT-1\nLaunch!"
+  },
+  {
+    "id": 87,
+    "cat": "combined",
+    "name": "Мемоизация",
+    "prompt": "Compute fib(10) = 55 using memoization with a mutable variable. Print result.",
+    "expected": "55"
+  },
+  {
+    "id": 88,
+    "cat": "combined",
+    "name": "Числа делятся на 5",
+    "prompt": "Print all multiples of 5 from 5 to 50, each on a new line.",
+    "expected": "5\n10\n15\n20\n25\n30\n35\n40\n45\n50"
+  },
+  {
+    "id": 89,
+    "cat": "combined",
+    "name": "Сумма факториалов",
+    "prompt": "Compute 1! + 2! + 3! + 4! = 1+2+6+24. Print the result.",
+    "expected": "33"
+  },
+  {
+    "id": 90,
+    "cat": "combined",
+    "name": "Числа Люка",
+    "prompt": "Compute L(7) where L(0)=2,L(1)=1,L(n)=L(n-1)+L(n-2). Print the result.",
+    "expected": "29"
+  },
+  {
+    "id": 91,
+    "cat": "combined",
+    "name": "Биномиальный коэф.",
+    "prompt": "Compute C(5,2) = 10 using recursive Pascal's triangle. Print result.",
+    "expected": "10"
+  },
+  {
+    "id": 92,
+    "cat": "combined",
+    "name": "Кол-во цифр",
+    "prompt": "Count how many digits are in 12345 (answer: 5) using a loop. Print the count.",
+    "expected": "5"
+  },
+  {
+    "id": 93,
+    "cat": "combined",
+    "name": "Палиндром 121",
+    "prompt": "Check if 121 is a palindrome number. Print 'yes' or 'no'.",
+    "expected": "yes"
+  },
+  {
+    "id": 94,
+    "cat": "combined",
+    "name": "Не палиндром 123",
+    "prompt": "Check if 123 is a palindrome number. Print 'yes' or 'no'.",
+    "expected": "no"
+  },
+  {
+    "id": 95,
+    "cat": "combined",
+    "name": "Минимум 3 чисел",
+    "prompt": "Find the minimum of 17, 3 and 42 using a function. Print the result.",
+    "expected": "3"
+  },
+  {
+    "id": 96,
+    "cat": "combined",
+    "name": "Среднее списка",
+    "prompt": "Compute the average of [10,20,30,40] as integer (sum/count). Print result.",
+    "expected": "25"
+  },
+  {
+    "id": 97,
+    "cat": "combined",
+    "name": "N-й треугольный",
+    "prompt": "Compute the 7th triangular number T(7)=1+2+...+7=28. Print the result.",
+    "expected": "28"
+  },
+  {
+    "id": 98,
+    "cat": "combined",
+    "name": "Сумма простых до 20",
+    "prompt": "Sum all prime numbers up to 20 (2+3+5+7+11+13+17+19=77). Print the result.",
+    "expected": "77"
+  },
+  {
+    "id": 99,
+    "cat": "combined",
+    "name": "Инверсия числа",
+    "prompt": "Reverse the digits of 12345 → 54321 using arithmetic (%, /). Print result.",
+    "expected": "54321"
+  },
+  {
+    "id": 100,
+    "cat": "combined",
+    "name": "Числа Падована",
+    "prompt": "Compute P(9) where P(0)=P(1)=P(2)=1, P(n)=P(n-2)+P(n-3). Print the result.",
+    "expected": "5"
+  }
+]

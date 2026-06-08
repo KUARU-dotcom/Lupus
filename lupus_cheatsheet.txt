@@ -1,0 +1,99 @@
+LUPUS LANGUAGE — SYNTAX REFERENCE
+All syntax is PREFIX notation: (operator arg1 arg2)
+
+VARIABLES
+  (define x 10)              immutable variable
+  (define-mutable x 0)       mutable variable
+  (set! x 99)                assign to mutable (only mutable!)
+
+FUNCTIONS
+  (define (f a b) body)      define function, body = 1+ expressions
+  (define (f a b)            multi-line body: all run, last = return value
+    expr1
+    expr2)
+  (lambda (a b) body)        anonymous function
+  ((lambda (x) (* x x)) 5)  call lambda inline → 25
+
+CALLS
+  (f 1 2)                    call function f with args 1, 2
+  (define g (lambda (x) x))  assign lambda to variable
+  (g 42)                     call it → 42
+
+CONTROL FLOW
+  (if cond then else)        BOTH branches required
+  (if (> x 0)
+    (print "pos")
+    (print "neg"))
+  (begin expr1 expr2 expr3)  run all, return last
+  (while cond body...)       loop, multiple body expressions OK
+  (define-mutable i 0)
+  (while (< i 5)
+    (print (int->str i))
+    (set! i (+ i 1)))
+
+ARITHMETIC  integers only, no float
+  (+ a b)   (- a b)   (* a b)   (/ a b)   (% a b)
+  (- 5)              unary minus → -5   NEVER write -5 directly!
+  (/ 7 2)            → 3   (integer division)
+  (% 7 2)            → 1   (modulo/remainder)
+
+COMPARISON  returns true/false
+  (= a b)  (!= a b)  (< a b)  (> a b)  (<= a b)  (>= a b)
+
+LOGIC  short-circuit evaluation
+  (and a b)   (or a b)   (not a)
+
+STRINGS & I/O
+  (print "text")             print with newline
+  (int->str 42)              → "42"
+  (string-append "a" "b")   → "ab"   any number of args
+  (print (int->str n))       print a number
+  (print (string-append "Result: " (int->str n)))
+
+LISTS
+  (list 1 2 3)               create list
+  (nth lst 0)                first element (0-based index)
+  (length lst)               number of elements
+  (define lst (list 3 1 4))
+  (nth lst 1)                → 1
+
+COMMON PATTERNS
+
+Recursion:
+  (define (factorial n)
+    (if (= n 0)
+      1
+      (* n (factorial (- n 1)))))
+
+Mutable accumulator:
+  (define-mutable sum 0)
+  (define-mutable i 1)
+  (while (<= i 10)
+    (set! sum (+ sum i))
+    (set! i (+ i 1)))
+  (print (int->str sum))
+
+Recursive list sum:
+  (define (sum-list lst i acc)
+    (if (= i (length lst))
+      acc
+      (sum-list lst (+ i 1) (+ acc (nth lst i)))))
+  (print (int->str (sum-list (list 1 2 3) 0 0)))
+
+Closure:
+  (define (make-counter)
+    (define-mutable n 0)
+    (lambda ()
+      (set! n (+ n 1))
+      n))
+  (define c (make-counter))
+  (print (int->str (c)))    → 1
+  (print (int->str (c)))    → 2
+
+CRITICAL RULES
+  ✗ WRONG: -5   x+1   if(x>0)   x = 1   for i in range(5)
+  ✓ RIGHT: (- 5)  (+ x 1)  (if (> x 0) ...)  (set! x 1)  (while ...)
+  - No float numbers
+  - No Python/C/Java syntax
+  - Every expression needs parentheses
+  - Output ONLY Lupus code, no markdown, no explanation
