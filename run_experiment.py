@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """
 Lupus Experiment — Batch Runner
-Запуск: python run_experiment.py
-        python run_experiment.py --resume      (продолжить с места остановки)
-        python run_experiment.py --ids 1,5,10  (только конкретные задачи)
-        python run_experiment.py --cat loops   (только категория)
-        python run_experiment.py --report      (только отчёт из сохранённых данных)
+Запуск: python run_experiment.py --model qwen3.5-2b
+        python run_experiment.py --model deepseek-v4-flash --resume
+        python run_experiment.py --model qwen3.5-9b --ids 1,5,10
+        python run_experiment.py --list-models
+        python run_experiment.py --model qwen3.5-2b --report
 """
 
 import json, subprocess, sys, re, time, os, argparse, tempfile
@@ -14,18 +14,39 @@ from urllib import request as urllib_request
 from urllib.error import URLError
 from datetime import datetime
 
-# ─── Конфигурация ─────────────────────────────────────────────────────────────
-API_URL      = "http://127.0.0.1:1234/v1/chat/completions"
-API_KEY      = "LM Studio API Key"
+# ─── Конфигурация моделей ─────────────────────────────────────────────────────
+LM_STUDIO_KEY = "API_KEI_LMSTUDIO"
+
+MODELS = {
+    "qwen3.5-2b":         {"base_url": "http://localhost:1234/v1", "api_key": LM_STUDIO_KEY, "model": "qwen3.5-2b",         "max_tokens": 700,  "disable_thinking": True},
+    "qwen3.5-4b":         {"base_url": "http://localhost:1234/v1", "api_key": LM_STUDIO_KEY, "model": "qwen3.5-4b",         "max_tokens": 700,  "disable_thinking": True},
+    "qwen3.5-9b":         {"base_url": "http://localhost:1234/v1", "api_key": LM_STUDIO_KEY, "model": "qwen3.5-9b",         "max_tokens": 700,  "disable_thinking": True},
+    "qwen3.8-4b-distill": {"base_url": "http://localhost:1234/v1", "api_key": LM_STUDIO_KEY, "model": "qwen3.8-4b-distill", "max_tokens": 700,  "disable_thinking": True},
+    "bonsai-27b":         {"base_url": "http://localhost:1234/v1", "api_key": LM_STUDIO_KEY, "model": "bonsai-27b",         "max_tokens": 700,  "disable_thinking": True},
+
+# ─── Постоянная конфигурация ──────────────────────────────────────────────────
 TEMPERATURE  = 0.1
-MAX_TOKENS   = 700
 TIMEOUT_API  = 90    # секунд
 TIMEOUT_RUN  = 10    # секунд
 INTERPRETER  = os.path.join(os.path.dirname(__file__), "lupus_proto.py")
 TASKS_FILE   = os.path.join(os.path.dirname(__file__), "tasks.json")
-RESULTS_FILE = os.path.join(os.path.dirname(__file__), "results.json")
 CHEATSHEET   = os.path.join(os.path.dirname(__file__), "lupus_cheatsheet.txt")
 RETRY_COUNT  = 2     # повторов при ошибке API
+
+# ─── Глобальная переменная: текущая конфигурация модели и файл результатов ────
+current_model_name = None
+current_model_config = None
+current_results_file = None
+
+def set_current_model(model_name: str):
+    """Устанавливает текущую модель и путь к файлу результатов."""
+    global current_model_name, current_model_config, current_results_file
+    if model_name not in MODELS:
+        return False
+    current_model_name = model_name
+    current_model_config = MODELS[model_name]
+    current_results_file = os.path.join(os.path.dirname(__file__), f"results_{model_name}.json")
+    return True
 
 # ─── Загружаем шпаргалку ──────────────────────────────────────────────────────
 def load_cheatsheet() -> str:
@@ -51,22 +72,41 @@ PYTHON_SYSTEM = (
 
 # ─── API ──────────────────────────────────────────────────────────────────────
 def call_model(system: str, prompt: str) -> str | None:
-    payload = json.dumps({
-        "model": "qwen2.5-coder-14b-instruct-abliterated",  # API Model Identifier из LM Studio
+    if current_model_config is None:
+        return None
+
+    user_prompt = prompt
+    payload_data = {
+        "model": current_model_config["model"],
         "messages": [
-            {"role": "system",  "content": system},
-            {"role": "user",    "content": prompt},
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_prompt},
         ],
         "temperature": TEMPERATURE,
-        "max_tokens":  MAX_TOKENS,
-        "stream":      False,
-    }).encode("utf-8")
+        "max_tokens": current_model_config["max_tokens"],
+        "stream": False,
+    }
+
+    # Отключаем thinking: /no_think в промпт + chat_template_kwargs на верхнем уровне JSON
+    if current_model_config.get("disable_thinking", False):
+        user_prompt = user_prompt + "\n/no_think"
+        payload_data["messages"] = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_prompt},
+        ]
+        payload_data["chat_template_kwargs"] = {"enable_thinking": False}
 
     for attempt in range(RETRY_COUNT):
         try:
+            payload = json.dumps(payload_data).encode("utf-8")
+
             req = urllib_request.Request(
-                API_URL, data=payload,
-                headers={"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"},
+                f"{current_model_config['base_url']}/chat/completions",
+                data=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {current_model_config['api_key']}"
+                },
                 method="POST",
             )
             with urllib_request.urlopen(req, timeout=TIMEOUT_API) as resp:
@@ -145,13 +185,13 @@ D = lambda t: f"\033[2m{t}\033[0m"
 
 # ─── Сохранение / загрузка ────────────────────────────────────────────────────
 def load_results() -> dict:
-    if os.path.exists(RESULTS_FILE):
-        with open(RESULTS_FILE, encoding="utf-8") as f:
+    if os.path.exists(current_results_file):
+        with open(current_results_file, encoding="utf-8") as f:
             return json.load(f)
     return {}
 
 def save_results(results: dict):
-    with open(RESULTS_FILE, "w", encoding="utf-8") as f:
+    with open(current_results_file, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
 # ─── Один прогон задачи ───────────────────────────────────────────────────────
@@ -190,6 +230,17 @@ def run_task(task: dict, lupus_system: str) -> dict:
 
     return row
 
+# ─── Вывод доступных моделей ──────────────────────────────────────────────────
+def list_models():
+    print()
+    print(B("Доступные модели:"))
+    print()
+    print(f"  {'Имя':25s}  {'base_url':40s}  {'max_tokens':11s}")
+    print(f"  {'-'*25}  {'-'*40}  {'-'*11}")
+    for name, cfg in MODELS.items():
+        print(f"  {name:25s}  {cfg['base_url']:40s}  {cfg['max_tokens']:11d}")
+    print()
+
 # ─── Отчёт ────────────────────────────────────────────────────────────────────
 def print_report(results: dict):
     rows = list(results.values())
@@ -199,9 +250,10 @@ def print_report(results: dict):
 
     total = len(rows)
     print()
-    print(B("=" * 62))
-    print(B("  ОТЧЁТ ПО ЭКСПЕРИМЕНТУ"))
-    print(B("=" * 62))
+    print(B("=" * 80))
+    print(B(f"  ОТЧЁТ ПО ЭКСПЕРИМЕНТУ — {current_model_name.upper()}"))
+    print(B(f"  Результаты: {current_results_file}"))
+    print(B("=" * 80))
 
     # Общий итог
     print()
@@ -268,8 +320,8 @@ def print_report(results: dict):
             print(f"  ... и ещё {len(lupus_fails)-10}")
 
     print()
-    print(B("=" * 62))
-    print(f"  Результаты сохранены: {RESULTS_FILE}")
+    print(B("=" * 80))
+    print(f"  Результаты сохранены: {current_results_file}")
     print()
 
 # ─── Основной прогон ──────────────────────────────────────────────────────────
@@ -296,23 +348,26 @@ def run_experiment(task_ids: list[int] | None, resume: bool, report_only: bool):
         print_report(results)
         return
 
-    # Проверяем соединение
-    print(f"\n🔌 Проверяем LM Studio...", end=" ", flush=True)
+    # Проверяем соединение с выбранной моделью
+    print(f"\n🔌 Проверяем {current_model_name}...", end=" ", flush=True)
     test = call_model("Reply: ok", "ok")
     if test is None:
         print(R("ОШИБКА"))
-        print("\n  Нужно:\n  1. Открыть LM Studio\n  2. Загрузить модель\n  3. Local Server → Start Server")
+        print(f"\n  Нужно:\n  1. Проверить доступность {current_model_config['base_url']}")
+        print(f"  2. Проверить API ключ: {current_model_config['api_key'][:20]}...")
         sys.exit(1)
     print(G("OK"))
 
     lupus_system = build_lupus_system()
     total = len(tasks)
 
-    print(f"\n{B('='*62)}")
+    print(f"\n{B('='*80)}")
     print(f"{B('  LUPUS EXPERIMENT — BATCH RUNNER')}")
+    print(f"  Модель: {current_model_name}")
+    print(f"  Результаты: {current_results_file}")
     print(f"  Задач к выполнению: {total}")
     print(f"  Режим: {'продолжение' if resume else 'полный прогон'}")
-    print(f"{B('='*62)}\n")
+    print(f"{B('='*80)}\n")
 
     for i, task in enumerate(tasks, 1):
         progress = f"[{i:3d}/{total}]"
@@ -346,12 +401,38 @@ def run_experiment(task_ids: list[int] | None, resume: bool, report_only: bool):
 # ─── CLI ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Lupus Experiment Batch Runner")
-    parser.add_argument("--resume",  action="store_true", help="Пропустить уже выполненные задачи")
-    parser.add_argument("--report",  action="store_true", help="Только вывести отчёт")
-    parser.add_argument("--ids",     type=str, default="",  help="Конкретные ID через запятую: 1,5,10")
-    parser.add_argument("--cat",     type=str, default="",  help="Только категория: arithmetic|logic|loops|recursion|lists|strings|combined")
+    parser.add_argument("--model",  type=str, default="", help="Имя модели (обязательно)")
+    parser.add_argument("--list-models", action="store_true", help="Вывести список доступных моделей")
+    parser.add_argument("--resume", action="store_true", help="Пропустить уже выполненные задачи")
+    parser.add_argument("--report", action="store_true", help="Только вывести отчёт")
+    parser.add_argument("--ids",    type=str, default="", help="Конкретные ID через запятую: 1,5,10")
+    parser.add_argument("--cat",    type=str, default="", help="Только категория: arithmetic|logic|loops|recursion|lists|strings|combined")
     args = parser.parse_args()
 
+    # Если запрошен список моделей
+    if args.list_models:
+        list_models()
+        sys.exit(0)
+
+    # Проверяем обязательный аргумент --model
+    if not args.model:
+        print(R("Ошибка: не указана модель."))
+        print("\nДоступные модели:")
+        for name in MODELS.keys():
+            print(f"  - {name}")
+        print(f"\nИспользуйте: python run_experiment.py --model <имя> [опции]")
+        print(f"Или для списка: python run_experiment.py --list-models")
+        sys.exit(1)
+
+    # Устанавливаем текущую модель
+    if not set_current_model(args.model):
+        print(R(f"Ошибка: модель '{args.model}' не найдена."))
+        print("\nДоступные модели:")
+        for name in MODELS.keys():
+            print(f"  - {name}")
+        sys.exit(1)
+
+    # Парсим ID и категорию
     ids = [int(x.strip()) for x in args.ids.split(",") if x.strip()] if args.ids else None
 
     if args.cat:
