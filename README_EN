@@ -21,7 +21,7 @@ Its goal: reduce syntax errors, logic errors, and hallucinations when neural net
 | Role | Contributor |
 |------|-------------|
 | **Language architect** | Kimi 2.6 Thinking |
-| **Implementation advisor** | DeepSeek R1 |
+| **Implementation advisor** | DeepSeek R1, Qwem 3.8 Max, Qwen 3.7 Plus |
 | **Specification author (v1.0)** | Kimi 2.6 Thinking |
 | **Specification verification** | Gemini 3.1 Pro, Grok |
 | **Language designer** | KYARU (module design, naming, final approval) |
@@ -80,7 +80,7 @@ Lupus is a companion language for LLMs, not a Python replacement for humans.
 
 **Alpha v0.1 (prototype):**
 - [x] v1.0 specification (vision) — frozen
-- [ ] Python interpreter (basic subset)
+- [x] Python interpreter (basic subset)
 - [ ] Examples: calculator, factorial, Fibonacci, list operations
 - [ ] Hypothesis validation using Qwen 1.5B
 
