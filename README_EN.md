@@ -177,7 +177,7 @@ AST is serialized deterministically — for pipeline transfer and LLM training.
 - [ ] Typechecker (Hindley-Milner)
 - [ ] FFI modules: senko (math), texas (net), kaltsit (file), amiya (async)
 - [ ] CLI: run, test, check, ast
-- [ ] Experiment: 100 tasks, Lupus vs Python on small LLMs
+- [x] Experiment: 100 tasks, Lupus vs Python on small LLMs
 - [ ] Rust implementation (if experiment succeeds)
 
 ---
