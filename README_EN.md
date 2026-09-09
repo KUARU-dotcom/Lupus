@@ -8,177 +8,247 @@
 
 ## About
 
-**Lupus** is an experimental general-purpose programming language.
+**Lupus** is an experimental general-purpose programming language designed for optimized interaction with LLMs (large language models).
 
-**Version:** Alpha (v0.1) · **Status:** Interpreter prototype is ready.
+**Version:** v0.2 (Rust Rewrite) · **Status:** Interpreter in active development.
 
 The experiment has three hypotheses:
 
 1. Can an LLM design a complete language — from grammar and type system to FFI and standard library?
-2. Can an LLM implement that language — interpreter, typechecker, runtime?
+2. Can an LLM implement that language — interpreter, parser, typechecker, runtime?
 3. Will a small LLM (1.5B–7B parameters) make 20%+ fewer errors writing Lupus than Python?
 
-If all three hold, it proves that LLMs can act not just as tools, but as **architects**.
+If all three hold, it proves that LLMs can act not just as tools, but as **language architects**.
 
 ---
 
 ## Quick Start
 
+### From Source (Rust)
+
 ```bash
 git clone https://github.com/KUARU-dotcom/Lupus
 cd Lupus
-git checkout prototype
 
-python lupus_proto.py examples/calc.lupus  # run a file
-python lupus_proto.py                       # interactive REPL
+# Build
+cargo build --release
+
+# Run a program
+./target/release/lupus examples/calc.lupus
+
+# Interactive REPL (planned for v0.3)
+# ./target/release/lupus --repl
 ```
 
-**Requirements:** Python 3.10+, no dependencies.
+**Requirements:** Rust 1.70+. No external dependencies.
 
-A full CLI (`lupus run`, `lupus check`, `lupus ast`) is planned for v0.2 in Rust.
+### From Binaries
+
+Download pre-built binaries for Linux/Windows from the [Releases](https://github.com/KUARU-dotcom/Lupus/releases) page.
+
+```bash
+# Linux/macOS
+./lupus examples/calc.lupus
+
+# Windows
+lupus.exe examples/calc.lupus
+```
+
+### Legacy Python Prototype (v0.1)
+
+To use the original Python prototype, switch to the `prototype` branch:
+
+```bash
+git checkout prototype
+python lupus_proto.py examples/calc.lupus
+```
 
 ---
 
 ## Features
 
 - **Prefix syntax** — `(define x 42)`, `(+ 1 2)`. Unambiguous AST, no syntactic sugar.
-- **Static typing** — Hindley-Milner with Value Restriction. Types inferred automatically.
-- **Algebraic types** — `Option`, `Result`, user-defined structs (`defstruct`) with generics.
-- **Pattern matching** — exhaustiveness checked at compile time.
-- **Python FFI** — standard library modules implemented as Python wrappers.
-- **Tensors** — built-in multi-dimensional arrays for ML experiments.
-- **Async** — threads, channels, `send`/`recv` with timeout.
-- **Built-in tests** — `(test "name" ...)` form, isolated environments, JSON reports.
-- **Deterministic AST** — JSON serialization for pipeline transfer and LLM training data.
+- **Static typing** — type inference algorithm (Hindley-Milner planned). Types inferred automatically.
+- **Pattern matching** — `match` with exhaustiveness checking.
+- **Functions and lambdas** — `define`, `lambda`, closures.
+- **Control flow** — `if`, `while`, `define-mutable`, `set!`.
+- **Built-in types** — integers, floats, strings, lists, booleans.
+- **Built-in functions** — arithmetic, string operations, list operations, printing.
+- **Deterministic AST** — designed for training LLMs on clean syntax.
 
 ---
 
 ## Code Examples
 
-### Circle area calculator
+### Basic Arithmetic and Definitions
 
 ```lisp
-(import (senko math))
-
-(define-public (circle-area (radius float)) -> float
-  (* math/pi (* radius radius)))
-
-(define r 10.0)
-(print (string-append "Area: " (float->str (circle-area r))))
-
-(test "circle-area-10"
-  (assert (= (circle-area 10.0) 314.1592653589793)))
+(define pi 3.14159)
+(define radius 10.0)
+(define area (* pi (* radius radius)))
+(print area)  ; => 314.159
 ```
 
-### HTTP client
+### Functions
 
 ```lisp
-(import (texas net) :as net)
+(define (square x)
+  (* x x))
 
-(define-public (fetch (host str) (path str)) -> (Result str str)
-  (match (net/tcp-connect host 80)
-    ((success sock)
-      (match (net/send sock (string-append "GET " path " HTTP/1.0\r\n"))
-        ((success _)
-          (match (net/recv sock 8192)
-            ((success response) (net/close sock) (success response))
-            ((failure err)      (net/close sock) (failure err))))
-        ((failure err) (net/close sock) (failure err))))
-    ((failure err) (failure err))))
+(define (circle-area r)
+  (* 3.14159 (* r r)))
+
+(print (square 5))           ; => 25
+(print (circle-area 10.0))   ; => 314.159
 ```
 
-### Async with channels
+### Conditionals and Loops
 
 ```lisp
-(import (amiya async) :as async)
+(define (abs x)
+  (if (< x 0) (- x) x))
 
-(define-public (ticker (id str) (count int) (ch (channel str)))
-  (define-mutable i 0)
-  (while (< i count)
-    (async/sleep 500)
-    (async/send ch (string-append "Tick from " id " #" (int->str i)))
-    (set! i (+ i 1))))
+(define (factorial n)
+  (define-mutable result 1)
+  (define-mutable i 1)
+  (while (<= i n)
+    (set! result (* result i))
+    (set! i (+ i 1)))
+  result)
 
-(define ch (async/channel))
-(async/spawn (lambda () (ticker "A" 3 ch)))
-(async/spawn (lambda () (ticker "B" 3 ch)))
-
-(define-mutable total 6)
-(while (> total 0)
-  (print (async/recv ch))
-  (set! total (- total 1)))
+(print (factorial 5))  ; => 120
 ```
 
-### Generics and data structures
+### Lists and Data Processing
 
 ```lisp
-(defstruct (Node a)
-  (value a)
-  (left  (Option (Node a)))
-  (right (Option (Node a))))
+(define numbers (list 1 2 3 4 5))
+(print (car numbers))      ; => 1
+(print (length numbers))   ; => 5
+(print (reverse numbers))  ; => (5 4 3 2 1)
+```
 
-(define tree (Node 10 (some (Node 5 none none)) none))
+### Lambdas and Closures
 
-(match tree
-  ((Node v _ _)
-    (print (string-append "Root: " (int->str v)))))
+```lisp
+(define (make-adder x)
+  (lambda (y) (+ x y)))
+
+(define add5 (make-adder 5))
+(print (add5 3))  ; => 8
 ```
 
 ---
 
-## Architecture
+## Interpreter Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│  CLI: run | test | check | ast          │
-├─────────────────────────────────────────┤
-│  Frontend: Lexer → Parser → AST (JSON)  │
-├─────────────────────────────────────────┤
-│  Middle-end: Typechecker → Linter       │
-├─────────────────────────────────────────┤
-│  Backend: Interpreter (tree-walk) + FFI │
-├─────────────────────────────────────────┤
-│  Runtime: Values + Environment + GC     │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│  CLI: lupus [--lenient-parens] file.lupus            │
+├──────────────────────────────────────────────────────┤
+│  Lexer (src/lexer.rs)                                │
+│  Transforms text into tokens                         │
+├──────────────────────────────────────────────────────┤
+│  Parser (src/parser.rs)                              │
+│  Transforms tokens into AST (Abstract Syntax Tree)   │
+├──────────────────────────────────────────────────────┤
+│  Interpreter (src/interpreter.rs)                    │
+│  Executes AST in an environment (tree-walk)          │
+├──────────────────────────────────────────────────────┤
+│  Runtime (src/value.rs, src/environment.rs)          │
+│  Stores values, variables, closures                  │
+└──────────────────────────────────────────────────────┘
 ```
 
-All errors are emitted as structured JSON with locations and hints.
-AST is serialized deterministically — for pipeline transfer and LLM training.
+### Project Structure
+
+```
+src/
+├── main.rs              # CLI entry point
+├── lib.rs               # Public library API
+├── lexer.rs             # Lexical analyzer
+├── parser.rs            # Syntax analyzer
+├── ast.rs               # AST definitions
+├── interpreter.rs       # Interpreter
+├── value.rs             # Value representation
+├── environment.rs       # Variable environment
+├── error.rs             # Error handling
+└── builtins/            # Built-in functions
+    ├── arithmetic.rs    # Planned
+    ├── io.rs            # Planned
+    └── list.rs          # Planned
+```
 
 ---
 
-## Standard Library
+## Supported Syntax (v0.2)
 
-| Module | Prefix | Description |
-|--------|--------|-------------|
-| `core` | — | Auto-imported. Arithmetic, lists, Map, strings, tensors, assert, print. |
-| `senko` | `math/` | Math: pi, e, sqrt, sin, cos, log, pow, abs, floor, ceil. |
-| `texas` | `net/` | Networking: TCP/UDP sockets, connect, listen, send, recv, close. |
-| `kaltsit` | `file/` | File system: read, write, append, exists, mkdir, list-dir. |
-| `amiya` | `async/` | Async: spawn, channel, send, recv, recv-timeout, wait. |
-| `w` | `test/` | Testing: assert-eq, assert-true, run, run-all. |
+### Definitions and Variables
+
+| Form | Example | Description |
+|------|---------|-------------|
+| `define` | `(define x 42)` | Define a variable |
+| `define-mutable` | `(define-mutable x 0)` | Define a mutable variable |
+| `set!` | `(set! x 10)` | Mutate a variable |
+
+### Functions
+
+| Form | Example | Description |
+|------|---------|-------------|
+| `define` with function | `(define (f x) (+ x 1))` | Define a function |
+| `lambda` | `(lambda (x) (+ x 1))` | Anonymous function |
+
+### Control Flow
+
+| Form | Example | Description |
+|------|---------|-------------|
+| `if` | `(if (> x 0) "pos" "neg")` | Conditional branching |
+| `while` | `(while (< i 10) (set! i (+ i 1)))` | While loop |
+
+### Built-in Functions
+
+| Function | Examples |
+|----------|----------|
+| Arithmetic | `(+ 1 2)`, `(- 5 3)`, `(* 2 3)`, `(/ 10 2)` |
+| Comparison | `(= a b)`, `(< x y)`, `(> x y)`, `(<= x y)`, `(>= x y)` |
+| Logic | `(and true false)`, `(or true false)`, `(not true)` |
+| Strings | `(string-append "a" "b")`, `(string-length "hello")` |
+| Lists | `(list 1 2 3)`, `(car lst)`, `(cdr lst)`, `(length lst)`, `(reverse lst)` |
+| Output | `(print x)`, `(println x)` |
 
 ---
 
-## Branches
+## Historical Information
 
-| Branch | Contents |
-|--------|---------|
-| `main` | This file. Project overview and vision. |
-| `specification` | Full language specification v1.0 (EBNF, types, FFI, AST). |
-| `prototype` | Working Alpha v0.1 interpreter prototype in Python. |
+### Branches
+
+| Branch | Contents | Status |
+|--------|----------|--------|
+| `main` | Current documentation. v0.2 release. | Active |
+| `prototype` | Original Python prototype (v0.1/v0.1e). | Archive |
+| `specification` | Full language specification v1.0 (EBNF). | Archive |
+
+### Versioning
+
+- **v0.1 / v0.1e** — Python prototype (`prototype` branch). Deprecated.
+- **v0.2** — Complete Rust rewrite (`main` branch). Active development.
+- **v1.0** — Planned stable release with full feature set.
 
 ---
 
 ## Roadmap
 
-- [x] Language specification v1.0 (EBNF, types, FFI, tests, AST)
-- [x] Interpreter prototype (tree-walk) — `prototype` branch
+- [x] Language specification (EBNF, types, AST)
+- [x] Python prototype interpreter (v0.1)
+- [x] Rust rewrite of interpreter (v0.2)
+- [x] Basic lexing, parsing, evaluation
+- [ ] Built-in functions (modules in `src/builtins/`)
 - [ ] Typechecker (Hindley-Milner)
-- [ ] FFI modules: senko (math), texas (net), kaltsit (file), amiya (async)
-- [ ] CLI: run, test, check, ast
-- [x] Experiment: 100 tasks, Lupus vs Python on small LLMs
-- [ ] Rust implementation (if experiment succeeds)
+- [ ] Interactive REPL
+- [ ] FFI modules (math, net, file, async)
+- [ ] Standard library
+- [ ] Performance optimization
+- [ ] API documentation
 
 ---
 
