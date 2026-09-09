@@ -16,7 +16,7 @@ from datetime import datetime
 
 # ─── Конфигурация моделей ─────────────────────────────────────────────────────
 LM_STUDIO_KEY = "sk-lm-kJIgUah0:sI0VU9qdjO2tv8lZaRis"
-KNYAZEV_KEY = os.environ.get("kn_live_01c2e82b912933324a2e80414ff32c58", "")
+KNYAZEV_KEY = os.environ.get("API_KEY", "")
 
 MODELS = {
     "qwen3.5-2b":         {"base_url": "http://localhost:1234/v1", "api_key": LM_STUDIO_KEY, "model": "qwen3.5-2b",         "max_tokens": 700,  "disable_thinking": True},
