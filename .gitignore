@@ -1,131 +1,48 @@
-# Byte-compiled / optimized / DLL files
+# ─── Rust ────────────────────────────────────────────────────────────────────
+# Каталог сборки cargo
+target/
+# Артефакты линковки
+*.so
+*.dll
+*.dylib
+# ВАЖНО: Cargo.lock НЕ игнорируется! Проект собирает бинарник ([[bin]]),
+# lock-файл должен быть в репозитории для воспроизводимых сборок.
+
+# ─── Python (legacy-прототип и скрипты экспериментов) ───────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
-*.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# PyInstaller
-*.manifest
-*.spec
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
-# pipenv
-Pipfile.lock
-
-# PEP 582
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
+.eggs/
+build/
+dist/
+wheels/
 .env
 .venv
-env/
 venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
+env/
 .mypy_cache/
-.dmypy.json
-dmypy.json
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Pyre type checker
-.pyre/
-
-# IDE
+# ─── IDE / редакторы ─────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-.DS_Store
 
-# Lupus-specific
+# ─── ОС ──────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+
+# ─── Lupus-specific ──────────────────────────────────────────────────────────
 *.lupus.bak
 *.lupus.tmp
+# Временные файлы бенчмарка (если запущен не из /tmp)
+/_lupus_exp.lupus
+/_python_exp.py
+# ВАЖНО: tasks.json и results_*.json НЕ игнорируются — это данные эксперимента,
+# они должны быть в репозитории.
