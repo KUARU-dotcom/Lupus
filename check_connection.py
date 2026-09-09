@@ -7,7 +7,7 @@ from urllib import request as urllib_request
 from urllib.error import URLError
 
 PORTS    = [1234, 8080, 8081, 11434]
-API_KEY  = "api_key"
+API_KEY  = "sk-lm-el4hzA5Z:wPhhpniR7gP534Hrv50M"
 PATHS    = ["/v1/chat/completions", "/api/chat", "/v1/completions"]
 
 def try_get(url):
