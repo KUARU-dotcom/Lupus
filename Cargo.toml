@@ -1,0 +1,16 @@
+[package]
+name = "lupus"
+version = "0.2.0"
+edition = "2021"
+description = "Rust interpreter for the Lupus programming language (rewrite of lupus_proto.py)"
+license = "MIT"
+
+[lib]
+name = "lupus"
+path = "src/lib.rs"
+
+[[bin]]
+name = "lupus"
+path = "src/main.rs"
+
+[dependencies]
