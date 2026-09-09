@@ -1,0 +1,2402 @@
+[
+  {
+    "id": 2,
+    "cat": "arithmetic",
+    "name": "mul_add_20_5_40",
+    "prompt": "Multiply 20 and 5, then increase the outcome by 40. Print what you get.",
+    "expected": "140",
+    "difficulty": "easy"
+  },
+  {
+    "id": 4,
+    "cat": "arithmetic",
+    "name": "add_then_div_40_17_8",
+    "prompt": "First sum 40 and 17, then divide that total by 8 using integer division and print the quotient.",
+    "expected": "7",
+    "difficulty": "medium"
+  },
+  {
+    "id": 10,
+    "cat": "arithmetic",
+    "name": "mod_add_95_12_25",
+    "prompt": "Find the remainder of 95 divided by 12, then add 25 to it and print the result.",
+    "expected": "36",
+    "difficulty": "easy"
+  },
+  {
+    "id": 15,
+    "cat": "arithmetic",
+    "name": "paren_sum_mul_17_15_6",
+    "prompt": "Sum 17 and 15, multiply the total by 6, and print the answer.",
+    "expected": "192",
+    "difficulty": "easy"
+  },
+  {
+    "id": 33,
+    "cat": "arithmetic",
+    "name": "paren_diff_mul_37_5_10",
+    "prompt": "Subtract 5 from 37, multiply the difference by 10, and output the result.",
+    "expected": "320",
+    "difficulty": "easy"
+  },
+  {
+    "id": 36,
+    "cat": "arithmetic",
+    "name": "paren_diff_mul_45_5_11",
+    "prompt": "Subtract 5 from 45, multiply the difference by 11, and output the result.",
+    "expected": "440",
+    "difficulty": "easy"
+  },
+  {
+    "id": 37,
+    "cat": "arithmetic",
+    "name": "mul_add_4_10_7",
+    "prompt": "Multiply 4 and 10, then increase the outcome by 7. Print what you get.",
+    "expected": "47",
+    "difficulty": "easy"
+  },
+  {
+    "id": 43,
+    "cat": "arithmetic",
+    "name": "double_paren_10_7_35_7",
+    "prompt": "Combine: add 10 to 7, subtract 7 from 35, and multiply the two results together. Print the number you obtain.",
+    "expected": "476",
+    "difficulty": "hard"
+  },
+  {
+    "id": 49,
+    "cat": "arithmetic",
+    "name": "zero_paren_6_10",
+    "prompt": "Add 6 and 10, then subtract the value you get by adding 10 and 6. Print the outcome.",
+    "expected": "0",
+    "difficulty": "easy"
+  },
+  {
+    "id": 77,
+    "cat": "arithmetic",
+    "name": "prod3_12_11_19",
+    "prompt": "Multiply three numbers together: 12, 11 and 19. Print the final product.",
+    "expected": "2508",
+    "difficulty": "hard"
+  },
+  {
+    "id": 126,
+    "cat": "arithmetic",
+    "name": "neg_mul_10_6",
+    "prompt": "Take the negation of 10 and multiply it by 6. Print the (possibly negative) product.",
+    "expected": "-60",
+    "difficulty": "medium"
+  },
+  {
+    "id": 147,
+    "cat": "arithmetic",
+    "name": "add_then_div_17_23_5",
+    "prompt": "First sum 17 and 23, then divide that total by 5 using integer division and print the quotient.",
+    "expected": "8",
+    "difficulty": "medium"
+  },
+  {
+    "id": 150,
+    "cat": "arithmetic",
+    "name": "add_then_div_45_36_3",
+    "prompt": "First sum 45 and 36, then divide that total by 3 using integer division and print the quotient.",
+    "expected": "27",
+    "difficulty": "medium"
+  },
+  {
+    "id": 154,
+    "cat": "arithmetic",
+    "name": "add_then_div_14_14_6",
+    "prompt": "First sum 14 and 14, then divide that total by 6 using integer division and print the quotient.",
+    "expected": "4",
+    "difficulty": "medium"
+  },
+  {
+    "id": 168,
+    "cat": "arithmetic",
+    "name": "paren_diff_mul_12_8_7",
+    "prompt": "Subtract 8 from 12, multiply the difference by 7, and output the result.",
+    "expected": "28",
+    "difficulty": "easy"
+  },
+  {
+    "id": 181,
+    "cat": "arithmetic",
+    "name": "prod3_20_8_5",
+    "prompt": "Multiply three numbers together: 20, 8 and 5. Print the final product.",
+    "expected": "800",
+    "difficulty": "hard"
+  },
+  {
+    "id": 206,
+    "cat": "arithmetic",
+    "name": "diff_products_10_16_10_2",
+    "prompt": "Subtract the product of 10 and 2 from the product of 10 and 16, then print the result.",
+    "expected": "140",
+    "difficulty": "easy"
+  },
+  {
+    "id": 207,
+    "cat": "arithmetic",
+    "name": "prod3_14_22_10",
+    "prompt": "Multiply three numbers together: 14, 22 and 10. Print the final product.",
+    "expected": "3080",
+    "difficulty": "hard"
+  },
+  {
+    "id": 226,
+    "cat": "arithmetic",
+    "name": "sum_sq_4_15",
+    "prompt": "Square 4, then add 15 to the square and print the answer.",
+    "expected": "31",
+    "difficulty": "easy"
+  },
+  {
+    "id": 249,
+    "cat": "arithmetic",
+    "name": "neg_add_6_44",
+    "prompt": "Add 44 to the negative of 6 and print the outcome.",
+    "expected": "38",
+    "difficulty": "easy"
+  },
+  {
+    "id": 272,
+    "cat": "arithmetic",
+    "name": "add_then_div_19_30_2",
+    "prompt": "First sum 19 and 30, then divide that total by 2 using integer division and print the quotient.",
+    "expected": "24",
+    "difficulty": "medium"
+  },
+  {
+    "id": 273,
+    "cat": "arithmetic",
+    "name": "mod_add_42_15_10",
+    "prompt": "Find the remainder of 42 divided by 15, then add 10 to it and print the result.",
+    "expected": "22",
+    "difficulty": "easy"
+  },
+  {
+    "id": 277,
+    "cat": "arithmetic",
+    "name": "neg_add_4_30",
+    "prompt": "Add 30 to the negative of 4 and print the outcome.",
+    "expected": "26",
+    "difficulty": "easy"
+  },
+  {
+    "id": 280,
+    "cat": "arithmetic",
+    "name": "zero_result_9_23",
+    "prompt": "Compute the product of 9 and 23, then subtract from it the product of 23 and 9. Output the resulting number.",
+    "expected": "0",
+    "difficulty": "easy"
+  },
+  {
+    "id": 286,
+    "cat": "arithmetic",
+    "name": "paren_sum_mul_11_9_4",
+    "prompt": "Sum 11 and 9, multiply the total by 4, and print the answer.",
+    "expected": "80",
+    "difficulty": "easy"
+  },
+  {
+    "id": 288,
+    "cat": "arithmetic",
+    "name": "prod3_19_23_23",
+    "prompt": "Multiply three numbers together: 19, 23 and 23. Print the final product.",
+    "expected": "10051",
+    "difficulty": "hard"
+  },
+  {
+    "id": 296,
+    "cat": "arithmetic",
+    "name": "prod3_8_15_7",
+    "prompt": "Multiply three numbers together: 8, 15 and 7. Print the final product.",
+    "expected": "840",
+    "difficulty": "hard"
+  },
+  {
+    "id": 298,
+    "cat": "arithmetic",
+    "name": "double_paren_27_27_28_8",
+    "prompt": "Combine: add 27 to 27, subtract 8 from 28, and multiply the two results together. Print the number you obtain.",
+    "expected": "1080",
+    "difficulty": "hard"
+  },
+  {
+    "id": 303,
+    "cat": "arithmetic",
+    "name": "add_then_div_24_40_8",
+    "prompt": "First sum 24 and 40, then divide that total by 8 using integer division and print the quotient.",
+    "expected": "8",
+    "difficulty": "medium"
+  },
+  {
+    "id": 304,
+    "cat": "arithmetic",
+    "name": "mul_then_div_7_19_3",
+    "prompt": "Multiply 7 by 19, then divide the product by 3 (integer division) and print the answer.",
+    "expected": "44",
+    "difficulty": "medium"
+  },
+  {
+    "id": 311,
+    "cat": "arithmetic",
+    "name": "double_paren_32_6_36_7",
+    "prompt": "Combine: add 32 to 6, subtract 7 from 36, and multiply the two results together. Print the number you obtain.",
+    "expected": "1102",
+    "difficulty": "hard"
+  },
+  {
+    "id": 313,
+    "cat": "arithmetic",
+    "name": "mul_then_div_10_20_5",
+    "prompt": "Multiply 10 by 20, then divide the product by 5 (integer division) and print the answer.",
+    "expected": "40",
+    "difficulty": "medium"
+  },
+  {
+    "id": 336,
+    "cat": "arithmetic",
+    "name": "prod3_5_16_7",
+    "prompt": "Multiply three numbers together: 5, 16 and 7. Print the final product.",
+    "expected": "560",
+    "difficulty": "hard"
+  },
+  {
+    "id": 357,
+    "cat": "arithmetic",
+    "name": "neg_mul_7_19",
+    "prompt": "Take the negation of 7 and multiply it by 19. Print the (possibly negative) product.",
+    "expected": "-133",
+    "difficulty": "medium"
+  },
+  {
+    "id": 403,
+    "cat": "arithmetic",
+    "name": "sum_sq_11_61",
+    "prompt": "Square 11, then add 61 to the square and print the answer.",
+    "expected": "182",
+    "difficulty": "easy"
+  },
+  {
+    "id": 406,
+    "cat": "arithmetic",
+    "name": "prod3_23_14_20",
+    "prompt": "Multiply three numbers together: 23, 14 and 20. Print the final product.",
+    "expected": "6440",
+    "difficulty": "hard"
+  },
+  {
+    "id": 407,
+    "cat": "arithmetic",
+    "name": "mul_then_div_13_6_8",
+    "prompt": "Multiply 13 by 6, then divide the product by 8 (integer division) and print the answer.",
+    "expected": "9",
+    "difficulty": "medium"
+  },
+  {
+    "id": 418,
+    "cat": "arithmetic",
+    "name": "neg_add_24_44",
+    "prompt": "Add 44 to the negative of 24 and print the outcome.",
+    "expected": "20",
+    "difficulty": "easy"
+  },
+  {
+    "id": 419,
+    "cat": "arithmetic",
+    "name": "mul_then_div_18_9_5",
+    "prompt": "Multiply 18 by 9, then divide the product by 5 (integer division) and print the answer.",
+    "expected": "32",
+    "difficulty": "medium"
+  },
+  {
+    "id": 420,
+    "cat": "arithmetic",
+    "name": "mod_add_43_7_20",
+    "prompt": "Find the remainder of 43 divided by 7, then add 20 to it and print the result.",
+    "expected": "21",
+    "difficulty": "easy"
+  },
+  {
+    "id": 442,
+    "cat": "arithmetic",
+    "name": "mul_add_15_6_14",
+    "prompt": "Multiply 15 and 6, then increase the outcome by 14. Print what you get.",
+    "expected": "104",
+    "difficulty": "easy"
+  },
+  {
+    "id": 443,
+    "cat": "arithmetic",
+    "name": "prod3_15_12_5",
+    "prompt": "Multiply three numbers together: 15, 12 and 5. Print the final product.",
+    "expected": "900",
+    "difficulty": "hard"
+  },
+  {
+    "id": 452,
+    "cat": "arithmetic",
+    "name": "diff_products_8_9_4_18",
+    "prompt": "Subtract the product of 4 and 18 from the product of 8 and 9, then print the result.",
+    "expected": "0",
+    "difficulty": "easy"
+  },
+  {
+    "id": 486,
+    "cat": "logic",
+    "name": "sign_word_-1",
+    "prompt": "Print 'plus' when -1 is greater than zero, 'minus' when it is less than zero, and 'nil' when it equals zero.",
+    "expected": "minus",
+    "difficulty": "easy"
+  },
+  {
+    "id": 494,
+    "cat": "logic",
+    "name": "even_label_19",
+    "prompt": "It is known a number is classified as class 'E' when it is even and class 'O' when it is odd. Classify 19 and print its class.",
+    "expected": "O",
+    "difficulty": "easy"
+  },
+  {
+    "id": 502,
+    "cat": "logic",
+    "name": "div11_74",
+    "prompt": "Decide if 74 is a multiple of 11. Print '1' when it is, otherwise '0'.",
+    "expected": "0",
+    "difficulty": "easy"
+  },
+  {
+    "id": 504,
+    "cat": "logic",
+    "name": "xor_logic_32_30_11_23",
+    "prompt": "Exactly one of the two facts \"32 > 30\" and \"11 < 23\" is true. Print '1' if exactly one holds, else '0'.",
+    "expected": "0",
+    "difficulty": "medium"
+  },
+  {
+    "id": 518,
+    "cat": "logic",
+    "name": "div_or_gt_59",
+    "prompt": "Print '1' if 59 is divisible by 3 or if it exceeds 50; print '0' otherwise.",
+    "expected": "1",
+    "difficulty": "easy"
+  },
+  {
+    "id": 522,
+    "cat": "logic",
+    "name": "and_check_41_1_45_11",
+    "prompt": "Print 'TRUE' if both 41 > 1 and 45 < 11 hold, otherwise print 'FALSE'.",
+    "expected": "FALSE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 528,
+    "cat": "logic",
+    "name": "div_or_gt_10",
+    "prompt": "Print '1' if 10 is divisible by 3 or if it exceeds 50; print '0' otherwise.",
+    "expected": "0",
+    "difficulty": "easy"
+  },
+  {
+    "id": 531,
+    "cat": "logic",
+    "name": "div_both_140_4_5",
+    "prompt": "Check whether 140 can be split evenly by both 4 and 5. Print 'Match' if it can, otherwise 'NoMatch'.",
+    "expected": "Match",
+    "difficulty": "medium"
+  },
+  {
+    "id": 541,
+    "cat": "logic",
+    "name": "div_or_gt_14",
+    "prompt": "Print '1' if 14 is divisible by 3 or if it exceeds 50; print '0' otherwise.",
+    "expected": "0",
+    "difficulty": "easy"
+  },
+  {
+    "id": 544,
+    "cat": "logic",
+    "name": "pos_even_11",
+    "prompt": "Check if 11 is positive and at the same time even. Output 'TRUE' or 'FALSE'.",
+    "expected": "FALSE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 549,
+    "cat": "logic",
+    "name": "sign_word_-10",
+    "prompt": "Print 'plus' when -10 is greater than zero, 'minus' when it is less than zero, and 'nil' when it equals zero.",
+    "expected": "minus",
+    "difficulty": "easy"
+  },
+  {
+    "id": 553,
+    "cat": "logic",
+    "name": "three_cond_15_11_14_21",
+    "prompt": "Print 'All' if the chain 15 < 11 < 14 < 21 is entirely true, else print 'Broken'.",
+    "expected": "Broken",
+    "difficulty": "medium"
+  },
+  {
+    "id": 588,
+    "cat": "logic",
+    "name": "same_rem_32_48_4",
+    "prompt": "Both 32 and 48 are divided by 4. Print 'Same' if the two remainders coincide, otherwise 'Diff'.",
+    "expected": "Same",
+    "difficulty": "medium"
+  },
+  {
+    "id": 595,
+    "cat": "logic",
+    "name": "same_rem_16_55_3",
+    "prompt": "Both 16 and 55 are divided by 3. Print 'Same' if the two remainders coincide, otherwise 'Diff'.",
+    "expected": "Same",
+    "difficulty": "medium"
+  },
+  {
+    "id": 620,
+    "cat": "logic",
+    "name": "three_cond_18_19_5_19",
+    "prompt": "Print 'All' if the chain 18 < 19 < 5 < 19 is entirely true, else print 'Broken'.",
+    "expected": "Broken",
+    "difficulty": "medium"
+  },
+  {
+    "id": 643,
+    "cat": "logic",
+    "name": "and_check_16_32_25_8",
+    "prompt": "Print 'TRUE' if both 16 > 32 and 25 < 8 hold, otherwise print 'FALSE'.",
+    "expected": "FALSE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 644,
+    "cat": "logic",
+    "name": "or_check_34_1_24_21",
+    "prompt": "Print 'TRUE' if 34 > 1 OR 24 < 21 is satisfied, otherwise print 'FALSE'.",
+    "expected": "TRUE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 652,
+    "cat": "logic",
+    "name": "or_check_20_45_28_47",
+    "prompt": "Print 'TRUE' if 20 > 45 OR 28 < 47 is satisfied, otherwise print 'FALSE'.",
+    "expected": "TRUE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 694,
+    "cat": "logic",
+    "name": "and_check_44_20_17_12",
+    "prompt": "Print 'TRUE' if both 44 > 20 and 17 < 12 hold, otherwise print 'FALSE'.",
+    "expected": "FALSE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 696,
+    "cat": "logic",
+    "name": "div11_23",
+    "prompt": "Decide if 23 is a multiple of 11. Print '1' when it is, otherwise '0'.",
+    "expected": "0",
+    "difficulty": "easy"
+  },
+  {
+    "id": 698,
+    "cat": "logic",
+    "name": "three_cond_3_19_19_9",
+    "prompt": "Print 'All' if the chain 3 < 19 < 19 < 9 is entirely true, else print 'Broken'.",
+    "expected": "Broken",
+    "difficulty": "medium"
+  },
+  {
+    "id": 708,
+    "cat": "logic",
+    "name": "div11_93",
+    "prompt": "Decide if 93 is a multiple of 11. Print '1' when it is, otherwise '0'.",
+    "expected": "0",
+    "difficulty": "easy"
+  },
+  {
+    "id": 723,
+    "cat": "logic",
+    "name": "and_check_22_40_13_9",
+    "prompt": "Print 'TRUE' if both 22 > 40 and 13 < 9 hold, otherwise print 'FALSE'.",
+    "expected": "FALSE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 730,
+    "cat": "logic",
+    "name": "in_interval_38_57_56",
+    "prompt": "Tell whether 56 lies inside the closed range from 38 to 57 (both endpoints included). Print 'Inside' or 'Outside'.",
+    "expected": "Inside",
+    "difficulty": "medium"
+  },
+  {
+    "id": 737,
+    "cat": "logic",
+    "name": "three_cond_15_1_9_7",
+    "prompt": "Print 'All' if the chain 15 < 1 < 9 < 7 is entirely true, else print 'Broken'.",
+    "expected": "Broken",
+    "difficulty": "medium"
+  },
+  {
+    "id": 739,
+    "cat": "logic",
+    "name": "div_or_gt_57",
+    "prompt": "Print '1' if 57 is divisible by 3 or if it exceeds 50; print '0' otherwise.",
+    "expected": "1",
+    "difficulty": "easy"
+  },
+  {
+    "id": 767,
+    "cat": "logic",
+    "name": "and_check_28_6_44_28",
+    "prompt": "Print 'TRUE' if both 28 > 6 and 44 < 28 hold, otherwise print 'FALSE'.",
+    "expected": "FALSE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 768,
+    "cat": "logic",
+    "name": "not_equal_54_39",
+    "prompt": "Print 'TRUE' when 54 differs from 39, else print 'FALSE'.",
+    "expected": "TRUE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 770,
+    "cat": "logic",
+    "name": "pos_even_18",
+    "prompt": "Check if 18 is positive and at the same time even. Output 'TRUE' or 'FALSE'.",
+    "expected": "TRUE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 780,
+    "cat": "logic",
+    "name": "in_interval_9_36_31",
+    "prompt": "Tell whether 31 lies inside the closed range from 9 to 36 (both endpoints included). Print 'Inside' or 'Outside'.",
+    "expected": "Inside",
+    "difficulty": "medium"
+  },
+  {
+    "id": 795,
+    "cat": "logic",
+    "name": "and_check_31_9_42_12",
+    "prompt": "Print 'TRUE' if both 31 > 9 and 42 < 12 hold, otherwise print 'FALSE'.",
+    "expected": "FALSE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 810,
+    "cat": "logic",
+    "name": "or_check_15_23_15_48",
+    "prompt": "Print 'TRUE' if 15 > 23 OR 15 < 48 is satisfied, otherwise print 'FALSE'.",
+    "expected": "TRUE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 814,
+    "cat": "logic",
+    "name": "div_or_gt_68",
+    "prompt": "Print '1' if 68 is divisible by 3 or if it exceeds 50; print '0' otherwise.",
+    "expected": "1",
+    "difficulty": "easy"
+  },
+  {
+    "id": 829,
+    "cat": "logic",
+    "name": "in_interval_26_35_27",
+    "prompt": "Tell whether 27 lies inside the closed range from 26 to 35 (both endpoints included). Print 'Inside' or 'Outside'.",
+    "expected": "Inside",
+    "difficulty": "medium"
+  },
+  {
+    "id": 845,
+    "cat": "logic",
+    "name": "or_check_12_3_19_24",
+    "prompt": "Print 'TRUE' if 12 > 3 OR 19 < 24 is satisfied, otherwise print 'FALSE'.",
+    "expected": "TRUE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 847,
+    "cat": "logic",
+    "name": "div_both_47_4_7",
+    "prompt": "Check whether 47 can be split evenly by both 4 and 7. Print 'Match' if it can, otherwise 'NoMatch'.",
+    "expected": "NoMatch",
+    "difficulty": "medium"
+  },
+  {
+    "id": 858,
+    "cat": "logic",
+    "name": "same_rem_76_22_9",
+    "prompt": "Both 76 and 22 are divided by 9. Print 'Same' if the two remainders coincide, otherwise 'Diff'.",
+    "expected": "Same",
+    "difficulty": "medium"
+  },
+  {
+    "id": 879,
+    "cat": "logic",
+    "name": "and_check_36_28_38_31",
+    "prompt": "Print 'TRUE' if both 36 > 28 and 38 < 31 hold, otherwise print 'FALSE'.",
+    "expected": "FALSE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 888,
+    "cat": "logic",
+    "name": "div_or_gt_87",
+    "prompt": "Print '1' if 87 is divisible by 3 or if it exceeds 50; print '0' otherwise.",
+    "expected": "1",
+    "difficulty": "easy"
+  },
+  {
+    "id": 890,
+    "cat": "logic",
+    "name": "and_check_25_10_4_43",
+    "prompt": "Print 'TRUE' if both 25 > 10 and 4 < 43 hold, otherwise print 'FALSE'.",
+    "expected": "TRUE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 897,
+    "cat": "logic",
+    "name": "xor_logic_15_24_38_35",
+    "prompt": "Exactly one of the two facts \"15 > 24\" and \"38 < 35\" is true. Print '1' if exactly one holds, else '0'.",
+    "expected": "0",
+    "difficulty": "medium"
+  },
+  {
+    "id": 921,
+    "cat": "logic",
+    "name": "or_check_35_1_42_47",
+    "prompt": "Print 'TRUE' if 35 > 1 OR 42 < 47 is satisfied, otherwise print 'FALSE'.",
+    "expected": "TRUE",
+    "difficulty": "easy"
+  },
+  {
+    "id": 927,
+    "cat": "logic",
+    "name": "three_cond_1_18_18_5",
+    "prompt": "Print 'All' if the chain 1 < 18 < 18 < 5 is entirely true, else print 'Broken'.",
+    "expected": "Broken",
+    "difficulty": "medium"
+  },
+  {
+    "id": 951,
+    "cat": "loops",
+    "name": "even_countdown_20",
+    "prompt": "Print every even number from 20 down to 2, each on its own line, in decreasing order.",
+    "expected": "20\n18\n16\n14\n12\n10\n8\n6\n4\n2",
+    "difficulty": "easy"
+  },
+  {
+    "id": 956,
+    "cat": "loops",
+    "name": "even_countdown_16",
+    "prompt": "Print every even number from 16 down to 2, each on its own line, in decreasing order.",
+    "expected": "16\n14\n12\n10\n8\n6\n4\n2",
+    "difficulty": "easy"
+  },
+  {
+    "id": 989,
+    "cat": "loops",
+    "name": "digit_product_8490",
+    "prompt": "Take the digits of 8490 one by one (using remainder and division) and multiply them together. Print the product.",
+    "expected": "0",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1009,
+    "cat": "loops",
+    "name": "accum_powers2_5",
+    "prompt": "Add the powers of two from 2^0 up to and including 2^5 — that is, compute 1, 2, 4, 8, 16, 32 — and print the resulting total.",
+    "expected": "63",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1016,
+    "cat": "loops",
+    "name": "nested_sum_product_7_4",
+    "prompt": "Use two nested loops: for every i from 1 to 7 and every j from 1 to 4 add the product i*j to a running total. Print the total.",
+    "expected": "280",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1035,
+    "cat": "loops",
+    "name": "pow_loop_3_5",
+    "prompt": "Raise 3 to the 5th power by repeatedly multiplying in a loop. Print the value of 3^5.",
+    "expected": "243",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1057,
+    "cat": "loops",
+    "name": "nested_sum_product_4_8",
+    "prompt": "Use two nested loops: for every i from 1 to 4 and every j from 1 to 8 add the product i*j to a running total. Print the total.",
+    "expected": "360",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1059,
+    "cat": "loops",
+    "name": "sum_interval_10_26",
+    "prompt": "Add up every whole number from 10 through 26 (inclusive) and print the accumulated total.",
+    "expected": "306",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1069,
+    "cat": "loops",
+    "name": "count_multiples_9_43_5",
+    "prompt": "Walk through every integer from 9 to 43 and keep a tally of how many are multiples of 5. Output that tally.",
+    "expected": "7",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1073,
+    "cat": "loops",
+    "name": "nested_sum_product_6_6",
+    "prompt": "Use two nested loops: for every i from 1 to 6 and every j from 1 to 6 add the product i*j to a running total. Print the total.",
+    "expected": "441",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1096,
+    "cat": "loops",
+    "name": "alternating_sum_12",
+    "prompt": "Sum the sequence 1 - 2 + 3 - 4 + ... up to term 12 (odd terms are added, even terms are subtracted). Print the total.",
+    "expected": "-6",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1099,
+    "cat": "loops",
+    "name": "squares_sum_1_4",
+    "prompt": "Loop from 1 to 4, squaring each number, and accumulate the sum of those squares. Print the sum.",
+    "expected": "30",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1109,
+    "cat": "loops",
+    "name": "count_multiples_24_47_4",
+    "prompt": "Walk through every integer from 24 to 47 and keep a tally of how many are multiples of 4. Output that tally.",
+    "expected": "6",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1110,
+    "cat": "loops",
+    "name": "squares_sum_1_6",
+    "prompt": "Loop from 1 to 6, squaring each number, and accumulate the sum of those squares. Print the sum.",
+    "expected": "91",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1112,
+    "cat": "loops",
+    "name": "squares_sum_4_8",
+    "prompt": "Loop from 4 to 8, squaring each number, and accumulate the sum of those squares. Print the sum.",
+    "expected": "190",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1125,
+    "cat": "loops",
+    "name": "count_multiples_16_28_7",
+    "prompt": "Walk through every integer from 16 to 28 and keep a tally of how many are multiples of 7. Output that tally.",
+    "expected": "2",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1127,
+    "cat": "loops",
+    "name": "count_multiples_21_50_4",
+    "prompt": "Walk through every integer from 21 to 50 and keep a tally of how many are multiples of 4. Output that tally.",
+    "expected": "7",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1152,
+    "cat": "loops",
+    "name": "digit_product_7379",
+    "prompt": "Take the digits of 7379 one by one (using remainder and division) and multiply them together. Print the product.",
+    "expected": "1323",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1153,
+    "cat": "loops",
+    "name": "nested_count_pairs_8_10_5",
+    "prompt": "With nested loops go over i in 1..8 and j in 1..10. Count the pairs whose sum i+j is divisible by 5. Print the count.",
+    "expected": "16",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1155,
+    "cat": "loops",
+    "name": "digit_product_4776",
+    "prompt": "Take the digits of 4776 one by one (using remainder and division) and multiply them together. Print the product.",
+    "expected": "1176",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1164,
+    "cat": "loops",
+    "name": "count_multiples_10_40_5",
+    "prompt": "Walk through every integer from 10 to 40 and keep a tally of how many are multiples of 5. Output that tally.",
+    "expected": "7",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1171,
+    "cat": "loops",
+    "name": "count_primes_1_33",
+    "prompt": "Scan the integers from 1 to 33 and count how many of them are prime. Print the count.",
+    "expected": "11",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1179,
+    "cat": "loops",
+    "name": "count_multiples_21_59_3",
+    "prompt": "Walk through every integer from 21 to 59 and keep a tally of how many are multiples of 3. Output that tally.",
+    "expected": "13",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1202,
+    "cat": "loops",
+    "name": "nested_sum_product_7_6",
+    "prompt": "Use two nested loops: for every i from 1 to 7 and every j from 1 to 6 add the product i*j to a running total. Print the total.",
+    "expected": "588",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1227,
+    "cat": "loops",
+    "name": "nested_count_pairs_6_9_4",
+    "prompt": "With nested loops go over i in 1..6 and j in 1..9. Count the pairs whose sum i+j is divisible by 4. Print the count.",
+    "expected": "13",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1229,
+    "cat": "loops",
+    "name": "fact_loop_8",
+    "prompt": "Find factorial(8) — the product of every integer from 1 to 8 — using a loop with an accumulator. Print the result.",
+    "expected": "40320",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1231,
+    "cat": "loops",
+    "name": "nested_count_pairs_3_3_6",
+    "prompt": "With nested loops go over i in 1..3 and j in 1..3. Count the pairs whose sum i+j is divisible by 6. Print the count.",
+    "expected": "1",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1250,
+    "cat": "loops",
+    "name": "sum_interval_7_25",
+    "prompt": "Add up every whole number from 7 through 25 (inclusive) and print the accumulated total.",
+    "expected": "304",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1260,
+    "cat": "loops",
+    "name": "count_multiples_14_40_9",
+    "prompt": "Walk through every integer from 14 to 40 and keep a tally of how many are multiples of 9. Output that tally.",
+    "expected": "3",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1269,
+    "cat": "loops",
+    "name": "nested_sum_product_7_7",
+    "prompt": "Use two nested loops: for every i from 1 to 7 and every j from 1 to 7 add the product i*j to a running total. Print the total.",
+    "expected": "784",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1281,
+    "cat": "loops",
+    "name": "nested_count_pairs_10_10_3",
+    "prompt": "With nested loops go over i in 1..10 and j in 1..10. Count the pairs whose sum i+j is divisible by 3. Print the count.",
+    "expected": "33",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1307,
+    "cat": "loops",
+    "name": "count_primes_1_34",
+    "prompt": "Scan the integers from 1 to 34 and count how many of them are prime. Print the count.",
+    "expected": "11",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1312,
+    "cat": "loops",
+    "name": "sum_evens_interval_15_37",
+    "prompt": "From 15 to 37 collect only the even numbers and fold them into a running sum, then print the sum.",
+    "expected": "286",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1314,
+    "cat": "loops",
+    "name": "count_multiples_4_25_8",
+    "prompt": "Walk through every integer from 4 to 25 and keep a tally of how many are multiples of 8. Output that tally.",
+    "expected": "3",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1320,
+    "cat": "loops",
+    "name": "nested_count_pairs_6_3_3",
+    "prompt": "With nested loops go over i in 1..6 and j in 1..3. Count the pairs whose sum i+j is divisible by 3. Print the count.",
+    "expected": "6",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1327,
+    "cat": "loops",
+    "name": "nested_count_pairs_7_3_5",
+    "prompt": "With nested loops go over i in 1..7 and j in 1..3. Count the pairs whose sum i+j is divisible by 5. Print the count.",
+    "expected": "4",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1349,
+    "cat": "loops",
+    "name": "nested_count_pairs_10_7_6",
+    "prompt": "With nested loops go over i in 1..10 and j in 1..7. Count the pairs whose sum i+j is divisible by 6. Print the count.",
+    "expected": "11",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1358,
+    "cat": "loops",
+    "name": "count_primes_3_69",
+    "prompt": "Scan the integers from 3 to 69 and count how many of them are prime. Print the count.",
+    "expected": "18",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1361,
+    "cat": "loops",
+    "name": "count_multiples_21_39_7",
+    "prompt": "Walk through every integer from 21 to 39 and keep a tally of how many are multiples of 7. Output that tally.",
+    "expected": "3",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1365,
+    "cat": "loops",
+    "name": "count_primes_1_53",
+    "prompt": "Scan the integers from 1 to 53 and count how many of them are prime. Print the count.",
+    "expected": "16",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1395,
+    "cat": "loops",
+    "name": "count_multiples_23_59_7",
+    "prompt": "Walk through every integer from 23 to 59 and keep a tally of how many are multiples of 7. Output that tally.",
+    "expected": "5",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1400,
+    "cat": "loops",
+    "name": "digit_product_3402",
+    "prompt": "Take the digits of 3402 one by one (using remainder and division) and multiply them together. Print the product.",
+    "expected": "0",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1411,
+    "cat": "loops",
+    "name": "nested_count_pairs_7_6_5",
+    "prompt": "With nested loops go over i in 1..7 and j in 1..6. Count the pairs whose sum i+j is divisible by 5. Print the count.",
+    "expected": "8",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1425,
+    "cat": "recursion",
+    "name": "sum_rec_5_25",
+    "prompt": "Write a recursive routine that adds the integers from 5 through 25. Call it and print the sum.",
+    "expected": "315",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1440,
+    "cat": "recursion",
+    "name": "contains_rec_49, 34, 44, 40, 18_18",
+    "prompt": "Using recursion decide whether the value 18 appears inside the list [49, 34, 44, 40, 18]. Print 'Present' or 'Absent'.",
+    "expected": "Present",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1444,
+    "cat": "recursion",
+    "name": "trib_rec_7",
+    "prompt": "Recursively evaluate the Tribonacci value T(7) given T(0)=0, T(1)=1, T(2)=1 and T(n)=T(n-1)+T(n-2)+T(n-3). Print it.",
+    "expected": "24",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1455,
+    "cat": "recursion",
+    "name": "gcd_rec_159_34",
+    "prompt": "Find the greatest common divisor of 159 and 34 with a recursive Euclidean algorithm and print it.",
+    "expected": "1",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1461,
+    "cat": "recursion",
+    "name": "trib_rec_10",
+    "prompt": "Recursively evaluate the Tribonacci value T(10) given T(0)=0, T(1)=1, T(2)=1 and T(n)=T(n-1)+T(n-2)+T(n-3). Print it.",
+    "expected": "149",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1464,
+    "cat": "recursion",
+    "name": "trib_rec_8",
+    "prompt": "Recursively evaluate the Tribonacci value T(8) given T(0)=0, T(1)=1, T(2)=1 and T(n)=T(n-1)+T(n-2)+T(n-3). Print it.",
+    "expected": "44",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1468,
+    "cat": "recursion",
+    "name": "pow_rec_3_6",
+    "prompt": "Define a recursive function to raise 3 to the power 6 and print the outcome of 3^6.",
+    "expected": "729",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1472,
+    "cat": "recursion",
+    "name": "mutual_even_odd_7",
+    "prompt": "Implement two functions is-even and is-odd that call each other recursively. Call is-even on 7 and print 'Even' if true and 'Odd' if false.",
+    "expected": "Odd",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1483,
+    "cat": "recursion",
+    "name": "contains_rec_12, 28, 18, 14, 22_15",
+    "prompt": "Using recursion decide whether the value 15 appears inside the list [12, 28, 18, 14, 22]. Print 'Present' or 'Absent'.",
+    "expected": "Absent",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1500,
+    "cat": "recursion",
+    "name": "digit_product_rec_1713",
+    "prompt": "Write a recursive function that multiplies all the digits of 1713 together and print the product.",
+    "expected": "21",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1514,
+    "cat": "recursion",
+    "name": "gcd_rec_34_81",
+    "prompt": "Find the greatest common divisor of 34 and 81 with a recursive Euclidean algorithm and print it.",
+    "expected": "1",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1550,
+    "cat": "recursion",
+    "name": "digit_product_rec_3175",
+    "prompt": "Write a recursive function that multiplies all the digits of 3175 together and print the product.",
+    "expected": "105",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1558,
+    "cat": "recursion",
+    "name": "gcd_rec_48_28",
+    "prompt": "Find the greatest common divisor of 48 and 28 with a recursive Euclidean algorithm and print it.",
+    "expected": "4",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1564,
+    "cat": "recursion",
+    "name": "contains_rec_19, 13, 42, 50_32",
+    "prompt": "Using recursion decide whether the value 32 appears inside the list [19, 13, 42, 50]. Print 'Present' or 'Absent'.",
+    "expected": "Absent",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1565,
+    "cat": "recursion",
+    "name": "lucas_rec_8",
+    "prompt": "Using recursion compute the Lucas number L(8) with L(0)=2 and L(1)=1, each L(k)=L(k-1)+L(k-2). Print the value.",
+    "expected": "47",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1571,
+    "cat": "recursion",
+    "name": "gcd_rec_92_114",
+    "prompt": "Find the greatest common divisor of 92 and 114 with a recursive Euclidean algorithm and print it.",
+    "expected": "2",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1582,
+    "cat": "recursion",
+    "name": "count_evens_rec_37, 30, 88, 39",
+    "prompt": "Recursively walk through the list [37, 30, 88, 39] and count how many of its entries are even. Print the count.",
+    "expected": "2",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1600,
+    "cat": "recursion",
+    "name": "sum_rec_7_12",
+    "prompt": "Write a recursive routine that adds the integers from 7 through 12. Call it and print the sum.",
+    "expected": "57",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1625,
+    "cat": "recursion",
+    "name": "sum_rec_7_14",
+    "prompt": "Write a recursive routine that adds the integers from 7 through 14. Call it and print the sum.",
+    "expected": "84",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1636,
+    "cat": "recursion",
+    "name": "count_evens_rec_36, 45, 42, 60",
+    "prompt": "Recursively walk through the list [36, 45, 42, 60] and count how many of its entries are even. Print the count.",
+    "expected": "3",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1643,
+    "cat": "recursion",
+    "name": "gcd_rec_42_97",
+    "prompt": "Find the greatest common divisor of 42 and 97 with a recursive Euclidean algorithm and print it.",
+    "expected": "1",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1651,
+    "cat": "recursion",
+    "name": "digit_product_rec_9929",
+    "prompt": "Write a recursive function that multiplies all the digits of 9929 together and print the product.",
+    "expected": "1458",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1660,
+    "cat": "recursion",
+    "name": "contains_rec_43, 34, 19, 40, 31_18",
+    "prompt": "Using recursion decide whether the value 18 appears inside the list [43, 34, 19, 40, 31]. Print 'Present' or 'Absent'.",
+    "expected": "Absent",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1668,
+    "cat": "recursion",
+    "name": "count_evens_rec_25, 70, 38, 70",
+    "prompt": "Recursively walk through the list [25, 70, 38, 70] and count how many of its entries are even. Print the count.",
+    "expected": "3",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1675,
+    "cat": "recursion",
+    "name": "sum_rec_3_15",
+    "prompt": "Write a recursive routine that adds the integers from 3 through 15. Call it and print the sum.",
+    "expected": "117",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1681,
+    "cat": "recursion",
+    "name": "count_evens_rec_57, 66, 49, 3, 35",
+    "prompt": "Recursively walk through the list [57, 66, 49, 3, 35] and count how many of its entries are even. Print the count.",
+    "expected": "1",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1685,
+    "cat": "recursion",
+    "name": "reverse_rec_47335",
+    "prompt": "Reversing digits via repeated remainder/modulo and division, build a recursive function that reads 47335 from right to left. Print the reversed number.",
+    "expected": "53374",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1693,
+    "cat": "recursion",
+    "name": "gcd_rec_116_92",
+    "prompt": "Find the greatest common divisor of 116 and 92 with a recursive Euclidean algorithm and print it.",
+    "expected": "4",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1694,
+    "cat": "recursion",
+    "name": "collatz_rec_24",
+    "prompt": "Starting at 24, iteratively apply: halve even numbers, triple and add one for odd numbers, until reaching 1. Count the steps taken, using a recursive routine, and print that count.",
+    "expected": "10",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1709,
+    "cat": "recursion",
+    "name": "lucas_rec_10",
+    "prompt": "Using recursion compute the Lucas number L(10) with L(0)=2 and L(1)=1, each L(k)=L(k-1)+L(k-2). Print the value.",
+    "expected": "123",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1711,
+    "cat": "recursion",
+    "name": "count_evens_rec_48, 94, 81, 22, 50",
+    "prompt": "Recursively walk through the list [48, 94, 81, 22, 50] and count how many of its entries are even. Print the count.",
+    "expected": "4",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1715,
+    "cat": "recursion",
+    "name": "digit_product_rec_334",
+    "prompt": "Write a recursive function that multiplies all the digits of 334 together and print the product.",
+    "expected": "36",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1716,
+    "cat": "recursion",
+    "name": "contains_rec_23, 40, 43, 25_56",
+    "prompt": "Using recursion decide whether the value 56 appears inside the list [23, 40, 43, 25]. Print 'Present' or 'Absent'.",
+    "expected": "Absent",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1731,
+    "cat": "recursion",
+    "name": "gcd_rec_87_101",
+    "prompt": "Find the greatest common divisor of 87 and 101 with a recursive Euclidean algorithm and print it.",
+    "expected": "1",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1749,
+    "cat": "recursion",
+    "name": "reverse_rec_6113",
+    "prompt": "Reversing digits via repeated remainder/modulo and division, build a recursive function that reads 6113 from right to left. Print the reversed number.",
+    "expected": "3116",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1779,
+    "cat": "recursion",
+    "name": "count_evens_rec_67, 41, 98, 82, 50, 4",
+    "prompt": "Recursively walk through the list [67, 41, 98, 82, 50, 4] and count how many of its entries are even. Print the count.",
+    "expected": "4",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1800,
+    "cat": "recursion",
+    "name": "pow_rec_2_3",
+    "prompt": "Define a recursive function to raise 2 to the power 3 and print the outcome of 2^3.",
+    "expected": "8",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1803,
+    "cat": "recursion",
+    "name": "digit_product_rec_5865",
+    "prompt": "Write a recursive function that multiplies all the digits of 5865 together and print the product.",
+    "expected": "1200",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1815,
+    "cat": "recursion",
+    "name": "gcd_rec_124_116",
+    "prompt": "Find the greatest common divisor of 124 and 116 with a recursive Euclidean algorithm and print it.",
+    "expected": "4",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1833,
+    "cat": "recursion",
+    "name": "digit_product_rec_8798",
+    "prompt": "Write a recursive function that multiplies all the digits of 8798 together and print the product.",
+    "expected": "4032",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1860,
+    "cat": "recursion",
+    "name": "gcd_rec_81_39",
+    "prompt": "Find the greatest common divisor of 81 and 39 with a recursive Euclidean algorithm and print it.",
+    "expected": "3",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1871,
+    "cat": "recursion",
+    "name": "contains_rec_47, 23, 47, 20, 19, 45_20",
+    "prompt": "Using recursion decide whether the value 20 appears inside the list [47, 23, 47, 20, 19, 45]. Print 'Present' or 'Absent'.",
+    "expected": "Present",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1879,
+    "cat": "recursion",
+    "name": "collatz_rec_15",
+    "prompt": "Starting at 15, iteratively apply: halve even numbers, triple and add one for odd numbers, until reaching 1. Count the steps taken, using a recursive routine, and print that count.",
+    "expected": "17",
+    "difficulty": "hard"
+  },
+  {
+    "id": 1897,
+    "cat": "lists",
+    "name": "list_nth_sum_even_idx_11, 4, 24, 2",
+    "prompt": "In the list [11, 4, 24, 2] add the elements that sit at even indices (0, 2, 4, ...) and print the total.",
+    "expected": "35",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1903,
+    "cat": "lists",
+    "name": "list_count_odds_57, 99, 17, 85, 62",
+    "prompt": "Count how many of the numbers in the list [57, 99, 17, 85, 62] are odd and print the count.",
+    "expected": "4",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1918,
+    "cat": "lists",
+    "name": "single_list_val_80",
+    "prompt": "Create a single-element list [80], read back its only entry, and print that entry.",
+    "expected": "80",
+    "difficulty": "easy"
+  },
+  {
+    "id": 1939,
+    "cat": "lists",
+    "name": "single_list_len_65",
+    "prompt": "Create a list holding exactly one number, 65, and print the length of that list.",
+    "expected": "1",
+    "difficulty": "easy"
+  },
+  {
+    "id": 1940,
+    "cat": "lists",
+    "name": "single_list_val_51",
+    "prompt": "Create a single-element list [51], read back its only entry, and print that entry.",
+    "expected": "51",
+    "difficulty": "easy"
+  },
+  {
+    "id": 1977,
+    "cat": "lists",
+    "name": "single_list_val_21",
+    "prompt": "Create a single-element list [21], read back its only entry, and print that entry.",
+    "expected": "21",
+    "difficulty": "easy"
+  },
+  {
+    "id": 1980,
+    "cat": "lists",
+    "name": "list_count_odds_88, 63, 43, 99",
+    "prompt": "Count how many of the numbers in the list [88, 63, 43, 99] are odd and print the count.",
+    "expected": "3",
+    "difficulty": "medium"
+  },
+  {
+    "id": 1990,
+    "cat": "lists",
+    "name": "list_len_87, 31, 60, 17, 37",
+    "prompt": "Report the number of entries stored in the list [87, 31, 60, 17, 37].",
+    "expected": "5",
+    "difficulty": "easy"
+  },
+  {
+    "id": 1999,
+    "cat": "lists",
+    "name": "list_sum_squares_7, 3, 10, 8",
+    "prompt": "Square each entry of the list [7, 3, 10, 8] and sum all the squares together. Print the total.",
+    "expected": "222",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2019,
+    "cat": "lists",
+    "name": "first_times_last_17, 16, 10, 19, 16",
+    "prompt": "In the list [17, 16, 10, 19, 16] take the first element and the last element and multiply them together. Print the product.",
+    "expected": "272",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2022,
+    "cat": "lists",
+    "name": "single_list_len_7",
+    "prompt": "Create a list holding exactly one number, 7, and print the length of that list.",
+    "expected": "1",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2024,
+    "cat": "lists",
+    "name": "first_times_last_15, 12, 13",
+    "prompt": "In the list [15, 12, 13] take the first element and the last element and multiply them together. Print the product.",
+    "expected": "195",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2027,
+    "cat": "lists",
+    "name": "single_list_val_29",
+    "prompt": "Create a single-element list [29], read back its only entry, and print that entry.",
+    "expected": "29",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2055,
+    "cat": "lists",
+    "name": "list_len_69, 96, 88, 49, 63, 42",
+    "prompt": "Report the number of entries stored in the list [69, 96, 88, 49, 63, 42].",
+    "expected": "6",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2081,
+    "cat": "lists",
+    "name": "list_max_73, 63, 66, 78",
+    "prompt": "Among the values in the list [73, 63, 66, 78] identify the biggest one and print it.",
+    "expected": "78",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2101,
+    "cat": "lists",
+    "name": "list_len_55, 88, 68, 53, 16, 14",
+    "prompt": "Report the number of entries stored in the list [55, 88, 68, 53, 16, 14].",
+    "expected": "6",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2112,
+    "cat": "lists",
+    "name": "list_sum_evens_32, 26, 10",
+    "prompt": "From the list [32, 26, 10] add together only the even entries and print that sum.",
+    "expected": "68",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2130,
+    "cat": "lists",
+    "name": "first_times_last_15, 3, 18, 11, 13, 12",
+    "prompt": "In the list [15, 3, 18, 11, 13, 12] take the first element and the last element and multiply them together. Print the product.",
+    "expected": "180",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2136,
+    "cat": "lists",
+    "name": "list_min_index_31, 20, 95, 66, 85, 44",
+    "prompt": "Locate the position (0-based index) of the smallest value in the list [31, 20, 95, 66, 85, 44]. Print that index.",
+    "expected": "1",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2137,
+    "cat": "lists",
+    "name": "list_min_index_62, 17, 21",
+    "prompt": "Locate the position (0-based index) of the smallest value in the list [62, 17, 21]. Print that index.",
+    "expected": "1",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2140,
+    "cat": "lists",
+    "name": "list_min_index_39, 67, 58, 77",
+    "prompt": "Locate the position (0-based index) of the smallest value in the list [39, 67, 58, 77]. Print that index.",
+    "expected": "0",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2154,
+    "cat": "lists",
+    "name": "list_sum_17, 25, 3, 7",
+    "prompt": "Given the list [17, 25, 3, 7], sum all of its elements and print the total.",
+    "expected": "52",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2157,
+    "cat": "lists",
+    "name": "first_times_last_2, 9, 14",
+    "prompt": "In the list [2, 9, 14] take the first element and the last element and multiply them together. Print the product.",
+    "expected": "28",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2178,
+    "cat": "lists",
+    "name": "list_sum_evens_25, 44, 2, 43",
+    "prompt": "From the list [25, 44, 2, 43] add together only the even entries and print that sum.",
+    "expected": "46",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2179,
+    "cat": "lists",
+    "name": "list_len_84, 69, 49",
+    "prompt": "Report the number of entries stored in the list [84, 69, 49].",
+    "expected": "3",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2190,
+    "cat": "lists",
+    "name": "single_list_len_36",
+    "prompt": "Create a list holding exactly one number, 36, and print the length of that list.",
+    "expected": "1",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2192,
+    "cat": "lists",
+    "name": "list_count_odds_16, 58, 44, 89, 50",
+    "prompt": "Count how many of the numbers in the list [16, 58, 44, 89, 50] are odd and print the count.",
+    "expected": "1",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2206,
+    "cat": "lists",
+    "name": "first_times_last_12, 17, 6, 15, 12",
+    "prompt": "In the list [12, 17, 6, 15, 12] take the first element and the last element and multiply them together. Print the product.",
+    "expected": "144",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2212,
+    "cat": "lists",
+    "name": "list_min_index_51, 49, 66, 21, 5",
+    "prompt": "Locate the position (0-based index) of the smallest value in the list [51, 49, 66, 21, 5]. Print that index.",
+    "expected": "4",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2214,
+    "cat": "lists",
+    "name": "list_len_31, 42, 73, 97, 30",
+    "prompt": "Report the number of entries stored in the list [31, 42, 73, 97, 30].",
+    "expected": "5",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2216,
+    "cat": "lists",
+    "name": "list_nth_sum_even_idx_5, 6, 19",
+    "prompt": "In the list [5, 6, 19] add the elements that sit at even indices (0, 2, 4, ...) and print the total.",
+    "expected": "24",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2219,
+    "cat": "lists",
+    "name": "list_sum_squares_10, 11, 4",
+    "prompt": "Square each entry of the list [10, 11, 4] and sum all the squares together. Print the total.",
+    "expected": "237",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2220,
+    "cat": "lists",
+    "name": "list_min_index_35, 86, 16, 90, 12, 8",
+    "prompt": "Locate the position (0-based index) of the smallest value in the list [35, 86, 16, 90, 12, 8]. Print that index.",
+    "expected": "5",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2248,
+    "cat": "lists",
+    "name": "list_max_70, 98, 33, 72",
+    "prompt": "Among the values in the list [70, 98, 33, 72] identify the biggest one and print it.",
+    "expected": "98",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2251,
+    "cat": "lists",
+    "name": "first_times_last_16, 17, 7, 4, 7, 15",
+    "prompt": "In the list [16, 17, 7, 4, 7, 15] take the first element and the last element and multiply them together. Print the product.",
+    "expected": "240",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2264,
+    "cat": "lists",
+    "name": "list_min_index_38, 27, 73, 66",
+    "prompt": "Locate the position (0-based index) of the smallest value in the list [38, 27, 73, 66]. Print that index.",
+    "expected": "1",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2278,
+    "cat": "lists",
+    "name": "single_list_val_85",
+    "prompt": "Create a single-element list [85], read back its only entry, and print that entry.",
+    "expected": "85",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2282,
+    "cat": "lists",
+    "name": "list_max_98, 79, 32, 89, 11, 2",
+    "prompt": "Among the values in the list [98, 79, 32, 89, 11, 2] identify the biggest one and print it.",
+    "expected": "98",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2302,
+    "cat": "lists",
+    "name": "list_count_odds_56, 26, 62",
+    "prompt": "Count how many of the numbers in the list [56, 26, 62] are odd and print the count.",
+    "expected": "0",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2306,
+    "cat": "lists",
+    "name": "first_times_last_16, 11, 18",
+    "prompt": "In the list [16, 11, 18] take the first element and the last element and multiply them together. Print the product.",
+    "expected": "288",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2309,
+    "cat": "lists",
+    "name": "list_nth_sum_even_idx_35, 24, 8, 40, 8, 29",
+    "prompt": "In the list [35, 24, 8, 40, 8, 29] add the elements that sit at even indices (0, 2, 4, ...) and print the total.",
+    "expected": "51",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2319,
+    "cat": "lists",
+    "name": "first_times_last_4, 14, 4, 10",
+    "prompt": "In the list [4, 14, 4, 10] take the first element and the last element and multiply them together. Print the product.",
+    "expected": "40",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2322,
+    "cat": "lists",
+    "name": "first_times_last_12, 5, 16, 8",
+    "prompt": "In the list [12, 5, 16, 8] take the first element and the last element and multiply them together. Print the product.",
+    "expected": "96",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2365,
+    "cat": "strings",
+    "name": "str_multi_4_part",
+    "prompt": "Print 4 lines in the form 'part1: <val>', 'part2: <val>', ... 'part4: <val>' where the values are 77, 84, 75, 38 respectively. One line per entry.",
+    "expected": "part1: 77\npart2: 84\npart3: 75\npart4: 38",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2368,
+    "cat": "strings",
+    "name": "str_repeat_bo_4",
+    "prompt": "Print the word 'bo' exactly 4 times, each occurrence on its own line.",
+    "expected": "bo\nbo\nbo\nbo",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2375,
+    "cat": "strings",
+    "name": "str_multi_4_v",
+    "prompt": "Print 4 lines in the form 'v1: <val>', 'v2: <val>', ... 'v4: <val>' where the values are 74, 63, 50, 64 respectively. One line per entry.",
+    "expected": "v1: 74\nv2: 63\nv3: 50\nv4: 64",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2387,
+    "cat": "strings",
+    "name": "concat_two_Sun_Dust",
+    "prompt": "Join the string 'Sun' together with the string 'Dust' and print the single combined line.",
+    "expected": "SunDust",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2389,
+    "cat": "strings",
+    "name": "str_multi_3_part",
+    "prompt": "Print 3 lines in the form 'part1: <val>', 'part2: <val>', ... 'part3: <val>' where the values are 79, 62, 74 respectively. One line per entry.",
+    "expected": "part1: 79\npart2: 62\npart3: 74",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2393,
+    "cat": "strings",
+    "name": "str_equality_sun_green",
+    "prompt": "Assemble a first string by writing 'sun' then 'green'. Assemble a second string again in the same order: 'sun' then 'green'. Compare the two strings and print 'equal' if they are identical, otherwise 'different'.",
+    "expected": "equal",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2398,
+    "cat": "strings",
+    "name": "str_pre_suf_head__mid__finish",
+    "prompt": "Glue together the prefix 'head_', the middle part 'mid' and the suffix '_finish', in that order, and print the final string.",
+    "expected": "head_mid_finish",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2401,
+    "cat": "strings",
+    "name": "concat_three_star_fox_green",
+    "prompt": "Concatenate the three strings 'star', 'fox' and 'green' into one piece of text and print it.",
+    "expected": "starfoxgreen",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2405,
+    "cat": "strings",
+    "name": "str_join_4__",
+    "prompt": "Produce a single line containing the numbers 1 through 4 joined by the character '_' (e.g. 1_2_3). Print that line.",
+    "expected": "1_2_3_4",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2410,
+    "cat": "strings",
+    "name": "str_join_3_-",
+    "prompt": "Produce a single line containing the numbers 1 through 3 joined by the character '-' (e.g. 1-2-3). Print that line.",
+    "expected": "1-2-3",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2430,
+    "cat": "strings",
+    "name": "concat_three_red_moon_green",
+    "prompt": "Concatenate the three strings 'red', 'moon' and 'green' into one piece of text and print it.",
+    "expected": "redmoongreen",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2447,
+    "cat": "strings",
+    "name": "str_countdown_Round-_3",
+    "prompt": "Print the lines 'Round-3', 'Round-2', ..., 'Round-1' — each on a separate line, in that exact order.",
+    "expected": "Round-3\nRound-2\nRound-1",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2462,
+    "cat": "strings",
+    "name": "str_equality_green_sun",
+    "prompt": "Assemble a first string by writing 'green' then 'sun'. Assemble a second string again in the same order: 'green' then 'sun'. Compare the two strings and print 'equal' if they are identical, otherwise 'different'.",
+    "expected": "equal",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2463,
+    "cat": "strings",
+    "name": "str_equality_green_fox",
+    "prompt": "Assemble a first string by writing 'green' then 'fox'. Assemble a second string in the reverse order: 'fox' then 'green'. Compare the two strings and print 'equal' if they are identical, otherwise 'different'.",
+    "expected": "different",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2475,
+    "cat": "strings",
+    "name": "str_equality_green_moon",
+    "prompt": "Assemble a first string by writing 'green' then 'moon'. Assemble a second string again in the same order: 'green' then 'moon'. Compare the two strings and print 'equal' if they are identical, otherwise 'different'.",
+    "expected": "equal",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2478,
+    "cat": "strings",
+    "name": "concat_three_fox_star_fox",
+    "prompt": "Concatenate the three strings 'fox', 'star' and 'fox' into one piece of text and print it.",
+    "expected": "foxstarfox",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2483,
+    "cat": "strings",
+    "name": "concat_four_moon_blue_green_red",
+    "prompt": "Fuse the four tokens 'moon', 'blue', 'green' and 'red' in that order into a single string and print it.",
+    "expected": "moonbluegreenred",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2486,
+    "cat": "strings",
+    "name": "str_num_sum_16_14",
+    "prompt": "Add 16 and 14, then print the label 'Sum = ' followed by the result on one line.",
+    "expected": "Sum = 30",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2495,
+    "cat": "strings",
+    "name": "concat_four_red_green_green_blue",
+    "prompt": "Fuse the four tokens 'red', 'green', 'green' and 'blue' in that order into a single string and print it.",
+    "expected": "redgreengreenblue",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2502,
+    "cat": "strings",
+    "name": "str_equality_green_blue",
+    "prompt": "Assemble a first string by writing 'green' then 'blue'. Assemble a second string again in the same order: 'green' then 'blue'. Compare the two strings and print 'equal' if they are identical, otherwise 'different'.",
+    "expected": "equal",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2524,
+    "cat": "strings",
+    "name": "str_countdown_Phase-_3",
+    "prompt": "Print the lines 'Phase-3', 'Phase-2', ..., 'Phase-1' — each on a separate line, in that exact order.",
+    "expected": "Phase-3\nPhase-2\nPhase-1",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2539,
+    "cat": "strings",
+    "name": "str_pre_suf_head__body__finish",
+    "prompt": "Glue together the prefix 'head_', the middle part 'body' and the suffix '_finish', in that order, and print the final string.",
+    "expected": "head_body_finish",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2540,
+    "cat": "strings",
+    "name": "str_pre_suf_head__body__end",
+    "prompt": "Glue together the prefix 'head_', the middle part 'body' and the suffix '_end', in that order, and print the final string.",
+    "expected": "head_body_end",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2556,
+    "cat": "strings",
+    "name": "str_repeat_bo_3",
+    "prompt": "Print the word 'bo' exactly 3 times, each occurrence on its own line.",
+    "expected": "bo\nbo\nbo",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2614,
+    "cat": "strings",
+    "name": "str_num_sum_7_6",
+    "prompt": "Add 7 and 6, then print the label 'Sum = ' followed by the result on one line.",
+    "expected": "Sum = 13",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2632,
+    "cat": "strings",
+    "name": "concat_four_moon_red_green_green",
+    "prompt": "Fuse the four tokens 'moon', 'red', 'green' and 'green' in that order into a single string and print it.",
+    "expected": "moonredgreengreen",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2670,
+    "cat": "strings",
+    "name": "concat_two_Ocean_Shine",
+    "prompt": "Join the string 'Ocean' together with the string 'Shine' and print the single combined line.",
+    "expected": "OceanShine",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2677,
+    "cat": "strings",
+    "name": "concat_four_star_star_sun_red",
+    "prompt": "Fuse the four tokens 'star', 'star', 'sun' and 'red' in that order into a single string and print it.",
+    "expected": "starstarsunred",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2694,
+    "cat": "strings",
+    "name": "str_pre_suf_head__core__tail",
+    "prompt": "Glue together the prefix 'head_', the middle part 'core' and the suffix '_tail', in that order, and print the final string.",
+    "expected": "head_core_tail",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2716,
+    "cat": "strings",
+    "name": "str_num_Total_633",
+    "prompt": "Print the text 'Total: ' immediately followed by the number 633 on one line.",
+    "expected": "Total: 633",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2720,
+    "cat": "strings",
+    "name": "str_num_sum_22_39",
+    "prompt": "Add 22 and 39, then print the label 'Sum = ' followed by the result on one line.",
+    "expected": "Sum = 61",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2723,
+    "cat": "strings",
+    "name": "str_num_Total_717",
+    "prompt": "Print the text 'Total: ' immediately followed by the number 717 on one line.",
+    "expected": "Total: 717",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2725,
+    "cat": "strings",
+    "name": "str_num_Value_48",
+    "prompt": "Print the text 'Value: ' immediately followed by the number 48 on one line.",
+    "expected": "Value: 48",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2731,
+    "cat": "strings",
+    "name": "str_num_sum_24_3",
+    "prompt": "Add 24 and 3, then print the label 'Sum = ' followed by the result on one line.",
+    "expected": "Sum = 27",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2733,
+    "cat": "strings",
+    "name": "concat_three_sun_red_fox",
+    "prompt": "Concatenate the three strings 'sun', 'red' and 'fox' into one piece of text and print it.",
+    "expected": "sunredfox",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2755,
+    "cat": "strings",
+    "name": "concat_four_fox_moon_blue_red",
+    "prompt": "Fuse the four tokens 'fox', 'moon', 'blue' and 'red' in that order into a single string and print it.",
+    "expected": "foxmoonbluered",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2761,
+    "cat": "strings",
+    "name": "concat_three_sun_sun_sun",
+    "prompt": "Concatenate the three strings 'sun', 'sun' and 'sun' into one piece of text and print it.",
+    "expected": "sunsunsun",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2769,
+    "cat": "strings",
+    "name": "concat_three_blue_star_moon",
+    "prompt": "Concatenate the three strings 'blue', 'star' and 'moon' into one piece of text and print it.",
+    "expected": "bluestarmoon",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2771,
+    "cat": "strings",
+    "name": "concat_two_Sun_Shine",
+    "prompt": "Join the string 'Sun' together with the string 'Shine' and print the single combined line.",
+    "expected": "SunShine",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2776,
+    "cat": "strings",
+    "name": "str_num_sum_4_38",
+    "prompt": "Add 4 and 38, then print the label 'Sum = ' followed by the result on one line.",
+    "expected": "Sum = 42",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2779,
+    "cat": "strings",
+    "name": "concat_three_red_fox_moon",
+    "prompt": "Concatenate the three strings 'red', 'fox' and 'moon' into one piece of text and print it.",
+    "expected": "redfoxmoon",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2816,
+    "cat": "strings",
+    "name": "str_num_sum_12_16",
+    "prompt": "Add 12 and 16, then print the label 'Sum = ' followed by the result on one line.",
+    "expected": "Sum = 28",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2822,
+    "cat": "strings",
+    "name": "str_num_Total_196",
+    "prompt": "Print the text 'Total: ' immediately followed by the number 196 on one line.",
+    "expected": "Total: 196",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2838,
+    "cat": "combined",
+    "name": "closure_counter_4",
+    "prompt": "Build a counter with a closure: a function that increments an internal mutable counter on every call and returns the new value. Call it 4 times and print each returned value, one per line.",
+    "expected": "1\n2\n3\n4",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2839,
+    "cat": "combined",
+    "name": "max_of_four_44_8_12_67",
+    "prompt": "Given four numbers 44, 8, 12 and 67, report the largest of them.",
+    "expected": "67",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2848,
+    "cat": "combined",
+    "name": "closure_counter_5",
+    "prompt": "Build a counter with a closure: a function that increments an internal mutable counter on every call and returns the new value. Call it 5 times and print each returned value, one per line.",
+    "expected": "1\n2\n3\n4\n5",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2854,
+    "cat": "combined",
+    "name": "reverse_add_5576",
+    "prompt": "Take the number 5576, reverse its digits, and add the reversed value back to 5576. Print the sum.",
+    "expected": "12331",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2869,
+    "cat": "combined",
+    "name": "reverse_digits_72896",
+    "prompt": "Reverse the order of the digits of 72896 using only remainder and integer division (no strings). Print the reversed number.",
+    "expected": "69827",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2874,
+    "cat": "combined",
+    "name": "map_inc_27, 39, 30, 25, 21, 27",
+    "prompt": "Take the list [27, 39, 30, 25, 21, 27] and print, line by line, the result of adding 1 to each element.",
+    "expected": "28\n40\n31\n26\n22\n28",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2895,
+    "cat": "combined",
+    "name": "reverse_add_2290",
+    "prompt": "Take the number 2290, reverse its digits, and add the reversed value back to 2290. Print the sum.",
+    "expected": "3212",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2906,
+    "cat": "combined",
+    "name": "reverse_add_876",
+    "prompt": "Take the number 876, reverse its digits, and add the reversed value back to 876. Print the sum.",
+    "expected": "1554",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2923,
+    "cat": "combined",
+    "name": "sum_multiples_5_23",
+    "prompt": "Add together all the multiples of 5 between 1 and 23 (inclusive) and print the total.",
+    "expected": "50",
+    "difficulty": "medium"
+  },
+  {
+    "id": 2924,
+    "cat": "combined",
+    "name": "max_of_four_26_33_56_6",
+    "prompt": "Given four numbers 26, 33, 56 and 6, report the largest of them.",
+    "expected": "56",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2931,
+    "cat": "combined",
+    "name": "lambda_triple_20",
+    "prompt": "Create an anonymous function that triples its input, assign it to a name, then apply it to 20 and print the result.",
+    "expected": "60",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2950,
+    "cat": "combined",
+    "name": "lambda_triple_38",
+    "prompt": "Create an anonymous function that triples its input, assign it to a name, then apply it to 38 and print the result.",
+    "expected": "114",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2956,
+    "cat": "combined",
+    "name": "reverse_add_3620",
+    "prompt": "Take the number 3620, reverse its digits, and add the reversed value back to 3620. Print the sum.",
+    "expected": "3883",
+    "difficulty": "hard"
+  },
+  {
+    "id": 2969,
+    "cat": "combined",
+    "name": "max_of_four_90_86_44_90",
+    "prompt": "Given four numbers 90, 86, 44 and 90, report the largest of them.",
+    "expected": "90",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3000,
+    "cat": "combined",
+    "name": "map_inc_28, 11, 33, 50, 13, 18",
+    "prompt": "Take the list [28, 11, 33, 50, 13, 18] and print, line by line, the result of adding 1 to each element.",
+    "expected": "29\n12\n34\n51\n14\n19",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3002,
+    "cat": "combined",
+    "name": "reverse_digits_523",
+    "prompt": "Reverse the order of the digits of 523 using only remainder and integer division (no strings). Print the reversed number.",
+    "expected": "325",
+    "difficulty": "medium"
+  },
+  {
+    "id": 3007,
+    "cat": "combined",
+    "name": "max_of_four_69_80_88_30",
+    "prompt": "Given four numbers 69, 80, 88 and 30, report the largest of them.",
+    "expected": "88",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3015,
+    "cat": "combined",
+    "name": "map_inc_40, 13, 31, 32, 43, 28",
+    "prompt": "Take the list [40, 13, 31, 32, 43, 28] and print, line by line, the result of adding 1 to each element.",
+    "expected": "41\n14\n32\n33\n44\n29",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3020,
+    "cat": "combined",
+    "name": "map_inc_15, 22, 42, 28, 30, 26",
+    "prompt": "Take the list [15, 22, 42, 28, 30, 26] and print, line by line, the result of adding 1 to each element.",
+    "expected": "16\n23\n43\n29\n31\n27",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3029,
+    "cat": "combined",
+    "name": "lambda_triple_6",
+    "prompt": "Create an anonymous function that triples its input, assign it to a name, then apply it to 6 and print the result.",
+    "expected": "18",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3033,
+    "cat": "combined",
+    "name": "reverse_add_6843",
+    "prompt": "Take the number 6843, reverse its digits, and add the reversed value back to 6843. Print the sum.",
+    "expected": "10329",
+    "difficulty": "hard"
+  },
+  {
+    "id": 3037,
+    "cat": "combined",
+    "name": "max_of_four_79_12_81_13",
+    "prompt": "Given four numbers 79, 12, 81 and 13, report the largest of them.",
+    "expected": "81",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3040,
+    "cat": "combined",
+    "name": "max_of_four_38_5_45_51",
+    "prompt": "Given four numbers 38, 5, 45 and 51, report the largest of them.",
+    "expected": "51",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3042,
+    "cat": "combined",
+    "name": "max_of_four_42_71_37_22",
+    "prompt": "Given four numbers 42, 71, 37 and 22, report the largest of them.",
+    "expected": "71",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3046,
+    "cat": "combined",
+    "name": "max_of_four_6_81_40_42",
+    "prompt": "Given four numbers 6, 81, 40 and 42, report the largest of them.",
+    "expected": "81",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3053,
+    "cat": "combined",
+    "name": "map_inc_41, 44, 39, 14",
+    "prompt": "Take the list [41, 44, 39, 14] and print, line by line, the result of adding 1 to each element.",
+    "expected": "42\n45\n40\n15",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3055,
+    "cat": "combined",
+    "name": "max_of_four_45_28_39_46",
+    "prompt": "Given four numbers 45, 28, 39 and 46, report the largest of them.",
+    "expected": "46",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3063,
+    "cat": "combined",
+    "name": "reverse_digits_54467",
+    "prompt": "Reverse the order of the digits of 54467 using only remainder and integer division (no strings). Print the reversed number.",
+    "expected": "76445",
+    "difficulty": "medium"
+  },
+  {
+    "id": 3072,
+    "cat": "combined",
+    "name": "lambda_triple_23",
+    "prompt": "Create an anonymous function that triples its input, assign it to a name, then apply it to 23 and print the result.",
+    "expected": "69",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3076,
+    "cat": "combined",
+    "name": "lambda_compose_40",
+    "prompt": "Define an anonymous function that adds 3 and another one that doubles. Pipe the value 40 through both (add 3, then double) and print the final number.",
+    "expected": "86",
+    "difficulty": "medium"
+  },
+  {
+    "id": 3080,
+    "cat": "combined",
+    "name": "lambda_triple_14",
+    "prompt": "Create an anonymous function that triples its input, assign it to a name, then apply it to 14 and print the result.",
+    "expected": "42",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3094,
+    "cat": "combined",
+    "name": "max_of_four_40_75_64_23",
+    "prompt": "Given four numbers 40, 75, 64 and 23, report the largest of them.",
+    "expected": "75",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3105,
+    "cat": "combined",
+    "name": "max_of_four_76_19_67_40",
+    "prompt": "Given four numbers 76, 19, 67 and 40, report the largest of them.",
+    "expected": "76",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3156,
+    "cat": "combined",
+    "name": "map_inc_23, 46, 28, 10, 33, 11",
+    "prompt": "Take the list [23, 46, 28, 10, 33, 11] and print, line by line, the result of adding 1 to each element.",
+    "expected": "24\n47\n29\n11\n34\n12",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3186,
+    "cat": "combined",
+    "name": "reverse_add_9507",
+    "prompt": "Take the number 9507, reverse its digits, and add the reversed value back to 9507. Print the sum.",
+    "expected": "16566",
+    "difficulty": "hard"
+  },
+  {
+    "id": 3206,
+    "cat": "combined",
+    "name": "reverse_digits_2539",
+    "prompt": "Reverse the order of the digits of 2539 using only remainder and integer division (no strings). Print the reversed number.",
+    "expected": "9352",
+    "difficulty": "medium"
+  },
+  {
+    "id": 3220,
+    "cat": "combined",
+    "name": "map_inc_27, 30, 14, 37, 33, 18",
+    "prompt": "Take the list [27, 30, 14, 37, 33, 18] and print, line by line, the result of adding 1 to each element.",
+    "expected": "28\n31\n15\n38\n34\n19",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3244,
+    "cat": "combined",
+    "name": "max_of_four_63_7_88_2",
+    "prompt": "Given four numbers 63, 7, 88 and 2, report the largest of them.",
+    "expected": "88",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3259,
+    "cat": "combined",
+    "name": "max_of_four_19_76_74_10",
+    "prompt": "Given four numbers 19, 76, 74 and 10, report the largest of them.",
+    "expected": "76",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3260,
+    "cat": "combined",
+    "name": "reverse_digits_50686",
+    "prompt": "Reverse the order of the digits of 50686 using only remainder and integer division (no strings). Print the reversed number.",
+    "expected": "68605",
+    "difficulty": "medium"
+  },
+  {
+    "id": 3287,
+    "cat": "combined",
+    "name": "perfect_square_257",
+    "prompt": "Check whether 257 is a perfect square (some integer squared). Print 'square' or 'nonsquare'.",
+    "expected": "nonsquare",
+    "difficulty": "medium"
+  },
+  {
+    "id": 3296,
+    "cat": "combined",
+    "name": "map_inc_42, 11, 48, 31, 35",
+    "prompt": "Take the list [42, 11, 48, 31, 35] and print, line by line, the result of adding 1 to each element.",
+    "expected": "43\n12\n49\n32\n36",
+    "difficulty": "easy"
+  }
+]
