@@ -1,0 +1,1302 @@
+{
+  "1": {
+    "id": 1,
+    "cat": "arithmetic",
+    "name": "Сложение",
+    "expected": "22",
+    "ts": "2026-09-11T23:42:29.529217",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (+ 7 15)))",
+      "output": "22",
+      "ms": 1886
+    }
+  },
+  "2": {
+    "id": 2,
+    "cat": "arithmetic",
+    "name": "Вычитание",
+    "expected": "63",
+    "ts": "2026-09-11T23:42:31.416595",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (- 100 37)))",
+      "output": "63",
+      "ms": 1893
+    }
+  },
+  "3": {
+    "id": 3,
+    "cat": "arithmetic",
+    "name": "Умножение",
+    "expected": "54",
+    "ts": "2026-09-11T23:42:33.310605",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (* 6 9)))",
+      "output": "54",
+      "ms": 1598
+    }
+  },
+  "4": {
+    "id": 4,
+    "cat": "arithmetic",
+    "name": "Деление",
+    "expected": "4",
+    "ts": "2026-09-11T23:42:34.909121",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (/ 17 4)))",
+      "output": "4",
+      "ms": 1707
+    }
+  },
+  "5": {
+    "id": 5,
+    "cat": "arithmetic",
+    "name": "Остаток",
+    "expected": "2",
+    "ts": "2026-09-11T23:42:36.616736",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (% 17 5)))",
+      "output": "2",
+      "ms": 1710
+    }
+  },
+  "6": {
+    "id": 6,
+    "cat": "arithmetic",
+    "name": "Квадрат",
+    "expected": "169",
+    "ts": "2026-09-11T23:42:38.327108",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (* 13 13)))",
+      "output": "169",
+      "ms": 1811
+    }
+  },
+  "7": {
+    "id": 7,
+    "cat": "arithmetic",
+    "name": "Куб",
+    "expected": "64",
+    "ts": "2026-09-11T23:42:40.139411",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (* 4 4 4)))",
+      "output": "64",
+      "ms": 1815
+    }
+  },
+  "8": {
+    "id": 8,
+    "cat": "arithmetic",
+    "name": "Степень 2^10",
+    "expected": "1024",
+    "ts": "2026-09-11T23:42:41.955520",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable result 1)\n(define-mutable i 0)\n(while (< i 10)\n  (set! result (* result 2))\n  (set! i (+ i 1)))\n(print (int->str result))",
+      "output": "1024",
+      "ms": 6306
+    }
+  },
+  "9": {
+    "id": 9,
+    "cat": "arithmetic",
+    "name": "Степень 3^5",
+    "expected": "243",
+    "ts": "2026-09-11T23:42:48.262392",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (power base exp)\n  (if (= exp 0)\n    1\n    (* base (power base (- exp 1)))))\n(print (int->str (power 3 5)))",
+      "output": "243",
+      "ms": 5323
+    }
+  },
+  "10": {
+    "id": 10,
+    "cat": "arithmetic",
+    "name": "Макс двух чисел",
+    "expected": "42",
+    "ts": "2026-09-11T23:42:53.586815",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (> 17 42) (print \"17\") (print \"42\"))",
+      "output": "42",
+      "ms": 2700
+    }
+  },
+  "11": {
+    "id": 11,
+    "cat": "logic",
+    "name": "Чётность 4",
+    "expected": "even",
+    "ts": "2026-09-11T23:42:56.287618",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (= (% 4 2) 0) (print \"even\") (print \"odd\"))",
+      "output": "even",
+      "ms": 2698
+    }
+  },
+  "12": {
+    "id": 12,
+    "cat": "logic",
+    "name": "Нечётность 7",
+    "expected": "odd",
+    "ts": "2026-09-11T23:42:58.987686",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (= (% 7 2) 0) (print \"even\") (print \"odd\"))",
+      "output": "odd",
+      "ms": 2692
+    }
+  },
+  "13": {
+    "id": 13,
+    "cat": "logic",
+    "name": "Делимость на 3",
+    "expected": "yes",
+    "ts": "2026-09-11T23:43:01.680236",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (= (% 15 3) 0) (print \"yes\") (print \"no\"))",
+      "output": "yes",
+      "ms": 2800
+    }
+  },
+  "14": {
+    "id": 14,
+    "cat": "logic",
+    "name": "Не делится на 7",
+    "expected": "no",
+    "ts": "2026-09-11T23:43:04.481481",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (= (% 10 7) 0) (print \"yes\") (print \"no\"))",
+      "output": "no",
+      "ms": 2799
+    }
+  },
+  "15": {
+    "id": 15,
+    "cat": "logic",
+    "name": "И",
+    "expected": "ok",
+    "ts": "2026-09-11T23:43:07.281219",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (and (> 5 3) (< 10 20)) (print \"ok\") (print \"fail\"))",
+      "output": "ok",
+      "ms": 3360
+    }
+  },
+  "16": {
+    "id": 16,
+    "cat": "logic",
+    "name": "ИЛИ",
+    "expected": "ok",
+    "ts": "2026-09-11T23:43:10.642689",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (or (> 5 10) (< 3 7)) (print \"ok\") (print \"fail\"))",
+      "output": "ok",
+      "ms": 3233
+    }
+  },
+  "17": {
+    "id": 17,
+    "cat": "logic",
+    "name": "НЕ",
+    "expected": "ok",
+    "ts": "2026-09-11T23:43:13.876984",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (!= 5 3) (print \"ok\") (print \"fail\"))",
+      "output": "ok",
+      "ms": 2367
+    }
+  },
+  "18": {
+    "id": 18,
+    "cat": "logic",
+    "name": "Знак числа",
+    "expected": "positive",
+    "ts": "2026-09-11T23:43:16.245263",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (> 42 0) (print \"positive\") (if (< 42 0) (print \"negative\") (print \"zero\")))",
+      "output": "positive",
+      "ms": 3894
+    }
+  },
+  "19": {
+    "id": 19,
+    "cat": "logic",
+    "name": "Знак нуля",
+    "expected": "zero",
+    "ts": "2026-09-11T23:43:20.140325",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (> 0 0) (print \"positive\") (if (< 0 0) (print \"negative\") (print \"zero\")))",
+      "output": "zero",
+      "ms": 3674
+    }
+  },
+  "20": {
+    "id": 20,
+    "cat": "logic",
+    "name": "Знак отрицательного",
+    "expected": "negative",
+    "ts": "2026-09-11T23:43:23.815352",
+    "lupus": {
+      "status": "pass",
+      "code": "(if (> (- 5) 0) (print \"positive\") (if (< (- 5) 0) (print \"negative\") (print \"zero\")))",
+      "output": "negative",
+      "ms": 4142
+    }
+  },
+  "21": {
+    "id": 21,
+    "cat": "loops",
+    "name": "Числа 1..5",
+    "expected": "1\n2\n3\n4\n5",
+    "ts": "2026-09-11T23:43:27.958766",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 1)\n(while (<= i 5)\n  (print (int->str i))\n  (set! i (+ i 1)))",
+      "output": "1\n2\n3\n4\n5",
+      "ms": 4447
+    }
+  },
+  "22": {
+    "id": 22,
+    "cat": "loops",
+    "name": "Обратный счёт 5..1",
+    "expected": "5\n4\n3\n2\n1",
+    "ts": "2026-09-11T23:43:32.407339",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 5)\n(while (>= i 1)\n  (print (int->str i))\n  (set! i (- i 1)))",
+      "output": "5\n4\n3\n2\n1",
+      "ms": 4462
+    }
+  },
+  "23": {
+    "id": 23,
+    "cat": "loops",
+    "name": "Сумма 1..10",
+    "expected": "55",
+    "ts": "2026-09-11T23:43:36.870956",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable sum 0)\n(define-mutable i 1)\n(while (<= i 10)\n  (set! sum (+ sum i))\n  (set! i (+ i 1)))\n(print (int->str sum))",
+      "output": "55",
+      "ms": 6302
+    }
+  },
+  "24": {
+    "id": 24,
+    "cat": "loops",
+    "name": "Произведение 1..5",
+    "expected": "120",
+    "ts": "2026-09-11T23:43:43.174179",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable product 1)\n(define-mutable i 2)\n(while (<= i 5)\n  (set! product (* product i))\n  (set! i (+ i 1)))\n(print (int->str product))",
+      "output": "120",
+      "ms": 6168
+    }
+  },
+  "25": {
+    "id": 25,
+    "cat": "loops",
+    "name": "Чётные 2..10",
+    "expected": "2\n4\n6\n8\n10",
+    "ts": "2026-09-11T23:43:49.343949",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 2)\n(while (<= i 10)\n  (print (int->str i))\n  (set! i (+ i 2)))",
+      "output": "2\n4\n6\n8\n10",
+      "ms": 4573
+    }
+  },
+  "26": {
+    "id": 26,
+    "cat": "loops",
+    "name": "Нечётные 1..9",
+    "expected": "1\n3\n5\n7\n9",
+    "ts": "2026-09-11T23:43:53.918038",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 1)\n(while (<= i 9)\n  (print (int->str i))\n  (set! i (+ i 2)))",
+      "output": "1\n3\n5\n7\n9",
+      "ms": 4428
+    }
+  },
+  "27": {
+    "id": 27,
+    "cat": "loops",
+    "name": "Сумма чётных 1..20",
+    "expected": "110",
+    "ts": "2026-09-11T23:43:58.346856",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable sum 0)\n(define-mutable i 1)\n(while (<= i 20)\n  (if (= (% i 2) 0)\n    (set! sum (+ sum i))\n    0)\n  (set! i (+ i 1)))\n(print (int->str sum))",
+      "output": "110",
+      "ms": 8256
+    }
+  },
+  "28": {
+    "id": 28,
+    "cat": "loops",
+    "name": "Сумма нечётных 1..9",
+    "expected": "25",
+    "ts": "2026-09-11T23:44:06.604226",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable sum 0)\n(define-mutable i 1)\n(while (<= i 9)\n  (if (= (% i 2) 1)\n    (set! sum (+ sum i))\n    0)\n  (set! i (+ i 1)))\n(print (int->str sum))",
+      "output": "25",
+      "ms": 8138
+    }
+  },
+  "29": {
+    "id": 29,
+    "cat": "loops",
+    "name": "Квадраты 1..5",
+    "expected": "1\n4\n9\n16\n25",
+    "ts": "2026-09-11T23:44:14.743807",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 1)\n(while (<= i 5)\n  (print (int->str (* i i)))\n  (set! i (+ i 1)))",
+      "output": "1\n4\n9\n16\n25",
+      "ms": 4669
+    }
+  },
+  "30": {
+    "id": 30,
+    "cat": "loops",
+    "name": "Умнож. таблица 3",
+    "expected": "3\n6\n9\n12\n15",
+    "ts": "2026-09-11T23:44:19.413880",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 1)\n(while (<= i 5)\n  (print (int->str (* 3 i)))\n  (set! i (+ i 1)))",
+      "output": "3\n6\n9\n12\n15",
+      "ms": 4765
+    }
+  },
+  "31": {
+    "id": 31,
+    "cat": "loops",
+    "name": "Степени 2: 1..8",
+    "expected": "2\n4\n8\n16\n32\n64\n128\n256",
+    "ts": "2026-09-11T23:44:24.179773",
+    "lupus": {
+      "status": "error",
+      "code": "(define-mutable i 1)\n(while (<= i 256)\n  (print (int->str (* 2 power)))\n  (set! power (* power 2))\n  (set! i (+ i 1)))",
+      "output": "Переменная 'power' не определена",
+      "ms": 6249
+    }
+  },
+  "32": {
+    "id": 32,
+    "cat": "loops",
+    "name": "Сумма квадратов",
+    "expected": "30",
+    "ts": "2026-09-11T23:44:30.429998",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable sum 0)\n(define-mutable i 1)\n(while (<= i 4)\n  (set! sum (+ sum (* i i)))\n  (set! i (+ i 1)))\n(print (int->str sum))",
+      "output": "30",
+      "ms": 6446
+    }
+  },
+  "33": {
+    "id": 33,
+    "cat": "loops",
+    "name": "Счётчик делений",
+    "expected": "5",
+    "ts": "2026-09-11T23:44:36.877801",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 1)\n(define-mutable count 0)\n(while (<= i 20)\n  (if (= (% i 4) 0)\n    (set! count (+ count 1))\n    0)\n  (set! i (+ i 1)))\n(print (int->str count))",
+      "output": "5",
+      "ms": 8348
+    }
+  },
+  "34": {
+    "id": 34,
+    "cat": "loops",
+    "name": "Max в цикле",
+    "expected": "9",
+    "ts": "2026-09-11T23:44:45.227479",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable max-val 3)\n(define-mutable i 0)\n(while (< i 6)\n  (if (> (nth (list 3 7 2 9 1 5) i) max-val)\n    (set! max-val (nth (list 3 7 2 9 1 5) i)))\n  (set! i (+ i 1)))\n(print (int->str max-val))",
+      "output": "9",
+      "ms": 11042
+    }
+  },
+  "35": {
+    "id": 35,
+    "cat": "loops",
+    "name": "Цифровая сумма 12345",
+    "expected": "15",
+    "ts": "2026-09-11T23:44:56.270568",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable n 12345)\n(define-mutable sum 0)\n(while (> n 0)\n  (set! sum (+ sum (% n 10)))\n  (set! n (/ n 10)))\n(print (int->str sum))",
+      "output": "15",
+      "ms": 7082
+    }
+  },
+  "36": {
+    "id": 36,
+    "cat": "recursion",
+    "name": "Факториал 5",
+    "expected": "120",
+    "ts": "2026-09-11T23:45:03.353874",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (factorial n)\n  (if (= n 0)\n    1\n    (* n (factorial (- n 1)))))\n(print (int->str (factorial 5)))",
+      "output": "120",
+      "ms": 5193
+    }
+  },
+  "37": {
+    "id": 37,
+    "cat": "recursion",
+    "name": "Факториал 7",
+    "expected": "5040",
+    "ts": "2026-09-11T23:45:08.547862",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (factorial n)\n  (if (= n 0)\n    1\n    (* n (factorial (- n 1)))))\n(print (int->str (factorial 7)))",
+      "output": "5040",
+      "ms": 5223
+    }
+  },
+  "38": {
+    "id": 38,
+    "cat": "recursion",
+    "name": "Фибоначчи F(7)",
+    "expected": "13",
+    "ts": "2026-09-11T23:45:13.772336",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable a 0)\n(define-mutable b 1)\n(define-mutable i 2)\n(define-mutable temp 0)\n(while (<= i 7)\n  (set! temp (+ a b))\n  (set! a b)\n  (set! b temp)\n  (set! i (+ i 1)))\n(print (int->str b))",
+      "output": "13",
+      "ms": 9692
+    }
+  },
+  "39": {
+    "id": 39,
+    "cat": "recursion",
+    "name": "Фибоначчи F(9)",
+    "expected": "34",
+    "ts": "2026-09-11T23:45:23.466272",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable a 0)\n(define-mutable b 1)\n(define-mutable i 2)\n(define-mutable temp 0)\n(while (<= i 9)\n  (set! temp (+ a b))\n  (set! a b)\n  (set! b temp)\n  (set! i (+ i 1)))\n(print (int->str b))",
+      "output": "34",
+      "ms": 9693
+    }
+  },
+  "40": {
+    "id": 40,
+    "cat": "recursion",
+    "name": "Сумма 1..N рекурс.",
+    "expected": "55",
+    "ts": "2026-09-11T23:45:33.160932",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (sum-to-n n)\n  (if (= n 0)\n    0\n    (+ n (sum-to-n (- n 1)))))\n\n(print (int->str (sum-to-n 10)))",
+      "output": "55",
+      "ms": 5665
+    }
+  },
+  "41": {
+    "id": 41,
+    "cat": "recursion",
+    "name": "Степень 2^8 рекурс.",
+    "expected": "256",
+    "ts": "2026-09-11T23:45:38.827516",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (power base exp)\n  (if (= exp 0)\n    1\n    (* base (power base (- exp 1)))))\n(print (int->str (power 2 8)))",
+      "output": "256",
+      "ms": 5307
+    }
+  },
+  "42": {
+    "id": 42,
+    "cat": "recursion",
+    "name": "GCD(48, 18)",
+    "expected": "6",
+    "ts": "2026-09-11T23:45:44.135670",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (gcd a b)\n  (if (= b 0)\n    a\n    (gcd b (% a b))))\n(print (int->str (gcd 48 18)))",
+      "output": "6",
+      "ms": 4978
+    }
+  },
+  "43": {
+    "id": 43,
+    "cat": "recursion",
+    "name": "НОД(100, 75)",
+    "expected": "25",
+    "ts": "2026-09-11T23:45:49.114890",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (gcd a b)\n  (if (= b 0)\n    a\n    (gcd b (% a b))))\n(print (int->str (gcd 100 75)))",
+      "output": "25",
+      "ms": 5113
+    }
+  },
+  "44": {
+    "id": 44,
+    "cat": "recursion",
+    "name": "Цифр. сумма рекурс.",
+    "expected": "30",
+    "ts": "2026-09-11T23:45:54.229124",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (sum-digits n)\n  (if (= n 0)\n    0\n    (+ (% n 10) (sum-digits (/ n 10)))))\n\n(print (int->str (sum-digits 9876)))",
+      "output": "30",
+      "ms": 6570
+    }
+  },
+  "45": {
+    "id": 45,
+    "cat": "recursion",
+    "name": "Обратный отсчёт",
+    "expected": "5\n4\n3\n2\n1",
+    "ts": "2026-09-11T23:46:00.801221",
+    "lupus": {
+      "status": "error",
+      "code": "(define (print-down n)\n  (if (= n 1)\n    (begin\n      (print \"1\")\n      (print-down (- n 1)))\n    (print-down (- n 1))))\n\n(print-down 5)",
+      "output": "1",
+      "ms": 7266
+    }
+  },
+  "46": {
+    "id": 46,
+    "cat": "recursion",
+    "name": "Счётчик рекурс.",
+    "expected": "1\n2\n3\n4",
+    "ts": "2026-09-11T23:46:08.069828",
+    "lupus": {
+      "status": "error",
+      "code": "(define (count n)\n  (if (= n 0)\n    print \"0\"\n    (print (int->str (+ n 1)))))\n(count 4)",
+      "output": "(if ...) требует ровно 2 или 3 аргумента, получено 4",
+      "ms": 4713
+    }
+  },
+  "47": {
+    "id": 47,
+    "cat": "recursion",
+    "name": "Числа Трибоначчи",
+    "expected": "24",
+    "ts": "2026-09-11T23:46:12.785198",
+    "lupus": {
+      "status": "error",
+      "code": "(define (compute-t n)\n  (if (= n 0)\n    0\n    (if (= n 1)\n      1\n      (+ (compute-t (- n 1)) (compute-t (- n 2)) (compute-t (- n 3))))))\n(print (int->str (compute-t 7)))",
+      "output": "",
+      "ms": 8593
+    }
+  },
+  "48": {
+    "id": 48,
+    "cat": "recursion",
+    "name": "Мощность 4^4",
+    "expected": "256",
+    "ts": "2026-09-11T23:46:21.380339",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (power base exp)\n  (if (= exp 0)\n    1\n    (* base (power base (- exp 1)))))\n(print (int->str (power 4 4)))",
+      "output": "256",
+      "ms": 5296
+    }
+  },
+  "49": {
+    "id": 49,
+    "cat": "recursion",
+    "name": "Сумма чётных рекурс",
+    "expected": "30",
+    "ts": "2026-09-11T23:46:26.678397",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (sum-even n)\n  (if (> n 10)\n    0\n    (+ n (sum-even (+ n 2)))))\n(print (int->str (sum-even 2)))",
+      "output": "30",
+      "ms": 5323
+    }
+  },
+  "50": {
+    "id": 50,
+    "cat": "recursion",
+    "name": "Макс рекурс.",
+    "expected": "9",
+    "ts": "2026-09-11T23:46:32.003723",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (max2 a b)\n  (if (> a b) a b))\n\n(define (max-list lst i acc)\n  (if (= i (length lst))\n    acc\n    (max-list lst (+ i 1) (max2 acc (nth lst i)))))\n\n(print (int->str (max-list (list 3 1 4 1 5 9 2 6) 0 0)))",
+      "output": "9",
+      "ms": 10665
+    }
+  },
+  "51": {
+    "id": 51,
+    "cat": "lists",
+    "name": "Длина списка",
+    "expected": "5",
+    "ts": "2026-09-11T23:46:42.671069",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (length (list 1 2 3 4 5))))",
+      "output": "5",
+      "ms": 2584
+    }
+  },
+  "52": {
+    "id": 52,
+    "cat": "lists",
+    "name": "Первый элемент",
+    "expected": "10",
+    "ts": "2026-09-11T23:46:45.256464",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (nth (list 10 20 30) 0)))",
+      "output": "10",
+      "ms": 2814
+    }
+  },
+  "53": {
+    "id": 53,
+    "cat": "lists",
+    "name": "Последний элемент",
+    "expected": "30",
+    "ts": "2026-09-11T23:46:48.072206",
+    "lupus": {
+      "status": "pass",
+      "code": "(define lst (list 10 20 30))\n(print (int->str (nth lst (- (length lst) 1))))",
+      "output": "30",
+      "ms": 3749
+    }
+  },
+  "54": {
+    "id": 54,
+    "cat": "lists",
+    "name": "Третий элемент",
+    "expected": "15",
+    "ts": "2026-09-11T23:46:51.822948",
+    "lupus": {
+      "status": "pass",
+      "code": "(define lst (list 5 10 15 20 25))\n(print (int->str (nth lst 2)))",
+      "output": "15",
+      "ms": 3888
+    }
+  },
+  "55": {
+    "id": 55,
+    "cat": "lists",
+    "name": "Сумма списка рекурс.",
+    "expected": "23",
+    "ts": "2026-09-11T23:46:55.713109",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (sum-list lst i acc)\n  (if (= i (length lst))\n    acc\n    (sum-list lst (+ i 1) (+ acc (nth lst i)))))\n\n(print (int->str (sum-list (list 3 1 4 1 5 9) 0 0)))",
+      "output": "23",
+      "ms": 7995
+    }
+  },
+  "56": {
+    "id": 56,
+    "cat": "lists",
+    "name": "Макс списка рекурс.",
+    "expected": "9",
+    "ts": "2026-09-11T23:47:03.709785",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (max2 a b)\n  (if (> a b) a b))\n\n(define (max-list lst i acc)\n  (if (= i (length lst))\n    acc\n    (max-list lst (+ i 1) (max2 acc (nth lst i)))))\n\n(print (int->str (max-list (list 3 1 4 1 5 9 2 6) 0 0)))",
+      "output": "9",
+      "ms": 10452
+    }
+  },
+  "57": {
+    "id": 57,
+    "cat": "lists",
+    "name": "Мин списка рекурс.",
+    "expected": "1",
+    "ts": "2026-09-11T23:47:14.163281",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (min-list lst i min-val)\n  (if (= i (length lst))\n    min-val\n    (if (< (nth lst i) min-val)\n      (min-list lst (+ i 1) (nth lst i))\n      (min-list lst (+ i 1) min-val))))\n\n(print (int->str (min-list (list 3 1 4 1 5 9 2 6) 0 (nth (list 3 1 4 1 5 9 2 6) 0))))",
+      "output": "1",
+      "ms": 13599
+    }
+  },
+  "58": {
+    "id": 58,
+    "cat": "lists",
+    "name": "Длина рекурс.",
+    "expected": "7",
+    "ts": "2026-09-11T23:47:27.763847",
+    "lupus": {
+      "status": "error",
+      "code": "(define (len lst i acc)\n  (if (= i (length lst))\n    acc\n    (len lst (+ i 1) (+ acc (nth lst i)))))\n(print (int->str (len (list 1 2 3 4 5 6 7) 0 0)))",
+      "output": "(length ...) требует ровно 1 аргумент, получено 3",
+      "ms": 7876
+    }
+  },
+  "59": {
+    "id": 59,
+    "cat": "lists",
+    "name": "Кол-во элементов > N",
+    "expected": "4",
+    "ts": "2026-09-11T23:47:35.641515",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (count-greater lst i acc)\n  (if (= i (length lst))\n    acc\n    (if (> (nth lst i) 4)\n      (count-greater lst (+ i 1) (+ acc 1))\n      (count-greater lst (+ i 1) acc))))\n\n(print (int->str (count-greater (list 3 7 2 9 1 5 8) 0 0)))",
+      "output": "4",
+      "ms": 11122
+    }
+  },
+  "60": {
+    "id": 60,
+    "cat": "lists",
+    "name": "Содержит ли 7",
+    "expected": "no",
+    "ts": "2026-09-11T23:47:46.765601",
+    "lupus": {
+      "status": "pass",
+      "code": "(define lst (list 3 1 4 1 5 9))\n(if (contains? lst 7)\n  (print \"yes\")\n  (print \"no\"))",
+      "output": "no",
+      "ms": 4819
+    }
+  },
+  "61": {
+    "id": 61,
+    "cat": "lists",
+    "name": "Содержит ли 5",
+    "expected": "yes",
+    "ts": "2026-09-11T23:47:51.586372",
+    "lupus": {
+      "status": "pass",
+      "code": "(define lst (list 3 1 4 1 5 9))\n(if (contains? lst 5)\n  (print \"yes\")\n  (print \"no\"))",
+      "output": "yes",
+      "ms": 4902
+    }
+  },
+  "62": {
+    "id": 62,
+    "cat": "lists",
+    "name": "Произведение списка",
+    "expected": "120",
+    "ts": "2026-09-11T23:47:56.489969",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define (product-helper i acc)\n  (if (= i 6)\n    acc\n    (product-helper (+ i 1) (* acc i))))\n\n(define (product lst)\n  (product-helper 0 1))\n\n(print (int->str (product (list 1 2 3 4 5))))",
+      "output": "0",
+      "ms": 8118
+    }
+  },
+  "63": {
+    "id": 63,
+    "cat": "lists",
+    "name": "Индекс элемента",
+    "expected": "3",
+    "ts": "2026-09-11T23:48:04.610186",
+    "lupus": {
+      "status": "pass",
+      "code": "(define lst (list 3 7 2 9 1))\n(define-mutable i 0)\n(while (< i (length lst))\n  (if (= (nth lst i) 9)\n    (print (int->str i)))\n    (set! i (+ i 1))))",
+      "output": "3",
+      "ms": 7780
+    }
+  },
+  "64": {
+    "id": 64,
+    "cat": "lists",
+    "name": "Список квадратов",
+    "expected": "16",
+    "ts": "2026-09-11T23:48:12.391593",
+    "lupus": {
+      "status": "pass",
+      "code": "(define lst (list (* 1 1) (* 1 4) (* 1 9) (* 1 16) (* 1 25)))\n(print (int->str (nth lst 3)))",
+      "output": "16",
+      "ms": 5869
+    }
+  },
+  "65": {
+    "id": 65,
+    "cat": "lists",
+    "name": "Сумма двух списков",
+    "expected": "21",
+    "ts": "2026-09-11T23:48:18.263574",
+    "lupus": {
+      "status": "error",
+      "code": "(define (sum-list lst)\n  (define-mutable total 0)\n  (define-mutable i 0)\n  (while (< i (length lst))\n    (set! total (+ total (nth lst i)))\n    (set! i (+ i 1)))\n  total)\n\n(print (int->str (+ (sum-list (list 1 2 3)) (sum-list (list 4 5 6))))",
+      "output": "Ошибка парсера: Неожиданный конец файла: ожидалась закрывающая скобка",
+      "ms": 10753
+    }
+  },
+  "66": {
+    "id": 66,
+    "cat": "strings",
+    "name": "Конкатенация",
+    "expected": "Hello World",
+    "ts": "2026-09-11T23:48:29.018044",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (string-append \"Hello\" \" World\"))",
+      "output": "Hello World",
+      "ms": 1479
+    }
+  },
+  "67": {
+    "id": 67,
+    "cat": "strings",
+    "name": "Три части",
+    "expected": "one-two-three",
+    "ts": "2026-09-11T23:48:30.499160",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (string-append \"one\" \"-\" \"two\" \"-\" \"three\"))",
+      "output": "one-two-three",
+      "ms": 2030
+    }
+  },
+  "68": {
+    "id": 68,
+    "cat": "strings",
+    "name": "Число в строку",
+    "expected": "42",
+    "ts": "2026-09-11T23:48:32.530949",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (string-append \"42\"))",
+      "output": "42",
+      "ms": 1286
+    }
+  },
+  "69": {
+    "id": 69,
+    "cat": "strings",
+    "name": "Строка + число",
+    "expected": "Result: 99",
+    "ts": "2026-09-11T23:48:33.818783",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (string-append \"Result: \" (int->str 99)))",
+      "output": "Result: 99",
+      "ms": 2195
+    }
+  },
+  "70": {
+    "id": 70,
+    "cat": "strings",
+    "name": "Повтор строки",
+    "expected": "ha\nha\nha\nha",
+    "ts": "2026-09-11T23:48:36.016047",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 0)\n(while (< i 4)\n  (print \"ha\")\n  (set! i (+ i 1)))",
+      "output": "ha\nha\nha\nha",
+      "ms": 4136
+    }
+  },
+  "71": {
+    "id": 71,
+    "cat": "strings",
+    "name": "Приветствие",
+    "expected": "Hello, Lupus!",
+    "ts": "2026-09-11T23:48:40.153955",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (greet name)\n  (print (string-append \"Hello, \" name \"!\")))\n(greet \"Lupus\")",
+      "output": "Hello, Lupus!",
+      "ms": 3489
+    }
+  },
+  "72": {
+    "id": 72,
+    "cat": "strings",
+    "name": "Сумма → строка",
+    "expected": "12",
+    "ts": "2026-09-11T23:48:43.645182",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print (string-append \"3\" \"+\" \"4\" \"+\" \"5\"))",
+      "output": "3+4+5",
+      "ms": 2075
+    }
+  },
+  "73": {
+    "id": 73,
+    "cat": "strings",
+    "name": "Факториал → строка",
+    "expected": "Result: 720",
+    "ts": "2026-09-11T23:48:45.722302",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define-mutable result 1)\n(define-mutable i 0)\n(while (< i 6)\n  (set! result (* result i))\n  (set! i (+ i 1)))\n(print (string-append \"Result: \" (int->str result)))",
+      "output": "Result: 0",
+      "ms": 6869
+    }
+  },
+  "74": {
+    "id": 74,
+    "cat": "strings",
+    "name": "Числа со строкой",
+    "expected": "Step 1\nStep 2\nStep 3",
+    "ts": "2026-09-11T23:48:52.593486",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define-mutable i 0)\n(while (< i 3)\n  (print (string-append \"Step \" (int->str i)))\n  (set! i (+ i 1)))",
+      "output": "Step 0\nStep 1\nStep 2",
+      "ms": 5003
+    }
+  },
+  "75": {
+    "id": 75,
+    "cat": "strings",
+    "name": "FizzBuzz 1..10 упрощ.",
+    "expected": "1\n2\nFizz\n4\n5\nFizz\n7\n8\nFizz\n10",
+    "ts": "2026-09-11T23:48:57.598063",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 1)\n(while (<= i 10)\n  (if (= (% i 3) 0)\n    (print \"Fizz\")\n    (print (int->str i)))\n  (set! i (+ i 1)))",
+      "output": "1\n2\nFizz\n4\n5\nFizz\n7\n8\nFizz\n10",
+      "ms": 6843
+    }
+  },
+  "76": {
+    "id": 76,
+    "cat": "combined",
+    "name": "Простое число 7",
+    "expected": "prime",
+    "ts": "2026-09-11T23:49:04.443287",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (is-prime n)\n  (if (< n 2)\n    false\n    (begin\n      (define-mutable i 2)\n      (define-mutable prime true)\n      (while (and (< i n) prime)\n        (if (= (% n i) 0)\n          (set! prime false)\n          (set! i (+ i 1))))\n      prime)))\n\n(if (is-prime 7)\n  (print \"prime\")\n  (print \"not prime\"))",
+      "output": "prime",
+      "ms": 12730
+    }
+  },
+  "77": {
+    "id": 77,
+    "cat": "combined",
+    "name": "Простое число 9",
+    "expected": "not prime",
+    "ts": "2026-09-11T23:49:17.175011",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (is-prime n)\n  (if (< n 2)\n    false\n    (begin\n      (define-mutable i 2)\n      (define-mutable prime true)\n      (while (and (< i n) prime)\n        (if (= (% n i) 0)\n          (set! prime false)\n          (set! i (+ i 1))))\n      prime)))\n\n(if (is-prime 9)\n  (print \"prime\")\n  (print \"not prime\"))",
+      "output": "not prime",
+      "ms": 12698
+    }
+  },
+  "78": {
+    "id": 78,
+    "cat": "combined",
+    "name": "Акерман(2,3)",
+    "expected": "9",
+    "ts": "2026-09-11T23:49:29.875498",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (ack m n)\n  (if (= m 0)\n    (+ n 1)\n    (if (= n 0)\n      (ack (- m 1) 1)\n      (ack (- m 1) (ack m (- n 1))))))\n(print (int->str (ack 2 3)))",
+      "output": "9",
+      "ms": 8573
+    }
+  },
+  "79": {
+    "id": 79,
+    "cat": "combined",
+    "name": "Коллатц шаги для 6",
+    "expected": "8",
+    "ts": "2026-09-11T23:49:38.450677",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define-mutable n 6)\n(define-mutable count 0)\n(while (= n 1)\n  (if (= (% n 3) 0)\n    (set! n (/ n 2))\n    (set! n (+ (* 3 n) 1))))\n  (set! count (+ count 1)))\n(print (int->str count))",
+      "output": "1",
+      "ms": 9353
+    }
+  },
+  "80": {
+    "id": 80,
+    "cat": "combined",
+    "name": "Замыкание счётчик",
+    "expected": "1\n2\n3",
+    "ts": "2026-09-11T23:49:47.806079",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define-mutable n 0)\n(define-mutable f (lambda () (+ n 1)))\n(print (int->str (f)))\n(print (int->str (f)))\n(print (int->str (f)))",
+      "output": "1\n1\n1",
+      "ms": 5602
+    }
+  },
+  "81": {
+    "id": 81,
+    "cat": "combined",
+    "name": "Лямбда + вызов",
+    "expected": "42",
+    "ts": "2026-09-11T23:49:53.410023",
+    "lupus": {
+      "status": "pass",
+      "code": "(define double (lambda (x) (* x 2)))\n(print (int->str (double 21)))",
+      "output": "42",
+      "ms": 3066
+    }
+  },
+  "82": {
+    "id": 82,
+    "cat": "combined",
+    "name": "Высш. порядок: map",
+    "expected": "2\n4\n6\n8\n10",
+    "ts": "2026-09-11T23:49:56.478773",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (double x) (* x 2))\n(define lst (list 1 2 3 4 5))\n(define-mutable i 0)\n(while (< i (length lst))\n  (print (int->str (double (nth lst i))))\n  (set! i (+ i 1)))",
+      "output": "2\n4\n6\n8\n10",
+      "ms": 7969
+    }
+  },
+  "83": {
+    "id": 83,
+    "cat": "combined",
+    "name": "Высш. порядок: filter",
+    "expected": "3\n6\n9",
+    "ts": "2026-09-11T23:50:04.450382",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 1)\n(while (<= i 10)\n  (if (= (% i 3) 0)\n    (print (int->str i))\n    (begin))\n    (set! i (+ i 1)))",
+      "output": "3\n6\n9",
+      "ms": 6538
+    }
+  },
+  "84": {
+    "id": 84,
+    "cat": "combined",
+    "name": "Накопление fold",
+    "expected": "15",
+    "ts": "2026-09-11T23:50:10.990865",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (sum-list lst i acc)\n  (if (= i (length lst))\n    acc\n    (sum-list lst (+ i 1) (+ acc (nth lst i)))))\n(print (int->str (sum-list (list 1 2 3 4 5) 0 0)))",
+      "output": "15",
+      "ms": 7766
+    }
+  },
+  "85": {
+    "id": 85,
+    "cat": "combined",
+    "name": "Взаимная рекурсия",
+    "expected": "even",
+    "ts": "2026-09-11T23:50:18.758725",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (is-even n)\n  (if (= n 0)\n    true\n    (is-odd (- n 1))))\n\n(define (is-odd n)\n  (if (= n 0)\n    false\n    (is-even (- n 1))))\n\n(if (is-even 4)\n  (print \"even\")\n  (print \"odd\"))",
+      "output": "even",
+      "ms": 10511
+    }
+  },
+  "86": {
+    "id": 86,
+    "cat": "combined",
+    "name": "Отсчёт + строка",
+    "expected": "T-3\nT-2\nT-1\nLaunch!",
+    "ts": "2026-09-11T23:50:29.271523",
+    "lupus": {
+      "status": "error",
+      "code": "(define-mutable i 0)\n(while (< i 4)\n  (print (string-append \"T-\" (- i 3)))\n  (print \"Launch!\")\n  (set! i (+ i 1)))",
+      "output": "string-append требует строковых аргументов",
+      "ms": 6612
+    }
+  },
+  "87": {
+    "id": 87,
+    "cat": "combined",
+    "name": "Мемоизация",
+    "expected": "55",
+    "ts": "2026-09-11T23:50:35.885597",
+    "lupus": {
+      "status": "error",
+      "code": "(define-mutable fib (list 0 1))\n(define-mutable i 2)\n(while (< i 10)\n  (set! fib (cons (+ (* fib (- i 1)) 1)))\n  (set! i (+ i 1)))\n(print (int->str (nth fib 9)))",
+      "output": "* требует целых чисел",
+      "ms": 9079
+    }
+  },
+  "88": {
+    "id": 88,
+    "cat": "combined",
+    "name": "Числа делятся на 5",
+    "expected": "5\n10\n15\n20\n25\n30\n35\n40\n45\n50",
+    "ts": "2026-09-11T23:50:44.967389",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable i 5)\n(while (<= i 50)\n  (print (int->str i))\n  (set! i (+ i 5)))",
+      "output": "5\n10\n15\n20\n25\n30\n35\n40\n45\n50",
+      "ms": 4735
+    }
+  },
+  "89": {
+    "id": 89,
+    "cat": "combined",
+    "name": "Сумма факториалов",
+    "expected": "33",
+    "ts": "2026-09-11T23:50:49.704386",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (factorial n)\n  (if (= n 0)\n    1\n    (* n (factorial (- n 1)))))\n\n(print (int->str (+ (factorial 1) (factorial 2) (factorial 3) (factorial 4))))",
+      "output": "33",
+      "ms": 7354
+    }
+  },
+  "90": {
+    "id": 90,
+    "cat": "combined",
+    "name": "Числа Люка",
+    "expected": "29",
+    "ts": "2026-09-11T23:50:57.060310",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (l n)\n  (if (= n 0)\n    2\n    (if (= n 1)\n      1\n      (+ (l (- n 1)) (l (- n 2)))))))\n(print (int->str (l 7)))",
+      "output": "29",
+      "ms": 6948
+    }
+  },
+  "91": {
+    "id": 91,
+    "cat": "combined",
+    "name": "Биномиальный коэф.",
+    "expected": "10",
+    "ts": "2026-09-11T23:51:04.010782",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define (pascal n k)\n  (if (= n 0)\n    1\n    (if (= k 0)\n      1\n      (pascal (- n 1) (+ k 1)))))\n\n(print (int->str (pascal 5 2)))",
+      "output": "1",
+      "ms": 7557
+    }
+  },
+  "92": {
+    "id": 92,
+    "cat": "combined",
+    "name": "Кол-во цифр",
+    "expected": "5",
+    "ts": "2026-09-11T23:51:11.570233",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable n 12345)\n(define-mutable count 0)\n(while (> n 0)\n  (set! count (+ count 1))\n  (set! n (/ n 10)))\n(print (int->str count))",
+      "output": "5",
+      "ms": 6764
+    }
+  },
+  "93": {
+    "id": 93,
+    "cat": "combined",
+    "name": "Палиндром 121",
+    "expected": "yes",
+    "ts": "2026-09-11T23:51:18.336620",
+    "lupus": {
+      "status": "error",
+      "code": "(define (is-palindrome n)\n  (define-mutable i 0)\n  (define-mutable temp n)\n  (while (< i len)\n    (if (= (% temp 10) (* i 10))\n      (set! temp (/ temp 10))\n      (set! temp (+ (* i 10) (% temp 10))))\n    (set! i (+ i 1)))\n  true)\n\n(if (is-palindrome 121)\n  (print \"yes\")\n  (print \"no\"))",
+      "output": "Переменная 'len' не определена. Возможно, вы имели в виду: 'n'",
+      "ms": 14181
+    }
+  },
+  "94": {
+    "id": 94,
+    "cat": "combined",
+    "name": "Не палиндром 123",
+    "expected": "no",
+    "ts": "2026-09-11T23:51:32.520525",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (is-palindrome n)\n  (define-mutable rev 0)\n  (define-mutable temp n)\n  (while (> temp 0)\n    (set! rev (+ (* rev 10) (% temp 10)))\n    (set! temp (/ temp 10)))\n  (= rev n))\n\n(if (is-palindrome 123)\n  (print \"yes\")\n  (print \"no\"))",
+      "output": "no",
+      "ms": 11223
+    }
+  },
+  "95": {
+    "id": 95,
+    "cat": "combined",
+    "name": "Минимум 3 чисел",
+    "expected": "3",
+    "ts": "2026-09-11T23:51:43.745507",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (min3 a b c)\n  (if (< a b)\n    (if (< a c) a c)\n    (if (< b c) b c)))\n(print (int->str (min3 17 3 42)))",
+      "output": "3",
+      "ms": 6530
+    }
+  },
+  "96": {
+    "id": 96,
+    "cat": "combined",
+    "name": "Среднее списка",
+    "expected": "25",
+    "ts": "2026-09-11T23:51:50.277684",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define (avg lst i acc)\n  (if (= i (length lst))\n    acc\n    (avg lst (+ i 1) (+ acc (nth lst i)))))\n(print (int->str (avg (list 10 20 30 40) 0 0)))",
+      "output": "100",
+      "ms": 7774
+    }
+  },
+  "97": {
+    "id": 97,
+    "cat": "combined",
+    "name": "N-й треугольный",
+    "expected": "28",
+    "ts": "2026-09-11T23:51:58.054424",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable sum 0)\n(define-mutable i 1)\n(while (<= i 7)\n  (set! sum (+ sum i))\n  (set! i (+ i 1)))\n(print (int->str sum))",
+      "output": "28",
+      "ms": 6199
+    }
+  },
+  "98": {
+    "id": 98,
+    "cat": "combined",
+    "name": "Сумма простых до 20",
+    "expected": "77",
+    "ts": "2026-09-11T23:52:04.255624",
+    "lupus": {
+      "status": "timeout",
+      "code": "(define-mutable sum 0)\n(define-mutable i 2)\n(while (<= i 20)\n  (if (= (% i 2) 0)\n    (set! sum (+ sum i))\n    (begin)))\n  (set! i (+ i 1)))\n(print (int->str sum))",
+      "output": "TIMEOUT",
+      "ms": 18281
+    }
+  },
+  "99": {
+    "id": 99,
+    "cat": "combined",
+    "name": "Инверсия числа",
+    "expected": "54321",
+    "ts": "2026-09-11T23:52:22.539295",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable n 12345)\n(define-mutable rev 0)\n(while (> n 0)\n  (set! rev (+ (* rev 10) (% n 10)))\n  (set! n (/ n 10)))\n(print (int->str rev))",
+      "output": "54321",
+      "ms": 8243
+    }
+  },
+  "100": {
+    "id": 100,
+    "cat": "combined",
+    "name": "Числа Падована",
+    "expected": "9",
+    "ts": "2026-09-11T23:52:30.785192",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define-mutable p0 1)\n(define-mutable p1 1)\n(define-mutable p2 1)\n(define-mutable i 3)\n(while (<= i 9)\n  (set! p2 (+ p0 p1))\n  (set! p0 p1)\n  (set! p1 p2)\n  (set! i (+ i 1)))\n(print (int->str p2))",
+      "output": "34",
+      "ms": 10968
+    }
+  }
+}
