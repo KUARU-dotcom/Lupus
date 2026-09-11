@@ -1,0 +1,63 @@
+;; v03_demo.lupus
+;; Демонстрация возможностей V0.3: cond, for, list-map, match,
+;; а также range, some, let и if-let.
+
+;; Классификация числа через cond с else.
+(define (classify n)
+  (cond ((< n 0) "negative")
+        ((= n 0) "zero")
+        (else "positive")))
+
+(define numbers (range -3 4))
+(print "numbers: ")
+(print numbers)
+
+;; list-map: удвоение каждого элемента.
+(print "doubled: ")
+(print (list-map numbers (lambda (x) (* x 2))))
+
+;; list-filter по чётности.
+(print "even: ")
+(print (list-filter numbers (lambda (x) (= 0 (mod x 2)))))
+
+;; for по range — сумма от 1 до 10.
+(define-mutable total 0)
+(for i in (range 1 11)
+    (set! total (+ total i)))
+(print "sum 1..10 = ")
+(print total)
+
+;; for + cond + печать классификаций.
+(for n in (range -2 3)
+    (print (classify n)))
+
+;; match по (some v).
+(print (match (some 42)
+    (none "nothing")
+    ((some v) (int->str v))
+    (_ "unknown")))
+
+;; match по failure.
+(print (match (failure "boom")
+    ((success v) v)
+    ((failure msg) (string-append "error: " msg))
+    (_ "?")))
+
+;; let с параллельными связями.
+(let ((a 3) (b 4))
+  (print (+ a b)))
+
+;; if-let с some и none.
+(if-let (v (some 7))
+  (print (* v 2))
+  (print 0))
+
+(if-let (v none)
+  (print 1)
+  (print "if-let none branch ok"))
+
+;; str->int: успех и none.
+(print (str->int "99"))
+(print (if-let (v (str->int "xyz")) v "nan"))
+
+(print "done")

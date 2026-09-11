@@ -1,0 +1,24 @@
+FROM debian:bookworm-slim AS builder
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y ca-certificates curl build-essential gcc-mingw-w64-x86-64 zip \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+
+ENV PATH="/root/.cargo/bin:${PATH}"
+WORKDIR /src
+
+COPY Cargo.toml Cargo.lock ./
+RUN rustup target add x86_64-unknown-linux-gnu x86_64-pc-windows-gnu
+COPY src ./src
+
+RUN cargo build --release --target x86_64-unknown-linux-gnu \
+    && cargo build --release --target x86_64-pc-windows-gnu \
+    && mkdir -p /out \
+    && tar -C target/x86_64-unknown-linux-gnu/release -czf /out/lupus-linux-x86_64.tar.gz lupus \
+    && zip -j /out/lupus-windows-x86_64.zip target/x86_64-pc-windows-gnu/release/lupus.exe \
+    && cp target/x86_64-unknown-linux-gnu/release/lupus /out/lupus-linux-x86_64 \
+    && cp target/x86_64-pc-windows-gnu/release/lupus.exe /out/lupus-windows-x86_64.exe
+
+FROM scratch AS release
+COPY --from=builder /out/ /out/

@@ -123,8 +123,40 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 _ => {
-                    value.push(ch as char);
-                    self.next();
+                    let b = ch;
+                    // Длина UTF-8-последовательности по ведущему байту.
+                    let len = if b < 0x80 {
+                        1
+                    } else if b < 0xE0 {
+                        2
+                    } else if b < 0xF0 {
+                        3
+                    } else {
+                        4
+                    };
+                    // Собираем полную последовательность байтов и декодируем её
+                    // как единый code point (иначе многобайтовые UTF-8 символы
+                    // превращались бы в отдельные Latin-1-подобные символы).
+                    let mut bytes = [0u8; 4];
+                    let mut got = 0;
+                    for slot in bytes.iter_mut().take(len) {
+                        if let Some(byte) = self.peek() {
+                            *slot = byte;
+                            self.next();
+                            got += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    match std::str::from_utf8(&bytes[..got])
+                        .ok()
+                        .and_then(|s| s.chars().next())
+                    {
+                        Some(c) => value.push(c),
+                        None => {
+                            return Err(self.error("Некорректная UTF-8 последовательность в строке"))
+                        }
+                    }
                 }
             }
         }

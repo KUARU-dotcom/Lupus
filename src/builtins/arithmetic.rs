@@ -108,3 +108,82 @@ pub fn rem(args: &[Value]) -> Result<Value, Error> {
     }
     Ok(Value::Int(dividend % divisor))
 }
+
+/// Возведение в степень `(pow основание показатель)`.
+///
+/// Показатель должен быть неотрицательным.
+///
+/// # Ошибки
+/// — не ровно два аргумента;
+/// — аргумент не является целым числом;
+/// — отрицательный показатель;
+/// — переполнение результата.
+pub fn pow(args: &[Value]) -> Result<Value, Error> {
+    if args.len() != 2 {
+        return Err(Error::new(format!(
+            "(pow ...) требует ровно 2 аргумента, получено {}",
+            args.len()
+        )));
+    }
+    let base = as_int(&args[0], "pow")?;
+    let exp = as_int(&args[1], "pow")?;
+    if exp < 0 {
+        return Err(Error::new(
+            "pow: показатель степени не может быть отрицательным",
+        ));
+    }
+    let result = base
+        .checked_pow(exp as u32)
+        .ok_or_else(|| Error::new("Переполнение при возведении в степень"))?;
+    Ok(Value::Int(result))
+}
+
+/// Минимум двух целых чисел `(min a b)`.
+///
+/// # Ошибки
+/// — не ровно два аргумента;
+/// — аргумент не является целым числом.
+pub fn min(args: &[Value]) -> Result<Value, Error> {
+    if args.len() != 2 {
+        return Err(Error::new(format!(
+            "(min ...) требует ровно 2 аргумента, получено {}",
+            args.len()
+        )));
+    }
+    let a = as_int(&args[0], "min")?;
+    let b = as_int(&args[1], "min")?;
+    Ok(Value::Int(a.min(b)))
+}
+
+/// Максимум двух целых чисел `(max a b)`.
+///
+/// # Ошибки
+/// — не ровно два аргумента;
+/// — аргумент не является целым числом.
+pub fn max(args: &[Value]) -> Result<Value, Error> {
+    if args.len() != 2 {
+        return Err(Error::new(format!(
+            "(max ...) требует ровно 2 аргумента, получено {}",
+            args.len()
+        )));
+    }
+    let a = as_int(&args[0], "max")?;
+    let b = as_int(&args[1], "max")?;
+    Ok(Value::Int(a.max(b)))
+}
+
+/// Абсолютная величина целого числа `(abs число)`.
+///
+/// # Ошибки
+/// — не ровно один аргумент;
+/// — аргумент не является целым числом.
+pub fn abs(args: &[Value]) -> Result<Value, Error> {
+    if args.len() != 1 {
+        return Err(Error::new(format!(
+            "(abs ...) требует ровно 1 аргумент, получено {}",
+            args.len()
+        )));
+    }
+    let a = as_int(&args[0], "abs")?;
+    Ok(Value::Int(a.abs()))
+}
