@@ -27,7 +27,7 @@ V0.3 — крупное расширение языка поверх V0.2. До�
 | `Result`: `success`/`failure` | `(success 1)`, `(failure "boom")` |
 | `print` любого значения | `(print (failure "boom"))` → `(failure "boom")` |
 
-Полный набор возможностей и семантику см. в [спецификации](./Lupus_V1.0_Specification_Russian.md).
+Полный набор возможностей и семантику см. в [спецификации](./docs/specification-v1.0.md).
 
 ## Исправление UTF-8
 
@@ -64,4 +64,4 @@ python validate_tasks.py      # PASSED: 100/100
 - `examples/v03_demo.lupus` — демонстрация возможностей V0.3.
 - `run_experiment.py` / `validate_tasks.py` / `tasks.json` — инструменты бенчмарка.
 - `results_*.json` — результаты экспериментов на LM Studio.
-- `legacy/` — материалы предыдущих фаз (см. также [спецификацию](./Lupus_V1.0_Specification_Russian.md)).
+- `legacy/` — материалы предыдущих фаз (см. также [спецификацию](./docs/specification-v1.0.md)).

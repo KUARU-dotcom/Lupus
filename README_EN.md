@@ -26,7 +26,7 @@ lists, type-safe `Option` and `Result`, string facilities, and additional arithm
 | `Result`: `success`/`failure` | `(success 1)`, `(failure "boom")` |
 | `print` of any value | `(print (failure "boom"))` → `(failure "boom")` |
 
-See the [specification](./Lupus_V1.0_Specification_Russian.md) for the full feature set and semantics.
+See the [specification](./docs/specification-v1.0.md) for the full feature set and semantics.
 
 ## UTF-8 fix
 
@@ -62,4 +62,4 @@ python validate_tasks.py      # PASSED: 100/100
 - `examples/v03_demo.lupus` — V0.3 feature demo.
 - `run_experiment.py` / `validate_tasks.py` / `tasks.json` — benchmark tooling.
 - `results_*.json` — LM Studio experiment results.
-- `legacy/` — materials from earlier phases (see also the [specification](./Lupus_V1.0_Specification_Russian.md)).
+- `legacy/` — materials from earlier phases (see also the [specification](./docs/specification-v1.0.md)).
