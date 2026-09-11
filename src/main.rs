@@ -19,6 +19,12 @@ fn main() {
     // сгенерённом моделью, игнорируются с предупреждением в stderr.
     let lenient = args.iter().any(|a| a == "--lenient-parens");
 
+    // Флаг `--version` / `-V` печатает версию и завершает работу.
+    if args.iter().any(|a| a == "--version" || a == "-V") {
+        println!("Lupus {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
     // Файлы — все аргументы, не начинающиеся с `-`.
     let files: Vec<String> = args
         .iter()
