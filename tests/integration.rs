@@ -918,3 +918,47 @@ fn v04_error_accessor_non_struct_arg() {
     let msg = run_err("(defstruct point (x int) (y int)) (point-x 7)");
     assert!(msg.contains("чужой структуре"), "{}", msg);
 }
+
+// ─── V0.4: Loop/exit (ЭТАП 4) ─────────────────────────────────────────────────
+
+/// Запускает программу через бинарник, возвращая (stdout, код выхода).
+fn run_bin_status(src: &str) -> (String, i32) {
+    let n = FILE_COUNTER.fetch_add(1, Ordering::SeqCst);
+    let file = std::env::temp_dir().join(format!("lupus_loop_{}_{}.lupus", std::process::id(), n));
+    std::fs::write(&file, src).expect("не удалось записать тестовый файл");
+    let out = Command::new(env!("CARGO_BIN_EXE_lupus"))
+        .arg(&file)
+        .output()
+        .expect("не удалось запустить интерпретатор");
+    let _ = std::fs::remove_file(&file);
+    (
+        String::from_utf8_lossy(&out.stdout).to_string(),
+        out.status.code().unwrap_or(-1),
+    )
+}
+
+#[test]
+fn v04_loop_exit_zero() {
+    let (out, code) = run_bin_status("(loop (exit 0))");
+    assert_eq!(out, "");
+    assert_eq!(code, 0);
+}
+
+#[test]
+fn v04_loop_prints_then_exit_zero() {
+    let src = "
+        (define-mutable i 0)
+        (loop
+            (set! i (+ i 1))
+            (if (= i 3) (exit 0))
+            (print i))";
+    let (out, code) = run_bin_status(src);
+    assert_eq!(out, "1\n2\n");
+    assert_eq!(code, 0);
+}
+
+#[test]
+fn v04_error_exit_non_integer() {
+    let msg = run_err("(exit \"x\")");
+    assert!(msg.contains("целого числа"), "{}", msg);
+}

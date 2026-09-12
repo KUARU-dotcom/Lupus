@@ -116,6 +116,8 @@ impl Interpreter {
                 "lambda" => return self.do_lambda(rest, env),
                 "if" => return self.do_if(rest, env),
                 "while" => return self.do_while(rest, env),
+                "loop" => return self.do_loop(rest, env),
+                "exit" => return self.do_exit(rest, env),
                 "begin" => return self.do_begin(rest, env),
                 "and" => return self.do_and(rest, env),
                 "or" => return self.do_or(rest, env),
@@ -841,6 +843,30 @@ impl Interpreter {
         }
 
         Ok(result)
+    }
+
+    /// (loop тело...) — бесконечный цикл. Выход — только через `(exit n)`.
+    fn do_loop(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
+        loop {
+            for form in rest {
+                self.eval(form, env.clone())?;
+            }
+        }
+    }
+
+    /// (exit n) — немедленно завершает процесс с кодом n.
+    fn do_exit(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
+        if rest.len() != 1 {
+            return Err(Error::new(format!(
+                "(exit ...) требует ровно 1 аргумент, получено {}",
+                rest.len()
+            )));
+        }
+        let code = match self.eval(&rest[0], env)? {
+            Value::Int(c) => c,
+            _ => return Err(Error::new("exit требует целого числа")),
+        };
+        std::process::exit(code as i32);
     }
 
     /// (begin форма...).
