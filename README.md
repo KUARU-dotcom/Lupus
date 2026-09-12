@@ -1,43 +1,47 @@
-# Lupus V0.3
+# Lupus V0.4
 
-Репозиторий прототипа интерпретатора [Lupus](https://github.com/KUARU-dotcom/Lupus) (фаза V0.3).
-Дистрибутивы и релизные артефакты V0.3 лежат в `dist/` (см. раздел «Сборка»).
+Репозиторий прототипа интерпретатора [Lupus](https://github.com/KUARU-dotcom/Lupus) (фаза V0.4).
+Дистрибутивы и релизные артефакты V0.4 лежат в `dist/` (см. раздел «Сборка»).
 
-## Что нового в V0.3
+## Что нового в V0.4
 
-V0.3 — крупное расширение языка поверх V0.2. Добавлены условная конструкция `cond`,
-циклы `for`/`range`, локальные связывания `let`, сопоставление `match`, `if-let`,
-утверждения `assert`, функции высшего порядка для списков, типобезопасные `Option`
-и `Result`, работа со строками и дополнительные арифметические функции.
+V0.4 добавляет поверх V0.3 числа с плавающей точкой, кортежи, пользовательские
+структуры (`defstruct`), цикл `loop`/`exit`, а также тест-систему LiF — выпускные
+ворота релиза.
 
 | Возможность | Пример |
 |-------------|--------|
-| `cond` (многоусловный ветвитель) | `(cond ((< n 0) "neg") (else "pos"))` |
-| `for … in (range …)` | `(for i in (range 1 11) (print i))` |
-| `let` (локальные связывания) | `(let ((a 3) (b 4)) (+ a b))` |
-| `match` (сопоставление с образцом) | `(match (some 42) (none 0) ((some v) v))` |
-| `if-let` (условное связывание) | `(if-let (v (some 7)) (* v 2) 0)` |
-| `assert` (утверждения) | `(assert (> x 0) "x должен быть > 0")` |
-| Списки: `cons`/`head`/`tail`/`empty?`/`append` | `(cons 1 (list 2 3))` |
-| `list-map`/`list-filter`/`list-fold` | `(list-map (list 1 2 3) (lambda (x) (* x 2)))` |
-| Строки: `string-length`/`split`/`reverse` | `(string-reverse "abc")` |
-| `str->int` (Option) | `(str->int "42")` → `(some 42)` |
-| Арифметика: `pow`/`min`/`max`/`abs`/`mod` | `(pow 2 10)` |
-| `Option`: `some`/`none` | `(some 42)`, `none` |
-| `Result`: `success`/`failure` | `(success 1)`, `(failure "boom")` |
-| `print` любого значения | `(print (failure "boom"))` → `(failure "boom")` |
+| Float: литералы и арифметика | `(+ 1.5 2.25)` → `3.75` |
+| Float: деление IEEE | `(/ 1.0 0.0)` → `inf`, `(/ 1.0 (- 0.0))` → `-inf` |
+| Float: конверсии | `(int->float 7)`, `(float->int 3.7)` → `3`, `(str->float "3.5")` |
+| Float: равенство | `(= 1 1.0)` → `false` |
+| Tuple: кортежи | `(tuple 1 "a" true)` |
+| Tuple: match-паттерн | `(match t ((tuple a b c) ...))` |
+| `defstruct`: структуры | `(defstruct point (x int) (y int))` |
+| Аксессоры | `(point-x p)`, `(point-y p)` |
+| `loop` / `exit` | `(loop ... (exit 0))` |
 
 Полный набор возможностей и семантику см. в [спецификации](./docs/specification-v1.0.md).
 
-## Исправление UTF-8
+## Тест-система LiF (выпускные ворота)
 
-В V0.2 была обнаружена проблема с разбором строковых литералов в UTF-8
-(подробности обсуждались в Discussions репозитория). В V0.3 баг устранён
-в лексере: строки с кириллицей и эмодзи корректно читаются и печатаются.
+LiF (Lupus in Fabula) — набор интеграционных тестов, которые становятся
+выпускными воротами релиза. Прогоняется одной командой:
 
-```lisp
-(print "привет 🐺")   ; → привет 🐺
+```bash
+cargo test
 ```
+
+Структура:
+
+- `tests/golden/<имя>.lupus` + `<имя>.expected` — позитивные тесты: точное
+  совпадение stdout байт-в-байт, код выхода 0.
+- `tests/negative/<имя>.lupus` + `<имя>.error` — негативные тесты: подстрока
+  сообщения об ошибке, код выхода обязан быть ненулевым.
+- `tests/coverage_map.toml` — карта покрытия: каждый реализованный символ
+  (спецформы + builtins + фичи V0.4) → списки `positive` и `negative`.
+- `tests/lif.rs` — харнес: обходит golden/ и negative/, сверяет вывод и коды
+  выхода, проверяет карту покрытия. Падение любого файла проваливает тест.
 
 ## Сборка
 
@@ -45,13 +49,13 @@ V0.3 — крупное расширение языка поверх V0.2. До�
 
 ```bash
 cargo build --release
-./target/release/lupus examples/v03_demo.lupus
+./target/release/lupus examples/v04_demo.lupus
 ```
 
-Тесты (74: 72 integration + 2 doc) и проверки:
+Тесты и проверки:
 
 ```bash
-cargo test --release
+cargo test
 cargo clippy --all-targets
 cargo fmt --check
 python validate_tasks.py      # PASSED: 100/100
@@ -61,7 +65,8 @@ python validate_tasks.py      # PASSED: 100/100
 
 - `src/` — исходный код интерпретатора на Rust.
 - `tests/integration.rs` — интеграционные тесты.
-- `examples/v03_demo.lupus` — демонстрация возможностей V0.3.
+- `tests/lif.rs` + `tests/{golden,negative}/` + `tests/coverage_map.toml` — тест-система LiF.
+- `examples/v03_demo.lupus`, `examples/v04_demo.lupus` — демонстрации.
 - `run_experiment.py` / `validate_tasks.py` / `tasks.json` — инструменты бенчмарка.
 - `results_*.json` — результаты экспериментов на LM Studio.
 - `legacy/` — материалы предыдущих фаз (см. также [спецификацию](./docs/specification-v1.0.md)).

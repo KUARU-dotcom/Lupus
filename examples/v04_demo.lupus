@@ -1,0 +1,43 @@
+;; v04_demo.lupus
+;; Демонстрация возможностей V0.4: float, tuple, defstruct, match.
+
+;; ── Float ────────────────────────────────────────────────────────────────────
+(print "Float:")
+(print (+ 1.5 2.25))
+(print (* 2.0 3.0))
+(print (/ 6.0 2.0))
+(print (/ 1.0 0.0))        ; inf (IEEE)
+(print (float->int 3.7))   ; 3 (усечение к нулю)
+(print (float->int -3.7))  ; -3
+(print (int->float 7))     ; 7.0
+(print (= 1 1.0))          ; false — int не равен float
+(print (str->float "2.5")) ; (some 2.5)
+
+;; ── Tuple ───────────────────────────────────────────────────────────────────
+(print "Tuple:")
+(define pair (tuple "x" 42))
+(print pair)
+(print (match pair
+    ((tuple s n) (string-append s "=" (int->str n)))
+    (_ "unknown")))
+
+;; ── Defstruct ───────────────────────────────────────────────────────────────
+(print "Defstruct:")
+(defstruct point (x int) (y int))
+(define p (point 10 20))
+(print p)
+(print (point-x p))
+(print (point-y p))
+
+;; ── match + defstruct ────────────────────────────────────────────────────────
+(print (match p
+    ((point a b) (+ a b))
+    (_ 0)))
+
+;; ── Loop / exit ─────────────────────────────────────────────────────────────
+(define-mutable i 0)
+(loop
+    (set! i (+ i 1))
+    (if (= i 3) (exit 0))
+    (print i))
+(print "done (never printed, exit inside loop)")

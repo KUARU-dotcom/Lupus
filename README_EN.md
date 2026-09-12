@@ -1,41 +1,46 @@
-# Lupus V0.3
+# Lupus V0.4
 
-Prototype interpreter repository for [Lupus](https://github.com/KUARU-dotcom/Lupus) (V0.3 phase).
-V0.3 release artifacts are placed under `dist/` (see "Build" below).
+Prototype interpreter repository for [Lupus](https://github.com/KUARU-dotcom/Lupus) (V0.4 phase).
+V0.4 release artifacts are placed under `dist/` (see "Build" below).
 
-## What's new in V0.3
+## What's new in V0.4
 
-V0.3 is a major language extension on top of V0.2: the `cond` conditional, `for`/`range` loops,
-`let` local bindings, `match` pattern matching, `if-let`, `assert`, higher-order functions for
-lists, type-safe `Option` and `Result`, string facilities, and additional arithmetic functions.
+V0.4 adds, on top of V0.3: floating-point numbers, tuples, user-defined structs
+(`defstruct`), a `loop`/`exit` cycle, and the LiF test system — the release gates.
 
 | Feature | Example |
 |---------|---------|
-| `cond` (multi-branch conditional) | `(cond ((< n 0) "neg") (else "pos"))` |
-| `for … in (range …)` | `(for i in (range 1 11) (print i))` |
-| `let` (local bindings) | `(let ((a 3) (b 4)) (+ a b))` |
-| `match` (pattern matching) | `(match (some 42) (none 0) ((some v) v))` |
-| `if-let` (conditional binding) | `(if-let (v (some 7)) (* v 2) 0)` |
-| `assert` (assertions) | `(assert (> x 0) "x must be > 0")` |
-| Lists: `cons`/`head`/`tail`/`empty?`/`append` | `(cons 1 (list 2 3))` |
-| `list-map`/`list-filter`/`list-fold` | `(list-map (list 1 2 3) (lambda (x) (* x 2)))` |
-| Strings: `string-length`/`split`/`reverse` | `(string-reverse "abc")` |
-| `str->int` (Option) | `(str->int "42")` → `(some 42)` |
-| Arithmetic: `pow`/`min`/`max`/`abs`/`mod` | `(pow 2 10)` |
-| `Option`: `some`/`none` | `(some 42)`, `none` |
-| `Result`: `success`/`failure` | `(success 1)`, `(failure "boom")` |
-| `print` of any value | `(print (failure "boom"))` → `(failure "boom")` |
+| Float: literals and arithmetic | `(+ 1.5 2.25)` → `3.75` |
+| Float: IEEE division | `(/ 1.0 0.0)` → `inf`, `(/ 1.0 (- 0.0))` → `-inf` |
+| Float: conversions | `(int->float 7)`, `(float->int 3.7)` → `3`, `(str->float "3.5")` |
+| Float: equality | `(= 1 1.0)` → `false` |
+| Tuple: tuples | `(tuple 1 "a" true)` |
+| Tuple: match pattern | `(match t ((tuple a b c) ...))` |
+| `defstruct`: structs | `(defstruct point (x int) (y int))` |
+| Accessors | `(point-x p)`, `(point-y p)` |
+| `loop` / `exit` | `(loop ... (exit 0))` |
 
 See the [specification](./docs/specification-v1.0.md) for the full feature set and semantics.
 
-## UTF-8 fix
+## LiF test system (release gates)
 
-V0.2 had a bug parsing UTF-8 string literals (discussed in the repository's Discussions).
-V0.3 fixes it in the lexer: strings with Cyrillic and emoji are read and printed correctly.
+LiF (Lupus in Fabula) is a set of integration tests that act as the release gates.
+Run everything with one command:
 
-```lisp
-(print "привет 🐺")   ; → привет 🐺
+```bash
+cargo test
 ```
+
+Layout:
+
+- `tests/golden/<name>.lupus` + `<name>.expected` — positive tests: exact
+  byte-for-byte stdout match, exit code 0.
+- `tests/negative/<name>.lupus` + `<name>.error` — negative tests: error-message
+  substring, exit code must be non-zero.
+- `tests/coverage_map.toml` — coverage map: every implemented symbol
+  (special forms + builtins + V0.4 features) → `positive` and `negative` lists.
+- `tests/lif.rs` — harness: walks `golden/` and `negative/`, compares stdout and
+  exit codes, and validates the coverage map. Failure of any file fails the test.
 
 ## Build
 
@@ -43,13 +48,13 @@ Requires Rust (stable, edition 2021). Build and run:
 
 ```bash
 cargo build --release
-./target/release/lupus examples/v03_demo.lupus
+./target/release/lupus examples/v04_demo.lupus
 ```
 
-Tests (74: 72 integration + 2 doc) and checks:
+Tests and checks:
 
 ```bash
-cargo test --release
+cargo test
 cargo clippy --all-targets
 cargo fmt --check
 python validate_tasks.py      # PASSED: 100/100
@@ -59,7 +64,8 @@ python validate_tasks.py      # PASSED: 100/100
 
 - `src/` — Rust interpreter source.
 - `tests/integration.rs` — integration tests.
-- `examples/v03_demo.lupus` — V0.3 feature demo.
+- `tests/lif.rs` + `tests/{golden,negative}/` + `tests/coverage_map.toml` — the LiF test system.
+- `examples/v03_demo.lupus`, `examples/v04_demo.lupus` — feature demos.
 - `run_experiment.py` / `validate_tasks.py` / `tasks.json` — benchmark tooling.
 - `results_*.json` — LM Studio experiment results.
 - `legacy/` — materials from earlier phases (see also the [specification](./docs/specification-v1.0.md)).

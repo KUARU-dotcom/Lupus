@@ -91,8 +91,10 @@ impl<'a> Lexer<'a> {
                 Some(c) if c.is_ascii_whitespace() => {
                     self.next();
                 }
-                Some(b';') if self.src.get(self.pos + 1) == Some(&b';') => {
-                    // Комментарий до конца строки.
+                Some(b';') => {
+                    // Комментарий до конца строки. Одиночная `;` тоже начинает
+                    // комментарий (символы `;` вне строк недопустимы), иначе
+                    // лексер зациклился бы на одном `;`.
                     while self.peek().is_some() && self.peek() != Some(b'\n') {
                         self.next();
                     }
