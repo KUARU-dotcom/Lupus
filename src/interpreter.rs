@@ -11,6 +11,7 @@ use crate::error::Error;
 use crate::lexer::{Token, TokenKind};
 use crate::value::{is_truthy, Closure, Value};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 /// Интерпретатор с глобальным окружением.
@@ -19,6 +20,8 @@ pub struct Interpreter {
     global: Rc<RefCell<Environment>>,
     /// Мягкий режим `--lenient-parens`: игнорировать лишние `)` вместо падения.
     lenient_parens: bool,
+    /// Реестр объявленных структур: имя типа → имена полей (позиционно).
+    structs: Rc<RefCell<HashMap<String, Vec<String>>>>,
 }
 
 impl Interpreter {
@@ -28,6 +31,7 @@ impl Interpreter {
         Interpreter {
             global: Environment::new(),
             lenient_parens: false,
+            structs: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
@@ -39,6 +43,7 @@ impl Interpreter {
         Interpreter {
             global: Environment::new(),
             lenient_parens: lenient,
+            structs: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
@@ -105,6 +110,7 @@ impl Interpreter {
         if let Expr::Symbol(name) = first {
             match name.as_str() {
                 "define" => return self.do_define(rest, &env),
+                "defstruct" => return self.do_defstruct(rest, &env),
                 "define-mutable" => return self.do_define_mutable(rest, &env),
                 "set!" => return self.do_set(rest, &env),
                 "lambda" => return self.do_lambda(rest, env),
@@ -444,6 +450,11 @@ impl Interpreter {
                 "test" => return Ok(Value::None),
                 _ => {}
             }
+
+            // Конструкторы и аксессоры структур (ЭТАП 3 V0.4).
+            if let Some(handled) = self.try_struct_call(name, rest, &env)? {
+                return Ok(handled);
+            }
         }
 
         // Пользовательская функция: первый элемент вычисляется как значение.
@@ -579,6 +590,120 @@ impl Interpreter {
             }
             _ => Err(Error::new("Некорректное определение")),
         }
+    }
+
+    /// (defstruct имя (поле тип)...)
+    ///
+    /// Регистрирует тип структуры и автогенерирует конвенцию: конструктор
+    /// `(имя значение...)` и аксессоры `(имя-поле структура)`. Аннотации типов
+    /// полей парсятся, но не проверяются (тайпчекера нет). Дубликат имени поля
+    /// — ошибка `duplicate-struct-field`.
+    fn do_defstruct(&self, rest: &[Expr], _env: &Rc<RefCell<Environment>>) -> Result<Value, Error> {
+        if rest.len() < 2 {
+            return Err(Error::new(format!(
+                "(defstruct ...) требует имя и минимум одно поле, получено {}",
+                rest.len()
+            )));
+        }
+        let type_name = match &rest[0] {
+            Expr::Symbol(n) => n.clone(),
+            _ => return Err(Error::new("Имя структуры должно быть символом")),
+        };
+
+        let mut field_names: Vec<String> = Vec::with_capacity(rest.len() - 1);
+        for field in &rest[1..] {
+            let Expr::List(items) = field else {
+                return Err(Error::new(
+                    "Каждое поле defstruct должно быть списком (имя тип)",
+                ));
+            };
+            if items.len() != 2 {
+                return Err(Error::new(
+                    "Поле defstruct должно быть списком из 2 элементов (имя тип)",
+                ));
+            }
+            let field_name = match &items[0] {
+                Expr::Symbol(n) => n.clone(),
+                _ => return Err(Error::new("Имя поля должно быть символом")),
+            };
+            if field_names.contains(&field_name) {
+                return Err(Error::new(format!(
+                    "duplicate-struct-field: поле '{}' уже объявлено в структуре '{}'",
+                    field_name, type_name
+                )));
+            }
+            field_names.push(field_name);
+        }
+
+        self.structs
+            .borrow_mut()
+            .insert(type_name.clone(), field_names);
+        Ok(Value::None)
+    }
+
+    /// Обрабатывает вызов конструктора (`(point 10 20)`) или аксессора
+    /// (`(point-x p)`) структуры. Возвращает `None`, если имя не относится
+    /// к аксессору/конструктору ни одной зарегистрированной структуры.
+    fn try_struct_call(
+        &self,
+        name: &str,
+        rest: &[Expr],
+        env: &Rc<RefCell<Environment>>,
+    ) -> Result<Option<Value>, Error> {
+        let types = self.structs.borrow();
+
+        // Конструктор: имя совпадает с зарегистрированным типом.
+        if let Some(fields) = types.get(name) {
+            let args = self.eval_all(rest, env)?;
+            if args.len() != fields.len() {
+                return Err(Error::new(format!(
+                    "({} ...) требует {} аргументов, получено {}",
+                    name,
+                    fields.len(),
+                    args.len()
+                )));
+            }
+            return Ok(Some(Value::Struct {
+                name: name.to_string(),
+                fields: args,
+            }));
+        }
+
+        // Аксессор: имя вида `<тип>-<поле>`.
+        if let Some(dash) = name.rfind('-') {
+            let (type_part, field_part) = name.split_at(dash);
+            let field_part = &field_part[1..];
+            if let Some(fields) = types.get(type_part) {
+                let Some((idx, _)) = fields.iter().enumerate().find(|(_, f)| **f == field_part)
+                else {
+                    return Ok(None);
+                };
+                if rest.len() != 1 {
+                    return Err(Error::new(format!(
+                        "({} ...) требует ровно 1 аргумент, получено {}",
+                        name,
+                        rest.len()
+                    )));
+                }
+                let value = self.eval(&rest[0], env.clone())?;
+                match value {
+                    Value::Struct {
+                        name: sn,
+                        fields: sf,
+                    } if sn == type_part => {
+                        return Ok(Some(sf[idx].clone()));
+                    }
+                    _ => {
+                        return Err(Error::new(format!(
+                            "Аксессор {} нельзя применить к чужой структуре",
+                            name
+                        )));
+                    }
+                }
+            }
+        }
+
+        Ok(None)
     }
 
     /// (define-mutable имя значение).
@@ -952,7 +1077,7 @@ impl Interpreter {
             let pattern = &items[0];
             let body = &items[1..];
 
-            if let Some(bindings) = Self::match_pattern(pattern, &expr_val)? {
+            if let Some(bindings) = self.match_pattern(pattern, &expr_val)? {
                 let match_env = Environment::new_child(env.clone());
                 for (name, value) in bindings {
                     Environment::define(&match_env, &name, value, false);
@@ -974,7 +1099,11 @@ impl Interpreter {
     /// Возвращает `Result`: некоторые структурные ошибки сопоставления
     /// (например, несовпадение арности у `(tuple ...)` при совпавшем типе)
     /// трактуются как runtime-ошибки, а не как простое «не совпало».
-    fn match_pattern(pattern: &Expr, value: &Value) -> Result<Option<Vec<(String, Value)>>, Error> {
+    fn match_pattern(
+        &self,
+        pattern: &Expr,
+        value: &Value,
+    ) -> Result<Option<Vec<(String, Value)>>, Error> {
         match pattern {
             // `_` — совпадает с чем угодно, без связываний.
             Expr::Symbol(name) if name == "_" => Ok(Some(Vec::new())),
@@ -1033,7 +1162,7 @@ impl Interpreter {
                         }
                         let mut bindings = Vec::new();
                         for (pat, val) in items[1..].iter().zip(elems.iter()) {
-                            if let Some(b) = Self::match_pattern(pat, val)? {
+                            if let Some(b) = self.match_pattern(pat, val)? {
                                 bindings.extend(b);
                             }
                         }
@@ -1041,6 +1170,31 @@ impl Interpreter {
                     }
                     if name == "none" && *value == Value::None {
                         return Ok(Some(Vec::new()));
+                    }
+                    // (имя-структуры подпаттерны...) — позиционное связывание
+                    // полей структуры (ЭТАП 3 V0.4).
+                    if self.structs.borrow().contains_key(name) {
+                        let Value::Struct { name: sn, fields } = value else {
+                            return Ok(None);
+                        };
+                        if sn != name {
+                            return Ok(None);
+                        }
+                        if items.len() - 1 != fields.len() {
+                            return Err(Error::new(format!(
+                                "Паттерн структуры '{}' ожидает {} полей, получено {}",
+                                name,
+                                items.len() - 1,
+                                fields.len()
+                            )));
+                        }
+                        let mut bindings = Vec::new();
+                        for (pat, val) in items[1..].iter().zip(fields.iter()) {
+                            if let Some(b) = self.match_pattern(pat, val)? {
+                                bindings.extend(b);
+                            }
+                        }
+                        return Ok(Some(bindings));
                     }
                 }
                 if items.len() == 2 {
@@ -1061,7 +1215,7 @@ impl Interpreter {
                             _ => None,
                         };
                         if let Some(inner) = inner {
-                            return Self::match_pattern(&items[1], inner);
+                            return self.match_pattern(&items[1], inner);
                         }
                     }
                 }

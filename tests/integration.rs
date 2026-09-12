@@ -820,3 +820,101 @@ fn v04_tuple_pattern_on_non_tuple_falls_through() {
     // 5 — не кортеж; (tuple a b) не совпадает → срабатывает wildcard.
     assert_eq!(run("(match 5 ((tuple a b) a) (_ 0))"), int(0));
 }
+
+// ─── V0.4: Defstruct (ЭТАП 3) ─────────────────────────────────────────────────
+
+#[test]
+fn v04_defstruct_constructor_value_to_string() {
+    let src = "
+        (defstruct point (x int) (y int))
+        (point 10 20)";
+    assert_eq!(lupus::value::value_to_string(&run(src)), "(point 10 20)");
+}
+
+#[test]
+fn v04_defstruct_print_struct() {
+    let src = "(defstruct point (x int) (y int)) (print (point 1 2))";
+    assert_eq!(run_bin(src), "(point 1 2)\n");
+}
+
+#[test]
+fn v04_defstruct_accessors() {
+    let src = "
+        (defstruct point (x int) (y int))
+        (define p (point 10 20))
+        (+ (point-x p) (point-y p))";
+    assert_eq!(run(src), int(30));
+}
+
+#[test]
+fn v04_defstruct_accessors_multiple_instances() {
+    let src = "
+        (defstruct point (x int) (y int))
+        (define a (point 1 2))
+        (define b (point 5 6))
+        (list (point-x a) (point-x b) (point-y b))";
+    assert_eq!(run(src), run("(list 1 5 6)"));
+}
+
+#[test]
+fn v04_defstruct_equality_by_fields() {
+    let src = "
+        (defstruct point (x int) (y int))
+        (list (= (point 1 2) (point 1 2))
+              (= (point 1 2) (point 3 4)))";
+    assert_eq!(run(src), run("(list true false)"));
+}
+
+#[test]
+fn v04_defstruct_match_binds_positionally() {
+    let src = "
+        (defstruct point (x int) (y int))
+        (match (point 3 4)
+            ((point a b) (+ a b))
+            (_ 0))";
+    assert_eq!(run(src), int(7));
+}
+
+#[test]
+fn v04_defstruct_arbitrary_field_types() {
+    // Аннотации типов не проверяются, поля могут быть любых типов.
+    let src = "
+        (defstruct person (name str) (age int))
+        (person \"Ann\" 30)";
+    assert_eq!(
+        lupus::value::value_to_string(&run(src)),
+        "(person \"Ann\" 30)"
+    );
+}
+
+#[test]
+fn v04_error_defstruct_duplicate_field() {
+    let msg = run_err("(defstruct p (x int) (x int))");
+    assert!(msg.contains("duplicate-struct-field"), "{}", msg);
+}
+
+#[test]
+fn v04_error_defstruct_constructor_arity() {
+    let src = "
+        (defstruct point (x int) (y int))
+        (point 1)";
+    let msg = run_err(src);
+    assert!(msg.contains("требует 2 аргументов"), "{}", msg);
+}
+
+#[test]
+fn v04_error_accessor_on_foreign_struct() {
+    let src = "
+        (defstruct point (x int) (y int))
+        (defstruct circle (r int))
+        (define c (circle 5))
+        (point-x c)";
+    let msg = run_err(src);
+    assert!(msg.contains("чужой структуре"), "{}", msg);
+}
+
+#[test]
+fn v04_error_accessor_non_struct_arg() {
+    let msg = run_err("(defstruct point (x int) (y int)) (point-x 7)");
+    assert!(msg.contains("чужой структуре"), "{}", msg);
+}

@@ -34,6 +34,9 @@ pub enum Value {
     List(Vec<Value>),
     /// Кортеж произвольной арности (ЭТАП 2 V0.4).
     Tuple(Vec<Value>),
+    /// Структура, созданная через `defstruct` (ЭТАП 3 V0.4).
+    /// Поля хранятся позиционно; имя типа — для аксессоров и равенства.
+    Struct { name: String, fields: Vec<Value> },
     /// Литерал `none` (отсутствие значения / пустой Option).
     None,
     /// Значение Option: (some v).
@@ -58,6 +61,16 @@ impl PartialEq for Value {
             (Value::Str(a), Value::Str(b)) => a == b,
             (Value::List(a), Value::List(b)) => a == b,
             (Value::Tuple(a), Value::Tuple(b)) => a == b,
+            (
+                Value::Struct {
+                    name: an,
+                    fields: af,
+                },
+                Value::Struct {
+                    name: bn,
+                    fields: bf,
+                },
+            ) => an == bn && af == bf,
             (Value::None, Value::None) => true,
             (Value::Some(a), Value::Some(b)) => *a == *b,
             (Value::Success(a), Value::Success(b)) => *a == *b,
@@ -81,6 +94,7 @@ pub fn is_truthy(value: &Value) -> bool {
         Value::Str(s) => !s.is_empty(),
         Value::List(items) => !items.is_empty(),
         Value::Tuple(items) => !items.is_empty(),
+        Value::Struct { .. } => true,
         Value::Some(_) => true,
         Value::Success(_) => true,
         Value::Closure(_) => true,
@@ -135,6 +149,14 @@ fn value_to_string_inner(value: &Value, in_container: bool) -> String {
                 .collect::<Vec<String>>()
                 .join(" ");
             format!("(tuple {})", inner)
+        }
+        Value::Struct { name, fields } => {
+            let inner = fields
+                .iter()
+                .map(|item| value_to_string_inner(item, true))
+                .collect::<Vec<String>>()
+                .join(" ");
+            format!("({} {})", name, inner)
         }
         Value::Some(v) => format!("(some {})", value_to_string_inner(v, true)),
         Value::Success(v) => format!("(success {})", value_to_string_inner(v, true)),
