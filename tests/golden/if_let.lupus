@@ -1,0 +1,3 @@
+(print (if-let (v (some 10)) (* v 2) 0))
+(print (if-let (v (some 10)) v 0))
+(print (if-let (v none) v 99))

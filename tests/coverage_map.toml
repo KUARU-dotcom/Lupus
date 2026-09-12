@@ -1,0 +1,67 @@
+# Карта покрытия V0.4 (LiF).
+# Каждый символ: positive = golden-тесты, negative = negative-тесты.
+[symbols]
+"define" = { positive = ["functions"], negative = ["define_arity"] }
+"define-mutable" = { positive = ["for_range", "functions"], negative = ["define_mutable_arity"] }
+"set!" = { positive = ["for_range", "functions"], negative = ["set_immutable"] }
+"lambda" = { positive = ["functions", "hof"], negative = ["lambda_arity"] }
+"if" = { positive = ["functions"], negative = ["if_arity"] }
+"while" = { positive = ["functions"], negative = ["while_arity"] }
+"loop" = { positive = ["loop"], negative = ["loop_body_error"] }
+"exit" = { positive = ["loop"], negative = ["exit_non_integer"] }
+"begin" = { positive = ["functions"], negative = ["begin_contained_error"] }
+"and" = { positive = ["functions"], negative = ["and_contained_error"] }
+"or" = { positive = ["functions"], negative = ["or_contained_error"] }
+"cond" = { positive = ["cond"], negative = ["cond_bad_clause"] }
+"for" = { positive = ["for_range"], negative = ["for_not_list"] }
+"range" = { positive = ["for_range"], negative = ["range_arity"] }
+"let" = { positive = ["let"], negative = ["let_missing_bindings"] }
+"match" = { positive = ["match", "tuple", "defstruct"], negative = ["match_no_clause"] }
+"if-let" = { positive = ["if_let"], negative = ["if_let_non_option"] }
+"assert" = { positive = ["assert"], negative = ["assert_fail"] }
+"print" = { positive = ["print_values"], negative = ["print_arity"] }
+"defstruct" = { positive = ["defstruct"], negative = ["defstruct_duplicate_field"] }
+"tuple" = { positive = ["tuple"], negative = ["tuple_pattern_arity"] }
+"not" = { positive = ["functions"], negative = ["not_arity"] }
+"+" = { positive = ["arithmetic", "functions"], negative = ["add_mix_int_float"] }
+"-" = { positive = ["arithmetic", "float"], negative = ["sub_mix_int_float"] }
+"*" = { positive = ["arithmetic"], negative = ["mul_mix_int_float"] }
+"/" = { positive = ["arithmetic", "float"], negative = ["divide_by_zero"] }
+"%" = { positive = ["arithmetic"], negative = ["mod_float"] }
+"mod" = { positive = ["arithmetic"], negative = ["mod_alias_float"] }
+"pow" = { positive = ["arithmetic"], negative = ["pow_negative_exp"] }
+"min" = { positive = ["arithmetic"], negative = ["min_arity"] }
+"max" = { positive = ["arithmetic"], negative = ["max_arity"] }
+"abs" = { positive = ["arithmetic"], negative = ["abs_arity"] }
+"=" = { positive = ["arithmetic", "float", "defstruct", "tuple"], negative = ["eq_arity"] }
+"!=" = { positive = ["arithmetic"], negative = ["neq_arity"] }
+"<" = { positive = ["arithmetic"], negative = ["lt_mix_int_float"] }
+">" = { positive = ["arithmetic"], negative = ["gt_mix_int_float"] }
+"<=" = { positive = ["arithmetic"], negative = ["le_mix_int_float"] }
+">=" = { positive = ["arithmetic"], negative = ["ge_mix_int_float"] }
+"int->str" = { positive = ["strings"], negative = ["int_to_str_type"] }
+"float->str" = { positive = ["float"], negative = ["float_to_str_type"] }
+"int->float" = { positive = ["float"], negative = ["int_to_float_type"] }
+"float->int" = { positive = ["float"], negative = ["float_to_int_type"] }
+"str->float" = { positive = ["float"], negative = ["str_to_float_type"] }
+"str->int" = { positive = ["strings"], negative = ["str_to_int_type"] }
+"string-append" = { positive = ["strings", "utf8", "for_range"], negative = ["string_append_type"] }
+"string-length" = { positive = ["strings", "utf8"], negative = ["string_length_type"] }
+"string-split" = { positive = ["strings"], negative = ["string_split_type"] }
+"string-reverse" = { positive = ["strings", "utf8"], negative = ["string_reverse_type"] }
+"list" = { positive = ["lists", "print_values", "functions"], negative = ["list_contained_error"] }
+"some" = { positive = ["print_values", "match"], negative = ["some_arity"] }
+"success" = { positive = ["print_values", "match"], negative = ["success_arity"] }
+"failure" = { positive = ["print_values", "match"], negative = ["failure_arity"] }
+"cons" = { positive = ["lists"], negative = ["cons_not_list"] }
+"head" = { positive = ["lists"], negative = ["head_arity"] }
+"tail" = { positive = ["lists"], negative = ["tail_arity"] }
+"empty?" = { positive = ["lists"], negative = ["empty_type"] }
+"append" = { positive = ["lists"], negative = ["append_not_list"] }
+"list-map" = { positive = ["hof"], negative = ["list_map_not_list"] }
+"list-filter" = { positive = ["hof"], negative = ["list_filter_not_list"] }
+"list-fold" = { positive = ["hof"], negative = ["list_fold_not_list"] }
+"nth" = { positive = ["lists"], negative = ["nth_index_out_of_bounds"] }
+"length" = { positive = ["lists"], negative = ["length_type"] }
+"len" = { positive = ["lists"], negative = ["len_type"] }
+"contains?" = { positive = ["lists"], negative = ["contains_type"] }

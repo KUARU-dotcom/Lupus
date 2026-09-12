@@ -1,0 +1,1 @@
+(defstruct point (x int) (y int)) (defstruct circle (r int)) (define c (circle 5)) (point-x c)

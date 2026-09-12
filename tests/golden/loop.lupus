@@ -1,0 +1,6 @@
+(define-mutable i 0)
+(loop
+    (set! i (+ i 1))
+    (if (= i 4) (exit 0))
+    (print i))
+(print "never reached")

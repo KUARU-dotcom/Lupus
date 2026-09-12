@@ -1,0 +1,11 @@
+42
+raw string
+true
+false
+none
+(1 2 3)
+(some 5)
+(success 7)
+(failure "boom")
+3.14
+(tuple 1 "a")

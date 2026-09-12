@@ -1,0 +1,7 @@
+(print (tuple 1 "a" true))
+(print (tuple))
+(print (= (tuple 1 "a") (tuple 1 "a")))
+(print (= (tuple 1) (tuple 1 2)))
+(define t (tuple 10 "x" true))
+(print (match t ((tuple a b c) (list a b c)) (_ (list 0))))
+(print (match (tuple 1 (tuple 2 3)) ((tuple a (tuple b c)) (+ a b c)) (_ 0)))

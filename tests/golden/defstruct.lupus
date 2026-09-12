@@ -1,0 +1,7 @@
+(defstruct point (x int) (y int))
+(print (point 10 20))
+(print (point-x (point 10 20)))
+(print (point-y (point 1 2)))
+(print (= (point 1 2) (point 1 2)))
+(print (= (point 1 2) (point 3 4)))
+(print (match (point 3 4) ((point a b) (+ a b)) (_ 0)))

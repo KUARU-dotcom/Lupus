@@ -1,0 +1,5 @@
+(print (match (some 42) (none 0) ((some v) v) (_ -1)))
+(print (match none (none 1) (_ 2)))
+(print (match (failure "e") ((failure m) m) (_ "x")))
+(print (match (success 7) ((success n) n) (_ 0)))
+(print (match 5 (3 "three") (5 "five") (_ "other")))

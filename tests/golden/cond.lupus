@@ -1,0 +1,4 @@
+(print (cond ((< 2 3) 10) (else 20)))
+(print (cond ((> 2 3) 10) (else 20)))
+(print (cond ((> 2 3) 10)))
+(print (cond ((< 1 2) (define-mutable s 0) (set! s 7) s)))

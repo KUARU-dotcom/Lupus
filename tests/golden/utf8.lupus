@@ -1,0 +1,7 @@
+(print "привет")
+(print "кириллица 🐺")
+(print (string-append "при" "вет"))
+(print (string-length "привет"))
+(print (string-reverse "привет"))
+(print (string-length "🐺"))
+(print (string-length "п\nт"))

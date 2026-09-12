@@ -1,0 +1,8 @@
+(print (int->str 42))
+(print (string-append "Hello" " " "World"))
+(print (string-length "привет"))
+(print (string-length "abc"))
+(print (string-split "a,b,c" ","))
+(print (string-reverse "abc"))
+(print (str->int "42"))
+(print (str->int "abc"))

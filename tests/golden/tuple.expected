@@ -1,0 +1,6 @@
+(tuple 1 "a" true)
+(tuple )
+true
+false
+(10 "x" true)
+6
