@@ -14,6 +14,8 @@ pub enum TokenKind {
     RParen,
     /// Целое число (включая отрицательные литералы вида `-5`).
     Number(i64),
+    /// Литерал с плавающей точкой (например, `3.14`, `2.5e-3`, `0.5`).
+    Float(f64),
     /// Строковый литерал.
     Str(String),
     /// Булев литерал `true` / `false`.
@@ -164,8 +166,13 @@ impl<'a> Lexer<'a> {
         Err(self.error("Незакрытая строка"))
     }
 
-    /// Разбирает целое число (первый символ — цифра или знак минус).
-    fn parse_number(&mut self) -> Result<i64, Error> {
+    /// Разбирает число (целое или float). Первый символ — цифра или знак минус.
+    ///
+    /// Отрицательных float-литералов по спеке нет: `(- 0 3.5)` — унарный минус
+    /// как вызов. Поэтому float-литерал всегда начинается с цифры (знак `-`
+    /// возможен только у целого литерала).
+    fn parse_number(&mut self) -> Result<TokenKind, Error> {
+        let mut is_float = false;
         let mut value = String::new();
 
         if self.peek() == Some(b'-') {
@@ -173,18 +180,45 @@ impl<'a> Lexer<'a> {
             self.next();
         }
 
-        while let Some(ch) = self.peek() {
-            if ch.is_ascii_digit() {
-                value.push(ch as char);
-                self.next();
-            } else {
-                break;
+        // Целая часть.
+        while self.peek().is_some_and(|c| c.is_ascii_digit()) {
+            value.push(self.next().unwrap() as char);
+        }
+
+        // Дробная часть (после '.').
+        if self.peek() == Some(b'.') {
+            is_float = true;
+            value.push('.');
+            self.next();
+            while self.peek().is_some_and(|c| c.is_ascii_digit()) {
+                value.push(self.next().unwrap() as char);
             }
         }
 
-        value
-            .parse::<i64>()
-            .map_err(|_| self.error("Некорректное число"))
+        // Экспонента (после e/E), допускает знак +/-.
+        if self.peek().is_some_and(|c| c == b'e' || c == b'E') {
+            is_float = true;
+            value.push('e');
+            self.next();
+            if self.peek().is_some_and(|c| c == b'+' || c == b'-') {
+                value.push(self.next().unwrap() as char);
+            }
+            while self.peek().is_some_and(|c| c.is_ascii_digit()) {
+                value.push(self.next().unwrap() as char);
+            }
+        }
+
+        if is_float {
+            value
+                .parse::<f64>()
+                .map(TokenKind::Float)
+                .map_err(|_| self.error("Некорректное число с плавающей точкой"))
+        } else {
+            value
+                .parse::<i64>()
+                .map(TokenKind::Number)
+                .map_err(|_| self.error("Некорректное число"))
+        }
     }
 
     /// Разбирает символ до разделителя (скобка, пробел, точка с запятой).
@@ -247,20 +281,12 @@ impl<'a> Lexer<'a> {
                     .get(self.pos + 1)
                     .is_some_and(|c| c.is_ascii_digit()) =>
                 {
-                    let value = self.parse_number()?;
-                    tokens.push(Token {
-                        kind: TokenKind::Number(value),
-                        line,
-                        col,
-                    });
+                    let kind = self.parse_number()?;
+                    tokens.push(Token { kind, line, col });
                 }
                 c if c.is_ascii_digit() => {
-                    let value = self.parse_number()?;
-                    tokens.push(Token {
-                        kind: TokenKind::Number(value),
-                        line,
-                        col,
-                    });
+                    let kind = self.parse_number()?;
+                    tokens.push(Token { kind, line, col });
                 }
                 _ => {
                     let symbol = self.parse_symbol();

@@ -2,7 +2,7 @@
 //! `string-length`, `string-split`, `string-reverse`, `str->int`.
 
 use crate::error::Error;
-use crate::value::{value_to_string, Value};
+use crate::value::{float_to_string, value_to_string, Value};
 
 /// Печатает значение с переводом строки `(print значение)`.
 ///
@@ -141,5 +141,47 @@ pub fn str_to_int(args: &[Value]) -> Result<Value, Error> {
             Err(_) => Ok(Value::None),
         },
         _ => Err(Error::new("str->int требует строку")),
+    }
+}
+
+/// Парсит строку в число с плавающей точкой `(str->float s)`.
+///
+/// Возвращает `(some x)` при успехе, `none` при ошибке парсинга.
+///
+/// # Ошибки
+/// — не ровно один аргумент;
+/// — аргумент не является строкой.
+pub fn str_to_float(args: &[Value]) -> Result<Value, Error> {
+    if args.len() != 1 {
+        return Err(Error::new(format!(
+            "(str->float ...) требует ровно 1 аргумент, получено {}",
+            args.len()
+        )));
+    }
+    match &args[0] {
+        Value::Str(s) => match s.trim().parse::<f64>() {
+            Ok(n) => Ok(Value::Some(Box::new(Value::Float(n)))),
+            Err(_) => Ok(Value::None),
+        },
+        _ => Err(Error::new("str->float требует строку")),
+    }
+}
+
+/// Преобразует float в строку `(float->str x)` по детерминированной политике
+/// (см. [`float_to_string`]).
+///
+/// # Ошибки
+/// — не ровно один аргумент;
+/// — аргумент не является float.
+pub fn float_to_str(args: &[Value]) -> Result<Value, Error> {
+    if args.len() != 1 {
+        return Err(Error::new(format!(
+            "(float->str ...) требует ровно 1 аргумент, получено {}",
+            args.len()
+        )));
+    }
+    match &args[0] {
+        Value::Float(f) => Ok(Value::Str(float_to_string(*f))),
+        _ => Err(Error::new("float->str требует float")),
     }
 }

@@ -55,6 +55,10 @@ impl Parser {
                 self.next();
                 Ok(Expr::Number(n))
             }
+            TokenKind::Float(f) => {
+                self.next();
+                Ok(Expr::Float(f))
+            }
             TokenKind::Str(s) => {
                 self.next();
                 Ok(Expr::Str(s))

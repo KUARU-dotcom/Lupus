@@ -81,6 +81,7 @@ impl Interpreter {
     pub fn eval(&self, expr: &Expr, env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         match expr {
             Expr::Number(n) => Ok(Value::Int(*n)),
+            Expr::Float(f) => Ok(Value::Float(*f)),
             Expr::Str(s) => Ok(Value::Str(s.clone())),
             Expr::Bool(b) => Ok(Value::Bool(*b)),
             Expr::None => Ok(Value::None),
@@ -127,6 +128,22 @@ impl Interpreter {
                 "int->str" => {
                     let args = self.eval_all(rest, &env)?;
                     return builtins::int_to_str(&args);
+                }
+                "float->str" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return builtins::float_to_str(&args);
+                }
+                "int->float" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return builtins::int_to_float(&args);
+                }
+                "float->int" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return builtins::float_to_int(&args);
+                }
+                "str->float" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return builtins::str_to_float(&args);
                 }
                 "string-append" => {
                     let args = self.eval_all(rest, &env)?;
@@ -956,6 +973,13 @@ impl Interpreter {
             Expr::Symbol(name) => Some(vec![(name.clone(), value.clone())]),
             Expr::Number(n) => {
                 if *value == Value::Int(*n) {
+                    Some(Vec::new())
+                } else {
+                    None
+                }
+            }
+            Expr::Float(f) => {
+                if *value == Value::Float(*f) {
                     Some(Vec::new())
                 } else {
                     None

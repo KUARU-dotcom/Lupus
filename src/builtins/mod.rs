@@ -10,10 +10,11 @@ pub mod lists;
 pub mod logic;
 pub mod strings;
 
-pub use arithmetic::{abs, add, div, max, min, mul, pow, rem, sub};
+pub use arithmetic::{abs, add, div, float_to_int, int_to_float, max, min, mul, pow, rem, sub};
 pub use comparison::{eq, ge, gt, le, lt, neq};
 pub use lists::{contains, length, make_list, nth};
 pub use logic::not;
 pub use strings::{
-    int_to_str, print_arg, str_to_int, string_append, string_length, string_reverse, string_split,
+    float_to_str, int_to_str, print_arg, str_to_float, str_to_int, string_append, string_length,
+    string_reverse, string_split,
 };

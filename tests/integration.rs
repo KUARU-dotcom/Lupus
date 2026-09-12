@@ -651,3 +651,105 @@ fn h_utf8_emoji_surrogate_pair() {
     // 🐺 — один Unicode code point (4 байта UTF-8 / суррогатная пара).
     assert_eq!(run("(string-length \"🐺\")"), int(1));
 }
+
+// ─── V0.4: Float (ЭТАП 1) ─────────────────────────────────────────────────────
+
+#[test]
+fn v04_float_literal_parse_and_print() {
+    assert_eq!(run_bin("(print 3.14)"), "3.14\n");
+    assert_eq!(run_bin("(print 4.0)"), "4.0\n");
+    assert_eq!(run_bin("(print 0.5)"), "0.5\n");
+}
+
+#[test]
+fn v04_float_exponent_literal() {
+    // 2.5e-3 == 0.0025.
+    assert_eq!(run_bin("(print 2.5e-3)"), "0.0025\n");
+}
+
+#[test]
+fn v04_float_arithmetic_float_float() {
+    assert_eq!(run_bin("(print (+ 1.5 2.25))"), "3.75\n");
+    assert_eq!(run_bin("(print (* 2.0 3.0))"), "6.0\n");
+    assert_eq!(run_bin("(print (- 5.0 2.5))"), "2.5\n");
+}
+
+#[test]
+fn v04_float_int_arithmetic_unchanged() {
+    assert_eq!(run("(+ 1 2)"), int(3));
+    assert_eq!(run("(* 2 3)"), int(6));
+}
+
+#[test]
+fn v04_float_division_ieee() {
+    assert_eq!(run_bin("(print (/ 1.0 0.0))"), "inf\n");
+    assert_eq!(run_bin("(print (/ 1.0 (- 0.0)))"), "-inf\n");
+    assert_eq!(run_bin("(print (/ 6.0 2.0))"), "3.0\n");
+}
+
+#[test]
+fn v04_float_equality() {
+    assert_eq!(run("(= 3.0 3.0)"), Value::Bool(true));
+    assert_eq!(run("(= 1 1.0)"), Value::Bool(false));
+    assert_eq!(run("(= 1.5 1.5)"), Value::Bool(true));
+}
+
+#[test]
+fn v04_float_print_accepts_float() {
+    assert_eq!(run_bin("(print (float->str 2.5))"), "2.5\n");
+    assert_eq!(run_bin("(print 9.0)"), "9.0\n");
+}
+
+#[test]
+fn v04_int_to_float() {
+    assert_eq!(run_bin("(print (int->float 7))"), "7.0\n");
+    assert_eq!(run_bin("(print (int->float -3))"), "-3.0\n");
+}
+
+#[test]
+fn v04_float_to_int_truncates_toward_zero() {
+    assert_eq!(run("(float->int 3.7)"), int(3));
+    assert_eq!(run("(float->int -3.7)"), int(-3));
+    assert_eq!(run("(float->int 0.9)"), int(0));
+}
+
+#[test]
+fn v04_str_to_float_some_and_none() {
+    assert_eq!(
+        run("(str->float \"3.5\")"),
+        Value::Some(Box::new(Value::Float(3.5)))
+    );
+    assert_eq!(run("(str->float \"abc\")"), Value::None);
+}
+
+#[test]
+fn v04_float_to_str_policy() {
+    assert_eq!(run("(float->str 4.0)"), Value::Str("4.0".to_string()));
+    assert_eq!(run("(float->str 3.14)"), Value::Str("3.14".to_string()));
+}
+
+// Негативные тесты Float.
+
+#[test]
+fn v04_error_mixing_int_float_add() {
+    let msg = run_err("(+ 1 2.5)");
+    assert!(msg.contains("нельзя смешивать int и float"), "{}", msg);
+}
+
+#[test]
+fn v04_error_mixing_int_float_compare() {
+    let msg = run_err("(< 1 2.5)");
+    assert!(msg.contains("нельзя смешивать int и float"), "{}", msg);
+}
+
+#[test]
+fn v04_error_mod_float() {
+    let msg = run_err("(% 5.5 2)");
+    assert!(msg.contains("float"), "{}", msg);
+}
+
+#[test]
+fn v04_error_mixing_int_float_sub() {
+    let msg = run_err("(- 10 2.5)");
+    assert!(msg.contains("нельзя смешивать int и float"), "{}", msg);
+}
