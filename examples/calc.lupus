@@ -1,0 +1,23 @@
+;; calc.lupus - Вычисление факториала
+
+;; Определение функции для вычисления факториала
+(define (factorial n)
+  (if (= n 0)
+    1
+    (* n (factorial (- n 1)))))
+
+;; Простой вспомогательный пример
+(print "Lupus - вычисление факториалов")
+
+;; Вычисляем факториал 5
+(define f5 (factorial 5))
+(print (int->str f5))
+
+;; Вычисляем факториал 7
+(define f7 (factorial 7))
+(print (int->str f7))
+
+;; Вычисляем факториал 10
+(define f10 (factorial 10))
+(print (int->str f10))
+
