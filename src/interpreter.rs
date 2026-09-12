@@ -169,6 +169,11 @@ impl Interpreter {
                     let args = self.eval_all(rest, &env)?;
                     return Ok(builtins::make_list(&args));
                 }
+                // Конструктор кортежа: (tuple элем...) — арность 0+ любая.
+                "tuple" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return Ok(Value::Tuple(args));
+                }
                 // Конструкторы Option/Result: (some e), (success e), (failure e).
                 "some" => {
                     if rest.len() != 1 {
@@ -947,7 +952,7 @@ impl Interpreter {
             let pattern = &items[0];
             let body = &items[1..];
 
-            if let Some(bindings) = Self::match_pattern(pattern, &expr_val) {
+            if let Some(bindings) = Self::match_pattern(pattern, &expr_val)? {
                 let match_env = Environment::new_child(env.clone());
                 for (name, value) in bindings {
                     Environment::define(&match_env, &name, value, false);
@@ -965,56 +970,78 @@ impl Interpreter {
 
     /// Сопоставляет паттерн со значением, возвращая новые связывания
     /// переменных (или `None`, если паттерн не совпал).
-    fn match_pattern(pattern: &Expr, value: &Value) -> Option<Vec<(String, Value)>> {
+    ///
+    /// Возвращает `Result`: некоторые структурные ошибки сопоставления
+    /// (например, несовпадение арности у `(tuple ...)` при совпавшем типе)
+    /// трактуются как runtime-ошибки, а не как простое «не совпало».
+    fn match_pattern(pattern: &Expr, value: &Value) -> Result<Option<Vec<(String, Value)>>, Error> {
         match pattern {
             // `_` — совпадает с чем угодно, без связываний.
-            Expr::Symbol(name) if name == "_" => Some(Vec::new()),
+            Expr::Symbol(name) if name == "_" => Ok(Some(Vec::new())),
             // Переменная — совпадает с чем угодно, связывает имя со значением.
-            Expr::Symbol(name) => Some(vec![(name.clone(), value.clone())]),
+            Expr::Symbol(name) => Ok(Some(vec![(name.clone(), value.clone())])),
             Expr::Number(n) => {
                 if *value == Value::Int(*n) {
-                    Some(Vec::new())
+                    Ok(Some(Vec::new()))
                 } else {
-                    None
+                    Ok(None)
                 }
             }
             Expr::Float(f) => {
                 if *value == Value::Float(*f) {
-                    Some(Vec::new())
+                    Ok(Some(Vec::new()))
                 } else {
-                    None
+                    Ok(None)
                 }
             }
             Expr::Str(s) => {
                 if *value == Value::Str(s.clone()) {
-                    Some(Vec::new())
+                    Ok(Some(Vec::new()))
                 } else {
-                    None
+                    Ok(None)
                 }
             }
             Expr::Bool(b) => {
                 if *value == Value::Bool(*b) {
-                    Some(Vec::new())
+                    Ok(Some(Vec::new()))
                 } else {
-                    None
+                    Ok(None)
                 }
             }
             Expr::None => {
                 if *value == Value::None {
-                    Some(Vec::new())
+                    Ok(Some(Vec::new()))
                 } else {
-                    None
+                    Ok(None)
                 }
             }
-            // Составные паттерны: (none), (some p), (success p), (failure p).
+            // Составные паттерны: (tuple ...), (none), (some p), (success p),
+            // (failure p).
             Expr::List(items) => {
-                if items.len() == 1 {
-                    if let Expr::Symbol(name) = &items[0] {
-                        if name == "none" && *value == Value::None {
-                            return Some(Vec::new());
+                if let Some(Expr::Symbol(name)) = items.first() {
+                    // (tuple подпаттерны...) — позиционное связывание.
+                    if name == "tuple" {
+                        let Value::Tuple(elems) = value else {
+                            return Ok(None);
+                        };
+                        if items.len() - 1 != elems.len() {
+                            return Err(Error::new(format!(
+                                "tuple-паттерн ожидает {} элементов, получено {}",
+                                items.len() - 1,
+                                elems.len()
+                            )));
                         }
+                        let mut bindings = Vec::new();
+                        for (pat, val) in items[1..].iter().zip(elems.iter()) {
+                            if let Some(b) = Self::match_pattern(pat, val)? {
+                                bindings.extend(b);
+                            }
+                        }
+                        return Ok(Some(bindings));
                     }
-                    return None;
+                    if name == "none" && *value == Value::None {
+                        return Ok(Some(Vec::new()));
+                    }
                 }
                 if items.len() == 2 {
                     if let Expr::Symbol(name) = &items[0] {
@@ -1038,7 +1065,7 @@ impl Interpreter {
                         }
                     }
                 }
-                None
+                Ok(None)
             }
         }
     }

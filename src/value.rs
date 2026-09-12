@@ -32,6 +32,8 @@ pub enum Value {
     Str(String),
     /// Список значений.
     List(Vec<Value>),
+    /// Кортеж произвольной арности (ЭТАП 2 V0.4).
+    Tuple(Vec<Value>),
     /// Литерал `none` (отсутствие значения / пустой Option).
     None,
     /// Значение Option: (some v).
@@ -55,6 +57,7 @@ impl PartialEq for Value {
             (Value::Bool(a), Value::Bool(b)) => a == b,
             (Value::Str(a), Value::Str(b)) => a == b,
             (Value::List(a), Value::List(b)) => a == b,
+            (Value::Tuple(a), Value::Tuple(b)) => a == b,
             (Value::None, Value::None) => true,
             (Value::Some(a), Value::Some(b)) => *a == *b,
             (Value::Success(a), Value::Success(b)) => *a == *b,
@@ -77,6 +80,7 @@ pub fn is_truthy(value: &Value) -> bool {
         Value::Float(f) => *f != 0.0,
         Value::Str(s) => !s.is_empty(),
         Value::List(items) => !items.is_empty(),
+        Value::Tuple(items) => !items.is_empty(),
         Value::Some(_) => true,
         Value::Success(_) => true,
         Value::Closure(_) => true,
@@ -123,6 +127,14 @@ fn value_to_string_inner(value: &Value, in_container: bool) -> String {
                 .collect::<Vec<String>>()
                 .join(" ");
             format!("({})", inner)
+        }
+        Value::Tuple(items) => {
+            let inner = items
+                .iter()
+                .map(|item| value_to_string_inner(item, true))
+                .collect::<Vec<String>>()
+                .join(" ");
+            format!("(tuple {})", inner)
         }
         Value::Some(v) => format!("(some {})", value_to_string_inner(v, true)),
         Value::Success(v) => format!("(success {})", value_to_string_inner(v, true)),

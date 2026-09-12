@@ -753,3 +753,70 @@ fn v04_error_mixing_int_float_sub() {
     let msg = run_err("(- 10 2.5)");
     assert!(msg.contains("нельзя смешивать int и float"), "{}", msg);
 }
+
+// ─── V0.4: Tuple (ЭТАП 2) ─────────────────────────────────────────────────────
+
+#[test]
+fn v04_tuple_value_to_string() {
+    assert_eq!(
+        lupus::value::value_to_string(&run("(tuple 1 \"a\" true)")),
+        "(tuple 1 \"a\" true)"
+    );
+    assert_eq!(lupus::value::value_to_string(&run("(tuple)")), "(tuple )");
+}
+
+#[test]
+fn v04_tuple_print() {
+    assert_eq!(run_bin("(print (tuple 1 \"a\"))"), "(tuple 1 \"a\")\n");
+}
+
+#[test]
+fn v04_tuple_equality_elementwise() {
+    assert_eq!(
+        run("(= (tuple 1 \"a\") (tuple 1 \"a\"))"),
+        Value::Bool(true)
+    );
+    assert_eq!(
+        run("(= (tuple 1 \"a\") (tuple 2 \"a\"))"),
+        Value::Bool(false)
+    );
+    assert_eq!(run("(= (tuple 1) (tuple 1 2))"), Value::Bool(false));
+}
+
+#[test]
+fn v04_tuple_match_binds_positionally() {
+    // Паттерн (tuple a b c) связывает элементы позиционно.
+    let src = "
+        (define t (tuple 10 \"x\" true))
+        (match t
+            ((tuple a b c) (list a b c))
+            (_ (list 0)))";
+    assert_eq!(run(src), run("(list 10 \"x\" true)"));
+}
+
+#[test]
+fn v04_tuple_nested_match() {
+    let src = "
+        (match (tuple 1 (tuple 2 3))
+            ((tuple a (tuple b c)) (+ a b c))
+            (_ 0))";
+    assert_eq!(run(src), int(6));
+}
+
+#[test]
+fn v04_error_tuple_pattern_arity_mismatch() {
+    let msg = run_err("(match (tuple 1 2 3) ((tuple a b) a))");
+    assert!(msg.contains("элементов"), "{}", msg);
+}
+
+#[test]
+fn v04_error_tuple_pattern_arity_mismatch_more() {
+    let msg = run_err("(match (tuple 1 2) ((tuple a b c) a))");
+    assert!(msg.contains("элементов"), "{}", msg);
+}
+
+#[test]
+fn v04_tuple_pattern_on_non_tuple_falls_through() {
+    // 5 — не кортеж; (tuple a b) не совпадает → срабатывает wildcard.
+    assert_eq!(run("(match 5 ((tuple a b) a) (_ 0))"), int(0));
+}
