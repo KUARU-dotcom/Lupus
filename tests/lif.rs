@@ -9,6 +9,8 @@
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::mpsc;
+use std::time::Duration;
 
 /// Корень каталога тестов (`tests/`).
 fn test_root() -> PathBuf {
@@ -16,15 +18,28 @@ fn test_root() -> PathBuf {
 }
 
 /// Запускает бинарник интерпретатора на файле, возвращает (stdout, код выхода).
+///
+/// Применяется таймаут 5 секунд: если интерпретатор зависает на файле (например,
+/// на неизвестном символе), вместо бесконечного ожидания возвращается код
+/// выхода -1 и пометка времени ожидания в stdout — тест падает, а не виснет.
 fn run_bin(file: &Path) -> (String, i32) {
-    let out = Command::new(env!("CARGO_BIN_EXE_lupus"))
-        .arg(file)
-        .output()
-        .expect("не удалось запустить интерпретатор");
-    (
-        String::from_utf8_lossy(&out.stdout).to_string(),
-        out.status.code().unwrap_or(-1),
-    )
+    let file = file.to_path_buf();
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let out = Command::new(env!("CARGO_BIN_EXE_lupus"))
+            .arg(&file)
+            .output()
+            .expect("не удалось запустить интерпретатор");
+        let _ = tx.send((
+            String::from_utf8_lossy(&out.stdout).to_string(),
+            out.status.code().unwrap_or(-1),
+        ));
+    });
+
+    match rx.recv_timeout(Duration::from_secs(5)) {
+        Ok(result) => result,
+        Err(_) => (String::from("<TIME-OUT: интерпретатор завис на файле>"), -1),
+    }
 }
 
 /// Возвращает отсортированный список `.lupus`-файлов в каталоге.
