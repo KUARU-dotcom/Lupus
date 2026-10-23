@@ -111,3 +111,5 @@
 "unknown-module-symbol" = { positive = ["v05_stdlib"], negative = ["unknown_module_symbol"] }
 "stack-depth-exceeded" = { positive = ["v05_recursion_5000_ok"], negative = ["v05_deep_recursion", "v05_mutual_recursion"] }
 "nesting-too-deep" = { positive = ["v05_recursion_5000_ok"], negative = ["v05_deep_nesting"] }
+"integer-overflow" = { positive = ["arithmetic"], negative = ["div_overflow_min", "mod_overflow_min", "abs_overflow_min", "sub_overflow_min"] }
+"invalid-exit-code" = { positive = ["loop"], negative = ["exit_out_of_range"] }
