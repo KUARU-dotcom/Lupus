@@ -1810,7 +1810,7 @@ impl Interpreter {
         if is_truthy(&result) {
             Ok(Value::None)
         } else {
-            let form_text = format!("{:?}", rest[0]);
+            let form_text = crate::ast::expr_to_source(&rest[0]);
             Err(Error::new(format!("Assert не выполнен: <{}>", form_text)))
         }
     }

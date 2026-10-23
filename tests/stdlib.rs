@@ -333,3 +333,25 @@ fn negative_test_in_function() {
         Some("test-in-function")
     );
 }
+
+#[test]
+fn test_command_assert_message_uses_source_syntax() {
+    let dir = temp_dir("test-assert-source");
+    let file = write_program(
+        &dir,
+        "suite.lupus",
+        "(import (w test))\n(test \"bad\" (assert (= (+ 1 2) 4)))",
+    );
+    let result = run(&["test", file.to_str().unwrap()], None);
+    assert_eq!(result.code, 1, "stderr: {}", result.stderr);
+    assert!(
+        result.stdout.contains("(= (+ 1 2) 4)"),
+        "stdout: {}",
+        result.stdout
+    );
+    assert!(
+        !result.stdout.contains("Symbol("),
+        "Rust Debug не должен попадать в JSONL: {}",
+        result.stdout
+    );
+}
