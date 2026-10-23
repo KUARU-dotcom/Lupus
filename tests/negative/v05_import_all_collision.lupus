@@ -1,0 +1,4 @@
+;; senko и kaltsit не пересекаются по именам; моделируем коллизию :all
+;; двумя модулями с общим экспортом double (util и test_cache).
+(import util :all)
+(import test_cache :all)

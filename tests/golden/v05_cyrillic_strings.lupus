@@ -1,0 +1,2 @@
+(print "Привет, мир!")
+(print (string-length "тест"))

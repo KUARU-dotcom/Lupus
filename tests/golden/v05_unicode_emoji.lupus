@@ -1,0 +1,2 @@
+(print "🐺 Волк")
+(print (string-reverse "hello🐺"))

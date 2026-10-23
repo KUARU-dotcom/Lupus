@@ -1,0 +1,4 @@
+(import test_cache)
+(import test_cache)
+(print (test_cache/increment))
+(print (test_cache/increment))

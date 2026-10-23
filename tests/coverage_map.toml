@@ -8,7 +8,7 @@
 "if" = { positive = ["functions"], negative = ["if_arity"] }
 "while" = { positive = ["functions"], negative = ["while_arity"] }
 "loop" = { positive = ["loop"], negative = ["loop_body_error"] }
-"exit" = { positive = ["loop"], negative = ["exit_non_integer"] }
+"exit" = { positive = ["loop", "v05_exit_boundary_ok"], negative = ["exit_non_integer", "v05_exit_negative", "v05_exit_1000"] }
 "begin" = { positive = ["functions"], negative = ["begin_contained_error"] }
 "and" = { positive = ["functions"], negative = ["and_contained_error"] }
 "or" = { positive = ["functions"], negative = ["or_contained_error"] }
@@ -26,7 +26,7 @@
 "+" = { positive = ["arithmetic", "functions"], negative = ["add_mix_int_float"] }
 "-" = { positive = ["arithmetic", "float"], negative = ["sub_mix_int_float"] }
 "*" = { positive = ["arithmetic"], negative = ["mul_mix_int_float"] }
-"/" = { positive = ["arithmetic", "float"], negative = ["divide_by_zero"] }
+"/" = { positive = ["arithmetic", "float", "v05_float_nan_inf"], negative = ["divide_by_zero"] }
 "%" = { positive = ["arithmetic"], negative = ["mod_float"] }
 "mod" = { positive = ["arithmetic"], negative = ["mod_alias_float"] }
 "pow" = { positive = ["arithmetic"], negative = ["pow_negative_exp"] }
@@ -41,14 +41,14 @@
 ">=" = { positive = ["arithmetic"], negative = ["ge_mix_int_float"] }
 "int->str" = { positive = ["strings"], negative = ["int_to_str_type"] }
 "float->str" = { positive = ["float"], negative = ["float_to_str_type"] }
-"int->float" = { positive = ["float"], negative = ["int_to_float_type"] }
+"int->float" = { positive = ["float", "v05_float_precision_loss"], negative = ["int_to_float_type"] }
 "float->int" = { positive = ["float"], negative = ["float_to_int_type"] }
 "str->float" = { positive = ["float"], negative = ["str_to_float_type"] }
 "str->int" = { positive = ["strings"], negative = ["str_to_int_type"] }
 "string-append" = { positive = ["strings", "utf8", "for_range"], negative = ["string_append_type"] }
-"string-length" = { positive = ["strings", "utf8"], negative = ["string_length_type"] }
+"string-length" = { positive = ["strings", "utf8", "v05_cyrillic_strings"], negative = ["string_length_type"] }
 "string-split" = { positive = ["strings"], negative = ["string_split_type"] }
-"string-reverse" = { positive = ["strings", "utf8"], negative = ["string_reverse_type"] }
+"string-reverse" = { positive = ["strings", "utf8", "v05_unicode_emoji"], negative = ["string_reverse_type"] }
 "list" = { positive = ["lists", "print_values", "functions"], negative = ["list_contained_error"] }
 "some" = { positive = ["print_values", "match"], negative = ["some_arity"] }
 "success" = { positive = ["print_values", "match"], negative = ["success_arity"] }
@@ -67,9 +67,9 @@
 "contains?" = { positive = ["lists"], negative = ["contains_type"] }
 
 # --- V0.5: модули, нативный stdlib, Map, дженерики, тесты, CLI ---
-"import" = { positive = ["v05_modules"], negative = ["unknown_module", "import_collision"] }
+"import" = { positive = ["v05_modules", "v05_module_cache_once"], negative = ["unknown_module", "import_collision", "v05_import_all_collision"] }
 "import:as" = { positive = ["v05_modules"], negative = ["unknown_module"] }
-"import:all" = { positive = ["v05_modules"], negative = ["import_collision"] }
+"import:all" = { positive = ["v05_modules"], negative = ["import_collision", "v05_import_all_collision"] }
 "import:(pkg mod)" = { positive = ["v05_modules"], negative = ["unknown_module"] }
 "senko/sqrt" = { positive = ["v05_stdlib"], negative = ["math_domain_error"] }
 "senko/pow" = { positive = ["v05_stdlib"], negative = ["math_domain_error"] }
@@ -111,5 +111,6 @@
 "unknown-module-symbol" = { positive = ["v05_stdlib"], negative = ["unknown_module_symbol"] }
 "stack-depth-exceeded" = { positive = ["v05_recursion_5000_ok"], negative = ["v05_deep_recursion", "v05_mutual_recursion"] }
 "nesting-too-deep" = { positive = ["v05_recursion_5000_ok"], negative = ["v05_deep_nesting"] }
-"integer-overflow" = { positive = ["arithmetic"], negative = ["div_overflow_min", "mod_overflow_min", "abs_overflow_min", "sub_overflow_min"] }
-"invalid-exit-code" = { positive = ["loop"], negative = ["exit_out_of_range"] }
+"integer-overflow" = { positive = ["arithmetic", "v05_i64_boundaries_ok"], negative = ["div_overflow_min", "mod_overflow_min", "abs_overflow_min", "sub_overflow_min", "v05_add_overflow", "v05_sub_overflow", "v05_mul_overflow", "v05_unary_neg_overflow", "v05_pow_overflow"] }
+"invalid-exit-code" = { positive = ["loop", "v05_exit_boundary_ok"], negative = ["exit_out_of_range", "v05_exit_negative", "v05_exit_1000"] }
+"import-collision" = { positive = ["v05_modules"], negative = ["v05_import_all_collision"] }

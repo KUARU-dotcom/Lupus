@@ -1,0 +1,6 @@
+;; test_cache.lupus — проверка однократного исполнения модуля.
+;; Второй экспорт нужен для ручной проверки коллизии import :all.
+(define-mutable counter 0)
+(print "модуль загружен")
+(define-public (increment) -> int (set! counter (+ counter 1)) counter)
+(define-public (double (x int)) -> int (* x 2))

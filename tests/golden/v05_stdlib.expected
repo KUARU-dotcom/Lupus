@@ -8,5 +8,5 @@ write-ok
 append-ok
 abc
 3
-(success ("util.lupus"))
+(success ("test_cache.lupus" "util.lupus"))
 delete-ok
