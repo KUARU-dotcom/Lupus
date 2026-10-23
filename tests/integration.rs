@@ -982,3 +982,55 @@ fn v04_single_semicolon_is_comment() {
     // иначе лексер зациклился бы. Регрессионная проверка (V0.4 этап 6).
     assert_eq!(run_bin("(print 42) ; хвостовой комментарий\n"), "42\n");
 }
+
+// ─── V0.5: ошибки чтения файла и резолва импорта ─────────────────────────────
+
+#[test]
+fn v05_cli_missing_file_io_error() {
+    let n = FILE_COUNTER.fetch_add(1, Ordering::SeqCst);
+    let path =
+        std::env::temp_dir().join(format!("lupus_missing_{}_{}.lupus", std::process::id(), n));
+    let _ = std::fs::remove_file(&path);
+
+    let out = Command::new(env!("CARGO_BIN_EXE_lupus"))
+        .arg(&path)
+        .output()
+        .expect("не удалось запустить интерпретатор");
+    assert_eq!(out.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    let trimmed = stderr.trim();
+    assert!(
+        trimmed.starts_with('{') && trimmed.ends_with('}'),
+        "{}",
+        stderr
+    );
+    assert!(stderr.contains("\"code\":\"io-error\""), "{}", stderr);
+    assert!(stderr.contains("\"phase\":\"runtime\""), "{}", stderr);
+    assert!(stderr.contains("\"location\":null"), "{}", stderr);
+}
+
+#[test]
+fn v05_unknown_module_still_for_import() {
+    let n = FILE_COUNTER.fetch_add(1, Ordering::SeqCst);
+    let path = std::env::temp_dir().join(format!(
+        "lupus_import_unknown_{}_{}.lupus",
+        std::process::id(),
+        n
+    ));
+    std::fs::write(&path, "(import nope_module)").expect("не удалось записать тестовый файл");
+
+    let out = Command::new(env!("CARGO_BIN_EXE_lupus"))
+        .arg(&path)
+        .output()
+        .expect("не удалось запустить интерпретатор");
+    let _ = std::fs::remove_file(&path);
+    assert_eq!(out.status.code(), Some(1));
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    let trimmed = stderr.trim();
+    assert!(
+        trimmed.starts_with('{') && trimmed.ends_with('}'),
+        "{}",
+        stderr
+    );
+    assert!(stderr.contains("\"code\":\"unknown-module\""), "{}", stderr);
+}

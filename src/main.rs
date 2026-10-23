@@ -99,10 +99,11 @@ fn fail(error: &Error, args: &Args) -> ! {
 
 fn read_source(path: &Path) -> Result<String, Error> {
     std::fs::read_to_string(path).map_err(|error| {
-        Error::lint(
-            "unknown-module",
+        Error::runtime(
+            "io-error",
             format!("Не удалось прочитать файл {}: {}", path.display(), error),
         )
+        .with_hint("Проверьте, что файл существует и доступен для чтения")
     })
 }
 
