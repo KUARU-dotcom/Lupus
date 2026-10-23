@@ -46,3 +46,6 @@ Thumbs.db
 /_python_exp.py
 # ВАЖНО: tasks.json и results_*.json НЕ игнорируются — это данные эксперимента,
 # они должны быть в репозитории.
+
+# Скачиваемые эталонные бинарники (scripts/fetch-oracle.sh)
+oracles/

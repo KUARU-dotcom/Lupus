@@ -909,10 +909,13 @@ impl Interpreter {
         rest: &[Expr],
         env: &Rc<RefCell<Environment>>,
     ) -> Result<Option<Value>, Error> {
-        let types = self.structs.borrow();
+        // Клонируем определение, чтобы не держать заимствование `structs`
+        // во время вычисления аргументов: аргументы могут сами объявлять
+        // структуры (`defstruct` — выражение) и брать `borrow_mut`.
+        let constructor = self.structs.borrow().get(name).cloned();
 
         // Конструктор: имя совпадает с зарегистрированным типом.
-        if let Some(definition) = types.get(name) {
+        if let Some(definition) = constructor {
             let args = self.eval_all(rest, env)?;
             if args.len() != definition.fields.len() {
                 return Err(Error::arity(format!(
@@ -934,12 +937,15 @@ impl Interpreter {
             let field_part = &field_part[1..];
             // Аксессор ищется по точному имени типа, а при отсутствии — без
             // учёта регистра (совместимость с `(node-value n)` для `Node`).
-            let definition = types.get(type_part).cloned().or_else(|| {
-                types
-                    .values()
-                    .find(|definition| definition.name.eq_ignore_ascii_case(type_part))
-                    .cloned()
-            });
+            let definition = {
+                let types = self.structs.borrow();
+                types.get(type_part).cloned().or_else(|| {
+                    types
+                        .values()
+                        .find(|definition| definition.name.eq_ignore_ascii_case(type_part))
+                        .cloned()
+                })
+            };
             if let Some(definition) = definition {
                 let Some((idx, _)) = definition
                     .fields

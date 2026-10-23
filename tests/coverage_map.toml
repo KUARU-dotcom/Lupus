@@ -65,3 +65,45 @@
 "length" = { positive = ["lists"], negative = ["length_type"] }
 "len" = { positive = ["lists"], negative = ["len_type"] }
 "contains?" = { positive = ["lists"], negative = ["contains_type"] }
+
+# --- V0.5: модули, нативный stdlib, Map, дженерики, тесты, CLI ---
+"import" = { positive = ["v05_modules"], negative = ["unknown_module", "import_collision"] }
+"import:as" = { positive = ["v05_modules"], negative = ["unknown_module"] }
+"import:all" = { positive = ["v05_modules"], negative = ["import_collision"] }
+"import:(pkg mod)" = { positive = ["v05_modules"], negative = ["unknown_module"] }
+"senko/sqrt" = { positive = ["v05_stdlib"], negative = ["math_domain_error"] }
+"senko/pow" = { positive = ["v05_stdlib"], negative = ["math_domain_error"] }
+"senko/round" = { positive = ["v05_stdlib"], negative = ["math_domain_error"] }
+"senko/abs" = { positive = ["v05_modules"], negative = ["math_domain_error"] }
+"kaltsit/exists?" = { positive = ["v05_stdlib"], negative = ["kaltsit_type_error"] }
+"kaltsit/is-dir?" = { positive = ["v05_stdlib"], negative = ["kaltsit_type_error"] }
+"kaltsit/mkdir" = { positive = ["v05_stdlib"], negative = ["kaltsit_type_error"] }
+"kaltsit/write-file" = { positive = ["v05_stdlib"], negative = ["kaltsit_type_error"] }
+"kaltsit/append-file" = { positive = ["v05_stdlib"], negative = ["kaltsit_type_error"] }
+"kaltsit/read-file" = { positive = ["v05_stdlib"], negative = ["kaltsit_type_error"] }
+"kaltsit/size" = { positive = ["v05_stdlib"], negative = ["kaltsit_type_error"] }
+"kaltsit/list-dir" = { positive = ["v05_stdlib"], negative = ["kaltsit_type_error"] }
+"kaltsit/delete" = { positive = ["v05_stdlib"], negative = ["kaltsit_type_error"] }
+"test" = { positive = ["v05_tests"], negative = ["test_name_duplicate", "test_in_function"] }
+"test/assert-eq" = { positive = ["v05_tests"], negative = ["assert_fail"] }
+"test/assert-true" = { positive = ["v05_tests"], negative = ["assert_fail"] }
+"test/assert-false" = { positive = ["v05_tests"], negative = ["assert_fail"] }
+"test/run" = { positive = ["v05_tests"], negative = ["test_in_function"] }
+"test/run-all" = { positive = ["v05_tests"], negative = ["test_name_duplicate"] }
+"map" = { positive = ["v05_map"], negative = ["map_nan_key"] }
+"map-get" = { positive = ["v05_map"], negative = ["map_nan_key"] }
+"map-keys" = { positive = ["v05_map"], negative = ["map_nan_key"] }
+"map-values" = { positive = ["v05_map"], negative = ["map_nan_key"] }
+"map-has?" = { positive = ["v05_map"], negative = ["map_nan_key"] }
+"map-set" = { positive = ["v05_map"], negative = ["map_nan_key"] }
+"generic-defstruct" = { positive = ["v05_generics"], negative = ["defstruct_duplicate_field"] }
+"Node" = { positive = ["v05_generics"], negative = ["constructor_arity"] }
+"Node-value" = { positive = ["v05_generics"], negative = ["accessor_foreign_struct"] }
+"node-value" = { positive = ["v05_generics"], negative = ["accessor_foreign_struct"] }
+"lupus run" = { positive = ["v05_modules"], negative = ["unknown_identifier"] }
+"lupus test" = { positive = ["v05_tests"], negative = ["test_name_duplicate"] }
+"lupus check" = { positive = ["v05_modules"], negative = ["unused_variable"] }
+"lupus ast" = { positive = ["v05_modules"], negative = ["unexpected_token"] }
+"lupus eval" = { positive = ["v05_modules"], negative = ["arity_mismatch"] }
+"string-split-utf8" = { positive = ["utf8_split", "v05_utf8_escape"], negative = ["string_split_type"] }
+"string-escape-utf8" = { positive = ["v05_utf8_escape"], negative = ["unclosed_string"] }

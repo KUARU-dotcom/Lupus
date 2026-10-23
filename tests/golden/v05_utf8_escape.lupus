@@ -1,0 +1,5 @@
+(print "кириллица 🐺")
+(print "tab\tnew\nline")
+(print (string-length "\u00e9"))
+(print "\x41\u0416")
+(print (string-split "а\nб" "\n"))

@@ -1,0 +1,5 @@
+(print (string-split "привет" ""))
+(print (string-split "a🐺b" "🐺"))
+(print (string-split "кириллица" "л"))
+(print (string-reverse "🐺л"))
+(print (string-length (string-reverse "🐺л")))

@@ -1,0 +1,12 @@
+4.0
+256.0
+3.0
+true
+true
+mkdir-ok
+write-ok
+append-ok
+abc
+3
+(success ("util.lupus"))
+delete-ok

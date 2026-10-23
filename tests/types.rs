@@ -174,3 +174,12 @@ fn negative_map_nan_key() {
     assert_ne!(code, 0);
     assert_eq!(error_code(&stderr).as_deref(), Some("type-mismatch"));
 }
+
+#[test]
+fn nested_defstruct_in_constructor_argument_does_not_panic() {
+    let out = run_ok(
+        "(defstruct Outer (x int))\n\
+         (print (Outer-x (Outer (begin (defstruct Inner (y int)) 5))))",
+    );
+    assert_eq!(out, "5\n");
+}

@@ -1,0 +1,7 @@
+(import (w test))
+(test "passes" (test/assert-eq 1 1))
+(test/assert-eq 1 1)
+(test/assert-true true)
+(test/assert-false false)
+(print (test/run-all))
+(print (test/run (list "passes")))

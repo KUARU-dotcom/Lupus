@@ -1,0 +1,8 @@
+(map (tuple "a" 1) (tuple "b" 2))
+(some 1)
+none
+("a" "b")
+(1 2)
+true
+(map (tuple "a" 1) (tuple "b" 2) (tuple "c" 3))
+true
