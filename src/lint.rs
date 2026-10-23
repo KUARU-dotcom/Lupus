@@ -20,9 +20,11 @@ pub fn diagnostics(forms: &[Expr], file: Option<&Path>) -> Vec<Error> {
 
     check_test_names(forms, &mut errors);
     check_function_bodies(forms, false, &mut errors);
+    // Импорты проверяются до unused-variable: коллизия `:all` должна
+    // диагностироваться как import-collision, а не как неиспользуемое имя.
+    check_imports(forms, file, &mut errors);
     check_definitions(forms, &mut errors);
     check_directives(forms, &mut errors);
-    check_imports(forms, file, &mut errors);
 
     errors
 }

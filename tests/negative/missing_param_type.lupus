@@ -1,0 +1,2 @@
+(define-public (f x) -> int x)
+(print (f 1))

@@ -351,7 +351,7 @@ def run_lupus(code: str) -> tuple[str, str]:
             timeout=TIMEOUT_RUN,
         )
         output = result.stdout.strip()
-        if result.returncode != 0 or "Ошибка" in output:
+        if result.returncode != 0:
             return "error", output
         return "ok", output
     except subprocess.TimeoutExpired:

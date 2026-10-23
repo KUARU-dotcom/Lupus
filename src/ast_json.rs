@@ -405,15 +405,13 @@ fn pattern_node(pattern: &Expr) -> Json {
                 Some(Expr::Symbol(name)) => name.clone(),
                 _ => String::new(),
             };
+            let args = Json::Array(items.iter().skip(1).map(pattern_node).collect());
+            if constructor == "tuple" || constructor == "Tuple" {
+                return node("PatternTuple", vec![("args", args)]);
+            }
             node(
                 "PatternConstructor",
-                vec![
-                    ("constructor", Json::str(constructor)),
-                    (
-                        "args",
-                        Json::Array(items.iter().skip(1).map(pattern_node).collect()),
-                    ),
-                ],
+                vec![("constructor", Json::str(constructor)), ("args", args)],
             )
         }
         other => node(
