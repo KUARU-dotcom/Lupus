@@ -1,8 +1,10 @@
 //! LiF фаза 2: fuzz-smoke интерпретатора (этап F1).
 //!
-//! Генерирует 2000 случайных программ (смесь валидных форм и token-soup)
-//! и запускает каждую с таймаутом 2 секунды. Допустимые исходы: код 0 или 1
-//! с JSON-ошибкой в stderr. Panic, сигнал, код 101 или зависание — провал.
+//! Генерирует структурированные программы (random, edge_cases, type_mix,
+//! modules, strings) и запускает каждую с таймаутом 2 секунды. Количество
+//! программ задаётся `LUPUS_FUZZ_N` (по умолчанию 10 000). Допустимые исходы:
+//! код 0 или 1 с JSON-ошибкой в stderr. Panic, сигнал, код 101 или зависание —
+//! провал.
 
 use std::io::Read;
 use std::path::PathBuf;
@@ -12,14 +14,24 @@ use std::time::{Duration, Instant};
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-const ITERATIONS: usize = 2000;
+const DEFAULT_ITERATIONS: usize = 10_000;
 const TIMEOUT: Duration = Duration::from_secs(2);
+const GENERATORS: [&str; 5] = ["random", "edge_cases", "type_mix", "modules", "strings"];
 
 fn temp_file() -> PathBuf {
     let n = COUNTER.fetch_add(1, Ordering::SeqCst);
     let dir = std::env::temp_dir().join(format!("lupus_fuzz_{}_{}", std::process::id(), n));
     std::fs::create_dir_all(&dir).expect("temp dir");
     dir.join("fuzz.lupus")
+}
+
+/// Количество fuzz-программ: `LUPUS_FUZZ_N` или 10 000 по умолчанию.
+fn iterations() -> usize {
+    std::env::var("LUPUS_FUZZ_N")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(DEFAULT_ITERATIONS)
 }
 
 /// Детерминированный xorshift64* — без внешних зависимостей.
@@ -208,7 +220,7 @@ fn token_soup(rng: &mut Rng) -> String {
     parts.join(" ")
 }
 
-fn generate(rng: &mut Rng) -> String {
+fn generate_random(rng: &mut Rng) -> String {
     if rng.chance(30) {
         return token_soup(rng);
     }
@@ -218,6 +230,196 @@ fn generate(rng: &mut Rng) -> String {
         forms.push(form(rng, 3));
     }
     forms.join("\n")
+}
+
+/// Граничные литералы, глубокая вложенность, смешение типов и рекурсия.
+fn generate_edge_cases(rng: &mut Rng) -> String {
+    if rng.chance(2) {
+        return generate_recursion(rng);
+    }
+    match rng.below(5) {
+        0 => {
+            let max = "9223372036854775807";
+            let min = "-9223372036854775808";
+            match rng.below(6) {
+                0 => format!("(print {max})\n(print {min})\n"),
+                1 => format!("(+ {max} 1)\n"),
+                2 => format!("(- {min} 1)\n"),
+                3 => format!("(* {max} 2)\n"),
+                4 => format!("(- {min})\n"),
+                _ => format!("(pow {max} 2)\n"),
+            }
+        }
+        1 => {
+            let forms = [
+                "(print 1e308)",
+                "(print -1e308)",
+                "(print (* 1e308 10.0))",
+                "(print (/ 1e308 1e-308))",
+                "(print (+ 1e308 1e308))",
+                "(print (int->float 9223372036854775807))",
+            ];
+            forms[rng.below(forms.len())].to_string() + "\n"
+        }
+        2 => {
+            let depth = 990 + rng.below(16);
+            format!(
+                "{}{}{}\n",
+                "(".repeat(depth),
+                "(print 1)",
+                ")".repeat(depth)
+            )
+        }
+        3 => {
+            let values = [
+                "1",
+                "1.5",
+                "\"str\"",
+                "(list 1 2)",
+                "true",
+                "none",
+                "9223372036854775807",
+                "-9223372036854775808",
+            ];
+            let ops = [
+                "+",
+                "-",
+                "*",
+                "/",
+                "%",
+                "=",
+                "string-append",
+                "list",
+                "nth",
+                "contains?",
+            ];
+            let op = ops[rng.below(ops.len())];
+            let a = values[rng.below(values.len())];
+            let b = values[rng.below(values.len())];
+            format!("(print ({op} {a} {b}))\n")
+        }
+        _ => format!(
+            "(print (list {} {} {}))\n",
+            rng.below(1000),
+            rng.below(1000) as f64 / 10.0,
+            ["\"x\"", "true", "none"][rng.below(3)]
+        ),
+    }
+}
+
+fn generate_recursion(rng: &mut Rng) -> String {
+    match rng.below(3) {
+        0 => "(define (f n) (f (+ n 1)))\n(f 0)\n".to_string(),
+        1 => "(define (f n) (if (= n 0) 0 (f (- n 1))))\n(f 10001)\n".to_string(),
+        _ => "(define (f n) (g n))\n(define (g n) (f n))\n(f 0)\n".to_string(),
+    }
+}
+
+/// Намеренное смешивание int/float/str/list для type-mismatch.
+fn generate_type_mix(rng: &mut Rng) -> String {
+    let values = [
+        "1",
+        "1.5",
+        "\"str\"",
+        "(list 1 2)",
+        "true",
+        "none",
+        "9223372036854775807",
+        "-9223372036854775808",
+    ];
+    let ops = [
+        "+",
+        "-",
+        "*",
+        "/",
+        "%",
+        "<",
+        "=",
+        "string-append",
+        "string-length",
+        "list",
+        "nth",
+        "contains?",
+        "not",
+    ];
+    let mut forms = vec![
+        "(print (+ 1 1.5))".to_string(),
+        "(print (string-append \"a\" (list 1 2)))".to_string(),
+    ];
+    let extra = 1 + rng.below(3);
+    for _ in 0..extra {
+        let op = ops[rng.below(ops.len())];
+        let a = values[rng.below(values.len())];
+        let b = values[rng.below(values.len())];
+        if op == "string-length" || op == "not" {
+            forms.push(format!("(print ({op} {a}))"));
+        } else {
+            forms.push(format!("(print ({op} {a} {b}))"));
+        }
+    }
+    forms.join("\n")
+}
+
+/// `(import senko)` и вызовы с граничными значениями.
+fn generate_modules(rng: &mut Rng) -> String {
+    let calls = [
+        "(print (senko/sqrt 16.0))",
+        "(print (senko/sqrt -1.0))",
+        "(print (senko/sqrt 1e308))",
+        "(print (senko/sqrt 1e-308))",
+        "(print (senko/pow 2.0 8.0))",
+        "(print (senko/pow 1e308 2.0))",
+        "(print (senko/pow 1e308 0.5))",
+        "(print (senko/pow -1e308 0.5))",
+        "(print (senko/pow 0.0 -1.0))",
+        "(print (senko/sqrt 1))",
+    ];
+    let mut forms = vec!["(import senko)".to_string()];
+    let count = 1 + rng.below(3);
+    for _ in 0..count {
+        forms.push(calls[rng.below(calls.len())].to_string());
+    }
+    forms.join("\n")
+}
+
+/// Строки с emoji, кириллицей и escape-последовательностями.
+fn generate_strings(rng: &mut Rng) -> String {
+    let strings = [
+        "\"\"",
+        "\"🐺 Волк\"",
+        "\"Привет, мир!\"",
+        "\"a\\nb\"",
+        "\"tab\\there\"",
+        "\"quote\\\"x\\\"\"",
+        "\"backslash\\\\\"",
+        "\"тест\"",
+        "\"hello🐺\"",
+        "\"\\u0432\\u043e\\u043b\\u043a\"",
+    ];
+    let value = strings[rng.below(strings.len())];
+    let mut forms = Vec::new();
+    let count = 1 + rng.below(3);
+    for _ in 0..count {
+        let expr = match rng.below(5) {
+            0 => format!("(print {value})"),
+            1 => format!("(print (string-length {value}))"),
+            2 => format!("(print (string-reverse {value}))"),
+            3 => format!("(print (string-append {value} {value}))"),
+            _ => format!("(print (string-split {value} \" \"))"),
+        };
+        forms.push(expr);
+    }
+    forms.join("\n")
+}
+
+fn generate_for(index: usize, rng: &mut Rng) -> String {
+    match index {
+        0 => generate_random(rng),
+        1 => generate_edge_cases(rng),
+        2 => generate_type_mix(rng),
+        3 => generate_modules(rng),
+        _ => generate_strings(rng),
+    }
 }
 
 enum Outcome {
@@ -532,38 +734,120 @@ fn validate_error_json(stderr: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn assert_valid_outcome(source: &str, outcome: Outcome) {
-    match outcome {
-        Outcome::TimedOut => {
-            panic!("fuzz: зависание >2с на программе:\n{source}");
-        }
-        Outcome::Exited { code, stderr } => {
-            if code == 0 {
-                return;
+#[derive(Default)]
+struct FuzzStats {
+    programs: usize,
+    exit0: usize,
+    exit1: usize,
+    panics: usize,
+    abnormal: usize,
+    timeouts: usize,
+    invalid_json: usize,
+    per_generator: [usize; GENERATORS.len()],
+    failures: Vec<String>,
+}
+
+fn short_source(source: &str) -> String {
+    let mut short: String = source.chars().take(300).collect();
+    if source.chars().count() > 300 {
+        short.push_str("...");
+    }
+    short
+}
+
+impl FuzzStats {
+    fn record(&mut self, source: &str, generator: &str, outcome: Outcome) {
+        match outcome {
+            Outcome::TimedOut => {
+                self.timeouts += 1;
+                self.failures.push(format!(
+                    "[{generator}] зависание >2с:\n{}",
+                    short_source(source)
+                ));
             }
-            assert_eq!(
-                code, 1,
-                "fuzz: недопустимый код {code} (ожидался 0/1) на программе:\n{source}\nstderr:\n{stderr}"
-            );
-            if let Err(error) = validate_error_json(&stderr) {
-                panic!(
-                    "fuzz: некорректный JSON ошибки на программе:\n{source}\nпричина: {error}\nstderr:\n{stderr}"
-                );
-            }
+            Outcome::Exited { code, stderr } => match code {
+                0 => self.exit0 += 1,
+                1 => {
+                    self.exit1 += 1;
+                    if let Err(error) = validate_error_json(&stderr) {
+                        self.invalid_json += 1;
+                        self.failures.push(format!(
+                            "[{generator}] некорректный JSON ошибки: {error}\nprogram:\n{}\nstderr:\n{stderr}",
+                            short_source(source)
+                        ));
+                    }
+                }
+                101 => {
+                    self.panics += 1;
+                    self.failures.push(format!(
+                        "[{generator}] panic/exit 101:\nprogram:\n{}\nstderr:\n{stderr}",
+                        short_source(source)
+                    ));
+                }
+                _ => {
+                    self.abnormal += 1;
+                    self.failures.push(format!(
+                        "[{generator}] аварийный код {code} (ожидался 0/1):\nprogram:\n{}\nstderr:\n{stderr}",
+                        short_source(source)
+                    ));
+                }
+            },
         }
     }
 }
 
 #[test]
-fn fuzz_smoke_2000_random_programs() {
+fn fuzz_smoke_structured_generators() {
+    let total = iterations();
     let path = temp_file();
     let mut rng = Rng::new(0x5EED_0F00_D1D1_u64);
-    for iteration in 0..ITERATIONS {
-        let source = generate(&mut rng);
+    let mut stats = FuzzStats::default();
+    let started = Instant::now();
+
+    for iteration in 0..total {
+        let index = iteration % GENERATORS.len();
+        let generator = GENERATORS[index];
+        let source = generate_for(index, &mut rng);
+        stats.programs += 1;
+        stats.per_generator[index] += 1;
         std::fs::write(&path, &source).expect("write fuzz program");
         let outcome = run_with_timeout(&path);
-        assert_valid_outcome(&source, outcome);
-        let _ = iteration;
+        stats.record(&source, generator, outcome);
+    }
+
+    let elapsed = started.elapsed();
+    let distribution = GENERATORS
+        .iter()
+        .zip(stats.per_generator.iter())
+        .map(|(name, count)| format!("{name}:{count}"))
+        .collect::<Vec<_>>()
+        .join(",");
+    println!(
+        "FUZZ_REPORT programs={} elapsed_ms={} generators={} exit0={} exit1={} panics={} abnormal={} timeouts={} invalid_json={}",
+        stats.programs,
+        elapsed.as_millis(),
+        distribution,
+        stats.exit0,
+        stats.exit1,
+        stats.panics,
+        stats.abnormal,
+        stats.timeouts,
+        stats.invalid_json
+    );
+
+    if !stats.failures.is_empty() {
+        let shown = stats
+            .failures
+            .iter()
+            .take(10)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n\n");
+        panic!(
+            "fuzz: ошибок {} (показаны первые 10):\n{}",
+            stats.failures.len(),
+            shown
+        );
     }
 }
 

@@ -24,6 +24,7 @@ jobs:
         run: cargo test --locked
         env:
           LUPUS_ORACLE_REQUIRED: "1"
+          LUPUS_FUZZ_N: "20000"
       - name: Clippy (deny warnings)
         run: cargo clippy --all-targets -- -D warnings
       - name: Format check
