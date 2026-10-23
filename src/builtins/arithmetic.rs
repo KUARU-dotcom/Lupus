@@ -70,7 +70,7 @@ pub fn add(args: &[Value]) -> Result<Value, Error> {
         if let Num::Int(i) = n {
             result = result
                 .checked_add(*i)
-                .ok_or_else(|| Error::new("Переполнение при сложении"))?;
+                .ok_or_else(|| Error::runtime("integer-overflow", "Переполнение при сложении"))?;
         }
     }
     Ok(Value::Int(result))
@@ -84,7 +84,9 @@ pub fn sub(args: &[Value]) -> Result<Value, Error> {
 
     if args.len() == 1 {
         return match &args[0] {
-            Value::Int(v) => Ok(Value::Int(-v)),
+            Value::Int(v) => v.checked_neg().map(Value::Int).ok_or_else(|| {
+                Error::runtime("integer-overflow", "Переполнение при унарном минусе")
+            }),
             Value::Float(v) => Ok(Value::Float(-v)),
             _ => Err(Error::new("- требует чисел")),
         };
@@ -117,7 +119,7 @@ pub fn sub(args: &[Value]) -> Result<Value, Error> {
         if let Num::Int(i) = n {
             result = result
                 .checked_sub(*i)
-                .ok_or_else(|| Error::new("Переполнение при вычитании"))?;
+                .ok_or_else(|| Error::runtime("integer-overflow", "Переполнение при вычитании"))?;
         }
     }
     Ok(Value::Int(result))
@@ -152,7 +154,7 @@ pub fn mul(args: &[Value]) -> Result<Value, Error> {
         if let Num::Int(i) = n {
             result = result
                 .checked_mul(*i)
-                .ok_or_else(|| Error::new("Переполнение при умножении"))?;
+                .ok_or_else(|| Error::runtime("integer-overflow", "Переполнение при умножении"))?;
         }
     }
     Ok(Value::Int(result))
@@ -178,9 +180,11 @@ pub fn div(args: &[Value]) -> Result<Value, Error> {
         (Num::Float(x), Num::Float(y)) => Ok(Value::Float(x / y)),
         (Num::Int(x), Num::Int(y)) => {
             if y == 0 {
-                return Err(Error::new("Деление на ноль"));
+                return Err(Error::runtime("divide-by-zero", "Деление на ноль"));
             }
-            Ok(Value::Int(x / y))
+            x.checked_div(y)
+                .map(Value::Int)
+                .ok_or_else(|| Error::runtime("integer-overflow", "Переполнение при делении"))
         }
         (Num::Int(_), Num::Float(_)) | (Num::Float(_), Num::Int(_)) => {
             unreachable!("смешивание уже отброшено check_no_mix")
@@ -203,9 +207,12 @@ pub fn rem(args: &[Value]) -> Result<Value, Error> {
     let dividend = as_int(&args[0], "%")?;
     let divisor = as_int(&args[1], "%")?;
     if divisor == 0 {
-        return Err(Error::new("Деление на ноль"));
+        return Err(Error::runtime("divide-by-zero", "Деление на ноль"));
     }
-    Ok(Value::Int(dividend % divisor))
+    dividend
+        .checked_rem(divisor)
+        .map(Value::Int)
+        .ok_or_else(|| Error::runtime("integer-overflow", "Переполнение при вычислении остатка"))
 }
 
 /// Возведение в степень `(pow основание показатель)`.
@@ -231,9 +238,9 @@ pub fn pow(args: &[Value]) -> Result<Value, Error> {
             "pow: показатель степени не может быть отрицательным",
         ));
     }
-    let result = base
-        .checked_pow(exp as u32)
-        .ok_or_else(|| Error::new("Переполнение при возведении в степень"))?;
+    let result = base.checked_pow(exp as u32).ok_or_else(|| {
+        Error::runtime("integer-overflow", "Переполнение при возведении в степень")
+    })?;
     Ok(Value::Int(result))
 }
 
@@ -284,7 +291,9 @@ pub fn abs(args: &[Value]) -> Result<Value, Error> {
         )));
     }
     let a = as_int(&args[0], "abs")?;
-    Ok(Value::Int(a.abs()))
+    a.checked_abs()
+        .map(Value::Int)
+        .ok_or_else(|| Error::runtime("integer-overflow", "Переполнение при вычислении abs"))
 }
 
 /// Конверсия int → float `(int->float n)`.
