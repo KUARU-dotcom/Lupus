@@ -75,7 +75,17 @@ pub fn run_file_lenient(path: &str, lenient: bool) -> Result<(), Error> {
 
 /// Лексирует и парсит исходный код без выполнения.
 pub fn parse_source(src: &str) -> Result<Vec<ast::Expr>, Error> {
+    parse_source_lenient(src, false)
+}
+
+/// Лексирует и парсит исходный код с поддержкой lenient-режима.
+pub fn parse_source_lenient(src: &str, lenient: bool) -> Result<Vec<ast::Expr>, Error> {
     let tokens = lexer::lex(src)?;
+    let tokens = if lenient {
+        interpreter::sanitize_tokens_lenient(tokens)
+    } else {
+        tokens
+    };
     parser::parse(tokens)
 }
 

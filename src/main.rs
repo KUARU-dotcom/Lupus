@@ -106,16 +106,16 @@ fn read_source(path: &Path) -> Result<String, Error> {
     })
 }
 
-fn parse_file(path: &Path) -> Result<Vec<lupus::ast::Expr>, Error> {
+fn parse_file(path: &Path, args: &Args) -> Result<Vec<lupus::ast::Expr>, Error> {
     let source = read_source(path)?;
-    lupus::parse_source(&source)
+    lupus::parse_source_lenient(&source, args.lenient)
         .map_err(|error| error.with_file_if_located(path.display().to_string()))
 }
 
 fn run_file(path: &Path, args: &Args) -> Result<(), Error> {
     let source = read_source(path)?;
     if !args.no_lint {
-        let forms = lupus::parse_source(&source)
+        let forms = lupus::parse_source_lenient(&source, args.lenient)
             .map_err(|error| error.with_file_if_located(path.display().to_string()))?;
         lupus::lint::check(&forms, Some(path))?;
     }
@@ -123,15 +123,15 @@ fn run_file(path: &Path, args: &Args) -> Result<(), Error> {
 }
 
 fn check_file(path: &Path, args: &Args) -> Result<(), Error> {
-    let forms = parse_file(path)?;
+    let forms = parse_file(path, args)?;
     if args.no_lint {
         return Ok(());
     }
     lupus::lint::check(&forms, Some(path))
 }
 
-fn ast_file(path: &Path) -> Result<(), Error> {
-    let forms = parse_file(path)?;
+fn ast_file(path: &Path, args: &Args) -> Result<(), Error> {
+    let forms = parse_file(path, args)?;
     println!("{}", lupus::ast_json::program_to_json(&forms));
     Ok(())
 }
@@ -210,7 +210,7 @@ fn run_test_file(path: &Path, args: &Args) -> bool {
         }
     };
 
-    let forms = match lupus::parse_source(&source)
+    let forms = match lupus::parse_source_lenient(&source, args.lenient)
         .map_err(|error| error.with_file_if_located(path.display().to_string()))
     {
         Ok(forms) => forms,
@@ -337,7 +337,7 @@ fn main() {
                 print_usage();
                 process::exit(1);
             }
-            ast_file(Path::new(&args.positional[0]))
+            ast_file(Path::new(&args.positional[0]), &args)
         }
         Command::Eval => {
             if args.positional.len() != 1 {
