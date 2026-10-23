@@ -1,0 +1,3 @@
+(import (w test))
+(test "same" (test/assert-true true))
+(test "same" (test/assert-true true))

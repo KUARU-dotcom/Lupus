@@ -1,0 +1,2 @@
+(import senko)
+(senko/sqrt (- 0.0 1.0))
