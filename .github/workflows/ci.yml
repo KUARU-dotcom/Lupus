@@ -16,8 +16,14 @@ jobs:
           components: rustfmt, clippy
       - name: Build (release)
         run: cargo build --release --locked
+      - name: Fetch oracle v0.4.0
+        run: bash scripts/fetch-oracle.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Test
         run: cargo test --locked
+        env:
+          LUPUS_ORACLE_REQUIRED: "1"
       - name: Clippy (deny warnings)
         run: cargo clippy --all-targets -- -D warnings
       - name: Format check

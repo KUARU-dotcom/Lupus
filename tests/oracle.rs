@@ -1,7 +1,8 @@
 //! Дифференциальный тест против эталонного Lupus v0.4.0 (этап F2).
 //!
-//! Если `oracles/v0.4.0/lupus` отсутствует, тест явно помечается как SKIP
-//! и не проваливается. Скачать бинарник: `scripts/fetch-oracle.sh`.
+//! Если `oracles/v0.4.0/lupus` отсутствует, тест помечается как SKIP и не
+//! проваливается. При `LUPUS_ORACLE_REQUIRED=1` отсутствие бинарника — ошибка
+//! гейта. Скачать бинарник: `scripts/fetch-oracle.sh`.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -55,6 +56,13 @@ fn corpus() -> Vec<PathBuf> {
 fn differential_against_v04_oracle() {
     let oracle = oracle_path();
     if !oracle.is_file() {
+        if std::env::var("LUPUS_ORACLE_REQUIRED").as_deref() == Ok("1") {
+            panic!(
+                "LUPUS_ORACLE_REQUIRED=1, но эталонный бинарник {} отсутствует; \
+                 запустите scripts/fetch-oracle.sh",
+                oracle.display()
+            );
+        }
         eprintln!(
             "SKIP: эталонный бинарник {} отсутствует; запустите scripts/fetch-oracle.sh",
             oracle.display()
