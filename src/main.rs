@@ -304,6 +304,21 @@ fn run_test_file(path: &Path, args: &Args) -> bool {
 fn main() {
     let raw: Vec<String> = std::env::args().skip(1).collect();
 
+    // Глубина рекурсии Lupus — до 10 000 вызовов. Tree-walk eval в debug-сборке
+    // расходует заметный объём стека на вызов, поэтому вычисление выполняется
+    // в отдельном потоке с большим стеком; глубина всё равно ограничена
+    // счётчиком `MAX_CALL_DEPTH`.
+    let worker = std::thread::Builder::new()
+        .name("lupus-eval".to_string())
+        .stack_size(1024 * 1024 * 1024)
+        .spawn(move || run_cli(raw))
+        .expect("не удалось запустить поток интерпретатора");
+    if worker.join().is_err() {
+        process::exit(101);
+    }
+}
+
+fn run_cli(raw: Vec<String>) {
     if raw.iter().any(|arg| arg == "--version" || arg == "-V") {
         println!("Lupus {}", env!("CARGO_PKG_VERSION"));
         return;

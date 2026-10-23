@@ -194,6 +194,21 @@ impl Error {
         error
     }
 
+    /// Синтаксическая ошибка с позицией и байтовым span.
+    pub fn parse_with_span(
+        code: impl Into<String>,
+        message: impl Into<String>,
+        line: usize,
+        col: usize,
+        span: Span,
+    ) -> Self {
+        let mut error = Error::parse(code, message, line, col);
+        if let Some(location) = error.location.as_mut() {
+            location.span = Some(span);
+        }
+        error
+    }
+
     /// Ошибка неверной арности.
     pub fn arity(message: impl Into<String>) -> Self {
         Error::runtime("arity-mismatch", message)

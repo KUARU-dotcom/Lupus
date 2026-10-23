@@ -38,6 +38,9 @@ pub struct TestDef {
     pub body: Vec<Expr>,
 }
 
+/// Максимальная глубина вызовов пользовательских функций.
+const MAX_CALL_DEPTH: u32 = 10_000;
+
 /// Результат выполнения одного теста.
 #[derive(Debug, Clone)]
 pub struct TestOutcome {
@@ -92,6 +95,19 @@ pub struct Interpreter {
     test_base_env: RefCell<Option<Rc<RefCell<Environment>>>>,
     /// Стек выполняющихся тестов (защита от рекурсии).
     running_tests: RefCell<Vec<String>>,
+    /// Текущая глубина вызовов пользовательских функций/замыканий.
+    depth: Rc<Cell<u32>>,
+}
+
+/// Уменьшает счётчик глубины при выходе из вызова (в том числе по ошибке).
+struct DepthGuard<'a> {
+    depth: &'a Cell<u32>,
+}
+
+impl Drop for DepthGuard<'_> {
+    fn drop(&mut self) {
+        self.depth.set(self.depth.get().saturating_sub(1));
+    }
 }
 
 impl Interpreter {
@@ -111,6 +127,7 @@ impl Interpreter {
             tests: RefCell::new(Vec::new()),
             test_base_env: RefCell::new(None),
             running_tests: RefCell::new(Vec::new()),
+            depth: Rc::new(Cell::new(0)),
         }
     }
 
@@ -611,6 +628,19 @@ impl Interpreter {
         }
     }
 
+    /// Проверяет и увеличивает глубину вызова пользовательской функции.
+    fn enter_call(&self) -> Result<DepthGuard<'_>, Error> {
+        let current = self.depth.get();
+        if current >= MAX_CALL_DEPTH {
+            return Err(Error::runtime(
+                "stack-depth-exceeded",
+                "Превышена максимальная глубина рекурсии (10000). Проверьте условие выхода.",
+            ));
+        }
+        self.depth.set(current + 1);
+        Ok(DepthGuard { depth: &self.depth })
+    }
+
     /// Вызывает замыкание с переданными формами-аргументами.
     fn call_closure(
         &self,
@@ -618,6 +648,7 @@ impl Interpreter {
         actual_args: &[Expr],
         caller_env: &Rc<RefCell<Environment>>,
     ) -> Result<Value, Error> {
+        let _depth = self.enter_call()?;
         if actual_args.len() != closure.params.len() {
             return Err(Error::new(format!(
                 "Функция ожидает {} аргументов, получено {}",
@@ -649,6 +680,7 @@ impl Interpreter {
         arg_vals: Vec<Value>,
         _caller_env: &Rc<RefCell<Environment>>,
     ) -> Result<Value, Error> {
+        let _depth = self.enter_call()?;
         if arg_vals.len() != closure.params.len() {
             return Err(Error::new(format!(
                 "Функция ожидает {} аргументов, получено {}",

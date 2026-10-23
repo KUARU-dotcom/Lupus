@@ -109,3 +109,5 @@
 "string-escape-utf8" = { positive = ["v05_utf8_escape"], negative = ["unclosed_string"] }
 "import-cycle" = { positive = ["v05_modules"], negative = ["import_cycle"] }
 "unknown-module-symbol" = { positive = ["v05_stdlib"], negative = ["unknown_module_symbol"] }
+"stack-depth-exceeded" = { positive = ["v05_recursion_5000_ok"], negative = ["v05_deep_recursion", "v05_mutual_recursion"] }
+"nesting-too-deep" = { positive = ["v05_recursion_5000_ok"], negative = ["v05_deep_nesting"] }

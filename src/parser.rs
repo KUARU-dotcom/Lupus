@@ -5,8 +5,11 @@
 //! `missing-rparen` и лишние `)` — ошибкой `unexpected-token`.
 
 use crate::ast::Expr;
-use crate::error::Error;
+use crate::error::{Error, Span};
 use crate::lexer::{Token, TokenKind};
+
+/// Максимальная глубина вложенности скобок.
+const MAX_NESTING: u32 = 1_000;
 
 /// Парсер, преобразующий токены в AST.
 pub struct Parser {
@@ -15,6 +18,8 @@ pub struct Parser {
     /// Позиция последнего успешно прочитанного токена (для ошибок в EOF).
     last_line: usize,
     last_col: usize,
+    /// Текущая глубина вложенности скобок.
+    nesting: u32,
 }
 
 impl Parser {
@@ -25,6 +30,7 @@ impl Parser {
             pos: 0,
             last_line: 1,
             last_col: 1,
+            nesting: 0,
         }
     }
 
@@ -92,6 +98,19 @@ impl Parser {
             }
             TokenKind::LParen => {
                 self.next();
+                self.nesting += 1;
+                if self.nesting > MAX_NESTING {
+                    return Err(Error::parse_with_span(
+                        "nesting-too-deep",
+                        "Слишком глубокая вложенность скобок (>1000).",
+                        token.line,
+                        token.col,
+                        Span {
+                            start: token.start,
+                            end: token.end,
+                        },
+                    ));
+                }
                 let mut elements = Vec::new();
 
                 loop {
@@ -112,6 +131,7 @@ impl Parser {
                     }
                 }
 
+                self.nesting -= 1;
                 Ok(Expr::List(elements))
             }
             TokenKind::RParen => {

@@ -37,6 +37,10 @@ pub struct Token {
     pub line: usize,
     /// Номер колонки (1-based).
     pub col: usize,
+    /// Начальный байтовый offset токена (включительно).
+    pub start: usize,
+    /// Конечный байтовый offset токена (исключительно).
+    pub end: usize,
 }
 
 /// Лексер, разбирающий исходный код на токены.
@@ -330,6 +334,7 @@ impl<'a> Lexer<'a> {
 
             let line = self.line;
             let col = self.col;
+            let start = self.pos;
             let ch = self.peek().unwrap();
 
             match ch {
@@ -339,6 +344,8 @@ impl<'a> Lexer<'a> {
                         kind: TokenKind::LParen,
                         line,
                         col,
+                        start,
+                        end: self.pos,
                     });
                 }
                 b')' => {
@@ -347,6 +354,8 @@ impl<'a> Lexer<'a> {
                         kind: TokenKind::RParen,
                         line,
                         col,
+                        start,
+                        end: self.pos,
                     });
                 }
                 b'"' => {
@@ -355,6 +364,8 @@ impl<'a> Lexer<'a> {
                         kind: TokenKind::Str(value),
                         line,
                         col,
+                        start,
+                        end: self.pos,
                     });
                 }
                 b'-' if self
@@ -363,11 +374,23 @@ impl<'a> Lexer<'a> {
                     .is_some_and(|c| c.is_ascii_digit()) =>
                 {
                     let kind = self.parse_number()?;
-                    tokens.push(Token { kind, line, col });
+                    tokens.push(Token {
+                        kind,
+                        line,
+                        col,
+                        start,
+                        end: self.pos,
+                    });
                 }
                 c if c.is_ascii_digit() => {
                     let kind = self.parse_number()?;
-                    tokens.push(Token { kind, line, col });
+                    tokens.push(Token {
+                        kind,
+                        line,
+                        col,
+                        start,
+                        end: self.pos,
+                    });
                 }
                 b'#' => {
                     // Разрешены только `#lupus` (директива) и `#| ... |#`
@@ -385,6 +408,8 @@ impl<'a> Lexer<'a> {
                             kind: TokenKind::Symbol("#lupus".to_string()),
                             line,
                             col,
+                            start,
+                            end: self.pos,
                         });
                     } else {
                         return Err(self.error(
@@ -401,7 +426,13 @@ impl<'a> Lexer<'a> {
                         "none" => TokenKind::None,
                         _ => TokenKind::Symbol(symbol),
                     };
-                    tokens.push(Token { kind, line, col });
+                    tokens.push(Token {
+                        kind,
+                        line,
+                        col,
+                        start,
+                        end: self.pos,
+                    });
                 }
                 _ => {
                     return Err(self.error(
