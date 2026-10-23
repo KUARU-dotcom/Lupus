@@ -1358,6 +1358,15 @@ impl Interpreter {
             Value::Int(c) => c,
             _ => return Err(Error::new("exit требует целого числа")),
         };
+        if !(0..=255).contains(&code) {
+            return Err(Error::runtime(
+                "invalid-exit-code",
+                format!(
+                    "Код выхода должен быть в диапазоне 0..=255, получено {}",
+                    code
+                ),
+            ));
+        }
         std::process::exit(code as i32);
     }
 
