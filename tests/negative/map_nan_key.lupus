@@ -1,0 +1,4 @@
+(defstruct point (x int) (y int))
+(define NaN (/ 0.0 0.0))
+(define m (map (tuple NaN 1)))
+(print m)

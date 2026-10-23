@@ -1,0 +1,3 @@
+(defstruct point (x int) (y int))
+(define p (point 1 2))
+(point-z p)

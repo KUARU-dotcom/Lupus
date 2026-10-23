@@ -1,0 +1,2 @@
+(defstruct (Node a) (value a) (left (Option (Node a))) (right (Option (Node a))))
+(Node 1)

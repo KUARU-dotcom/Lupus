@@ -932,7 +932,15 @@ impl Interpreter {
         if let Some(dash) = name.rfind('-') {
             let (type_part, field_part) = name.split_at(dash);
             let field_part = &field_part[1..];
-            if let Some(definition) = types.get(type_part) {
+            // Аксессор ищется по точному имени типа, а при отсутствии — без
+            // учёта регистра (совместимость с `(node-value n)` для `Node`).
+            let definition = types.get(type_part).cloned().or_else(|| {
+                types
+                    .values()
+                    .find(|definition| definition.name.eq_ignore_ascii_case(type_part))
+                    .cloned()
+            });
+            if let Some(definition) = definition {
                 let Some((idx, _)) = definition
                     .fields
                     .iter()
@@ -953,7 +961,7 @@ impl Interpreter {
                     Value::Struct {
                         name: sn,
                         fields: sf,
-                    } if sn == type_part => {
+                    } if sn == definition.name => {
                         return Ok(Some(sf[idx].clone()));
                     }
                     _ => {
@@ -1636,8 +1644,9 @@ impl Interpreter {
                         }
                         let mut bindings = Vec::new();
                         for (pat, val) in items[1..].iter().zip(elems.iter()) {
-                            if let Some(b) = self.match_pattern(pat, val)? {
-                                bindings.extend(b);
+                            match self.match_pattern(pat, val)? {
+                                Some(b) => bindings.extend(b),
+                                None => return Ok(None),
                             }
                         }
                         return Ok(Some(bindings));
@@ -1664,8 +1673,9 @@ impl Interpreter {
                         }
                         let mut bindings = Vec::new();
                         for (pat, val) in items[1..].iter().zip(fields.iter()) {
-                            if let Some(b) = self.match_pattern(pat, val)? {
-                                bindings.extend(b);
+                            match self.match_pattern(pat, val)? {
+                                Some(b) => bindings.extend(b),
+                                None => return Ok(None),
                             }
                         }
                         return Ok(Some(bindings));
