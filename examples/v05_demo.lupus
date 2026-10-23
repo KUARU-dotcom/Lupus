@@ -1,0 +1,32 @@
+;; Обзор V0.5: модули, нативный stdlib, Map и дженерик-структуры.
+(import senko)
+(import kaltsit)
+(import util)
+(import (w test))
+
+;; Нативный пакет senko.
+(print (senko/sqrt 144.0))
+
+;; Файловый модуль stdlib/util.lupus.
+(print (util/greet "V0.5"))
+
+;; Нативный пакет kaltsit.
+(print (kaltsit/exists? "README.md"))
+
+;; Map сохраняет порядок вставки.
+(define scores (map (tuple "alice" 10) (tuple "bob" 7)))
+(print (map-get scores "bob"))
+(print (map-set scores "carol" 12))
+
+;; Дженерик-структура с рекурсивным полем.
+(defstruct (Node a)
+  (value a)
+  (next (Option (Node a))))
+
+(define chain (Node 1 (some (Node 2 none))))
+(print (Node-value chain))
+(print (match chain
+  ((Node v (some next)) (+ v (Node-value next)))
+  (_ 0)))
+
+(test "demo" (test/assert-eq (util/double 2) 4))

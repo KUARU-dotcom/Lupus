@@ -94,7 +94,7 @@ fn cli_ast_stdout_is_json_only() {
 fn cli_version_and_lenient_parens() {
     let version = run(&["--version"]);
     assert_eq!(version.code, 0);
-    assert!(version.stdout.starts_with("Lupus "));
+    assert_eq!(version.stdout.trim(), "Lupus 0.5.0");
 
     let path = temp_file("(print 1))");
     let path = path.to_str().unwrap();

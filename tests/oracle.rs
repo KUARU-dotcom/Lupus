@@ -26,21 +26,27 @@ fn collect_lupus(dir: &Path, predicate: &dyn Fn(&Path) -> bool, out: &mut Vec<Pa
     }
 }
 
+fn is_v05_fixture(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|name| name.starts_with("v05_"))
+}
+
 fn corpus() -> Vec<PathBuf> {
     let root = manifest_dir();
     let mut files = Vec::new();
+    // V0.5-фикстуры и примеры используют import/Map/дженерики, которых нет
+    // в v0.4.0; дифференциальный корпус — только совместимые файлы.
     collect_lupus(
         &root.join("tests/golden"),
-        &|path| {
-            // V0.5-фикстуры используют import/Map/дженерики, которых нет в v0.4.0.
-            !path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|name| name.starts_with("v05_"))
-        },
+        &|path| !is_v05_fixture(path),
         &mut files,
     );
-    collect_lupus(&root.join("examples"), &|_| true, &mut files);
+    collect_lupus(
+        &root.join("examples"),
+        &|path| !is_v05_fixture(path),
+        &mut files,
+    );
     files.sort();
     files
 }

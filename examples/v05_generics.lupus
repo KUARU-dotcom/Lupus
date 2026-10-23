@@ -1,0 +1,16 @@
+;; V0.5: дженерик-структуры и рекурсивные поля.
+(defstruct (Node a)
+  (value a)
+  (left (Option (Node a)))
+  (right (Option (Node a))))
+
+(define tree
+  (Node 10
+        (some (Node 5 none none))
+        (some (Node 15 none none))))
+
+(print tree)
+(print (Node-value tree))
+(print (match tree
+  ((Node value (some left) _) (+ value (Node-value left)))
+  (_ 0)))

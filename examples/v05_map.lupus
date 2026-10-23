@@ -1,0 +1,10 @@
+;; V0.5: Map с сохранением порядка вставки.
+(define scores
+  (map (tuple "alice" 10)
+       (tuple "bob" 7)
+       (tuple "carol" 12)))
+
+(print (map-keys scores))
+(print (map-get scores "bob"))
+(print (map-has? scores "dave"))
+(print (map-set scores "dave" 3))

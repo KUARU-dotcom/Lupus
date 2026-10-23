@@ -1,4 +1,4 @@
-# Карта покрытия V0.4 (LiF).
+# Карта покрытия V0.4/V0.5 (LiF).
 # Каждый символ: positive = golden-тесты, negative = negative-тесты.
 [symbols]
 "define" = { positive = ["functions"], negative = ["define_arity"] }
@@ -107,3 +107,5 @@
 "lupus eval" = { positive = ["v05_modules"], negative = ["arity_mismatch"] }
 "string-split-utf8" = { positive = ["utf8_split", "v05_utf8_escape"], negative = ["string_split_type"] }
 "string-escape-utf8" = { positive = ["v05_utf8_escape"], negative = ["unclosed_string"] }
+"import-cycle" = { positive = ["v05_modules"], negative = ["import_cycle"] }
+"unknown-module-symbol" = { positive = ["v05_stdlib"], negative = ["unknown_module_symbol"] }

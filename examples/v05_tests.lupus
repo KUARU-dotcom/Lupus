@@ -1,0 +1,14 @@
+;; V0.5: тесты через нативный пакет w.
+;; Запуск: lupus test examples/v05_tests.lupus
+(import (w test))
+
+(define (square x) (* x x))
+
+(test "square positive"
+  (test/assert-eq (square 4) 16))
+
+(test "square zero"
+  (test/assert-eq (square 0) 0)
+  (test/assert-true (= (square 0) 0)))
+
+(print "v05 tests loaded")

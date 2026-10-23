@@ -114,7 +114,9 @@ SOLUTIONS = {
 def run_lupus(code):
     with open(TMP, "w", encoding="utf-8") as f:
         f.write(code)
-    r = subprocess.run([BIN, TMP], capture_output=True, text=True)
+    # Задачи V0.2–V0.4 писались до появления линта; проверяем семантику,
+    # поэтому отключаем линт (например, задачи определяют свою `pow`).
+    r = subprocess.run([BIN, "--no-lint", TMP], capture_output=True, text=True)
     return r.stdout.strip()
 
 

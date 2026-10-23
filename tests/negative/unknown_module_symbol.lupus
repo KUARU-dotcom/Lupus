@@ -1,0 +1,2 @@
+(import senko)
+(print (senko/no-such-function 1.0))

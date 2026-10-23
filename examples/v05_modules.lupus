@@ -1,0 +1,12 @@
+;; V0.5: импорты, нативные пакеты и файловый модуль stdlib/util.lupus.
+(import senko)
+(import kaltsit)
+(import util)
+(import (w test))
+
+(print (senko/sqrt 144.0))
+(print (kaltsit/exists? "README.md"))
+(print (util/double 21))
+(print (util/greet "V0.5"))
+
+(test "sqrt" (test/assert-eq (senko/sqrt 9.0) 3.0))
