@@ -9,10 +9,62 @@ use crate::builtins;
 use crate::environment::Environment;
 use crate::error::Error;
 use crate::lexer::{Token, TokenKind};
+use crate::modules;
+use crate::native;
 use crate::value::{is_truthy, Closure, Value};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::rc::Rc;
+use std::time::Instant;
+
+/// Описание структуры, объявленной через `defstruct`.
+#[derive(Debug, Clone)]
+pub struct StructDef {
+    /// Имя типа (конструктора).
+    pub name: String,
+    /// Имена параметров-дженериков (не проверяются).
+    pub type_params: Vec<String>,
+    /// Имена полей в порядке объявления.
+    pub fields: Vec<String>,
+}
+
+/// Разобранный и загруженный тест.
+#[derive(Debug, Clone)]
+pub struct TestDef {
+    /// Имя теста.
+    pub name: String,
+    /// Тело теста (последовательность выражений).
+    pub body: Vec<Expr>,
+}
+
+/// Результат выполнения одного теста.
+#[derive(Debug, Clone)]
+pub struct TestOutcome {
+    /// Имя теста.
+    pub name: String,
+    /// Успешен ли тест.
+    pub passed: bool,
+    /// Ошибка (для проваленного теста).
+    pub error: Option<Error>,
+    /// Длительность в миллисекундах.
+    pub duration_ms: f64,
+}
+
+/// Экспорты файлового модуля: имя → значение.
+type ModuleExports = HashMap<String, Value>;
+
+/// Кэш загруженных файловых модулей.
+type ModuleCache = Rc<RefCell<HashMap<PathBuf, Rc<ModuleExports>>>>;
+
+/// Импортированный модуль.
+#[derive(Debug, Clone)]
+enum ImportedModule {
+    /// Нативный пакет.
+    Native { package: String },
+    /// Файловый модуль: только `define-public`.
+    File(Rc<ModuleExports>),
+}
 
 /// Интерпретатор с глобальным окружением.
 pub struct Interpreter {
@@ -20,8 +72,26 @@ pub struct Interpreter {
     global: Rc<RefCell<Environment>>,
     /// Мягкий режим `--lenient-parens`: игнорировать лишние `)` вместо падения.
     lenient_parens: bool,
-    /// Реестр объявленных структур: имя типа → имена полей (позиционно).
-    structs: Rc<RefCell<HashMap<String, Vec<String>>>>,
+    /// Реестр объявленных структур: имя типа → описание.
+    structs: Rc<RefCell<HashMap<String, StructDef>>>,
+    /// Импортированные модули: префикс → модуль.
+    imports: RefCell<HashMap<String, ImportedModule>>,
+    /// Кэш файловых модулей по каноническому пути.
+    module_cache: ModuleCache,
+    /// Стек загрузки модулей (обнаружение циклов).
+    module_stack: Rc<RefCell<Vec<PathBuf>>>,
+    /// Каталог текущей программы (для поиска `stdlib/` рядом с файлом).
+    program_dir: RefCell<Option<PathBuf>>,
+    /// Коллектор экспортов загружаемого файлового модуля.
+    exports: RefCell<Option<HashMap<String, Value>>>,
+    /// Подавление `print` (режим `lupus test` без `--verbose`).
+    suppress_print: Cell<bool>,
+    /// Зарегистрированные тесты текущего файла.
+    tests: RefCell<Vec<TestDef>>,
+    /// Базовое окружение для запуска тестов (`w/run`, `w/run-all`).
+    test_base_env: RefCell<Option<Rc<RefCell<Environment>>>>,
+    /// Стек выполняющихся тестов (защита от рекурсии).
+    running_tests: RefCell<Vec<String>>,
 }
 
 impl Interpreter {
@@ -32,6 +102,15 @@ impl Interpreter {
             global: Environment::new(),
             lenient_parens: false,
             structs: Rc::new(RefCell::new(HashMap::new())),
+            imports: RefCell::new(HashMap::new()),
+            module_cache: Rc::new(RefCell::new(HashMap::new())),
+            module_stack: Rc::new(RefCell::new(Vec::new())),
+            program_dir: RefCell::new(None),
+            exports: RefCell::new(None),
+            suppress_print: Cell::new(false),
+            tests: RefCell::new(Vec::new()),
+            test_base_env: RefCell::new(None),
+            running_tests: RefCell::new(Vec::new()),
         }
     }
 
@@ -40,11 +119,9 @@ impl Interpreter {
     /// При `lenient = true` лишние закрывающие скобки `)` игнорируются
     /// (с предупреждением в stderr), интерпретатор не падает.
     pub fn with_lenient_parens(lenient: bool) -> Self {
-        Interpreter {
-            global: Environment::new(),
-            lenient_parens: lenient,
-            structs: Rc::new(RefCell::new(HashMap::new())),
-        }
+        let mut interpreter = Interpreter::new();
+        interpreter.lenient_parens = lenient;
+        interpreter
     }
 
     /// Включает/выключает lenient-режим после создания интерпретатора.
@@ -52,14 +129,30 @@ impl Interpreter {
         self.lenient_parens = lenient;
     }
 
+    /// Включает/выключает подавление `print`.
+    pub fn set_suppress_print(&mut self, suppress: bool) {
+        self.suppress_print.set(suppress);
+    }
+
+    /// Задаёт каталог текущей программы (для поиска модулей рядом с файлом).
+    pub fn set_program_dir(&mut self, dir: PathBuf) {
+        *self.program_dir.borrow_mut() = Some(dir);
+    }
+
     /// Возвращает копию shared-ссылки на глобальное окружение.
     fn global_env(&self) -> Rc<RefCell<Environment>> {
         self.global.clone()
     }
 
-    /// Вычисляет AST-программу (список форм верхнего уровня).
+    /// Выполняет AST-программу (список форм верхнего уровня).
+    ///
+    /// Формы `test` на верхнем уровне не выполняются (тесты запускает
+    /// отдельная подкоманда `lupus test`).
     pub fn run(&mut self, forms: Vec<Expr>) -> Result<(), Error> {
         for form in forms {
+            if is_test_form(&form) {
+                continue;
+            }
             self.eval(&form, self.global_env())?;
         }
         Ok(())
@@ -110,10 +203,14 @@ impl Interpreter {
         if let Expr::Symbol(name) = first {
             match name.as_str() {
                 "define" => return self.do_define(rest, &env),
+                "define-public" => return self.do_define_public(rest, &env),
+                "define-const" => return self.do_define_const(rest, &env),
+                "import" => return self.do_import(rest, &env),
                 "defstruct" => return self.do_defstruct(rest, &env),
                 "define-mutable" => return self.do_define_mutable(rest, &env),
                 "set!" => return self.do_set(rest, &env),
                 "lambda" => return self.do_lambda(rest, env),
+                "#lupus" => return self.do_directive(rest),
                 "if" => return self.do_if(rest, env),
                 "while" => return self.do_while(rest, env),
                 "loop" => return self.do_loop(rest, env),
@@ -181,6 +278,31 @@ impl Interpreter {
                 "tuple" => {
                     let args = self.eval_all(rest, &env)?;
                     return Ok(Value::Tuple(args));
+                }
+                // ─── Map (V0.5) ────────────────────────────────────────────────
+                "map" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return builtins::map::make_map(&args);
+                }
+                "map-get" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return builtins::map::map_get(&args);
+                }
+                "map-set" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return builtins::map::map_set(&args);
+                }
+                "map-keys" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return builtins::map::map_keys(&args);
+                }
+                "map-values" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return builtins::map::map_values(&args);
+                }
+                "map-has?" => {
+                    let args = self.eval_all(rest, &env)?;
+                    return builtins::map::map_has(&args);
                 }
                 // Конструкторы Option/Result: (some e), (success e), (failure e).
                 "some" => {
@@ -481,7 +603,11 @@ impl Interpreter {
 
         match func_val {
             Value::Closure(closure) => self.call_closure(&closure, actual_args, &env),
-            _ => Err(Error::new("Не могу вызвать не-функцию")),
+            Value::Native(function) => {
+                let args = self.eval_all(actual_args, &env)?;
+                native::call(self, &function, &args)
+            }
+            _ => Err(Error::type_mismatch("Не могу вызвать не-функцию")),
         }
     }
 
@@ -539,107 +665,238 @@ impl Interpreter {
         self.eval(&closure.body, func_env)
     }
 
-    /// (define имя значение) или (define (имя параметры...) тело...).
+    /// `(define имя значение)` или `(define (имя параметры...) тело...)`.
     fn do_define(&self, rest: &[Expr], env: &Rc<RefCell<Environment>>) -> Result<Value, Error> {
+        self.do_define_like(rest, env, DefineKind::Private)
+    }
+
+    /// `(define-public (имя (параметр тип)...) -> тип тело...)`.
+    ///
+    /// Семантика выполнения совпадает с `define`; дополнительно имя попадает
+    /// в экспорт файлового модуля. Проверка аннотаций — задача линта.
+    fn do_define_public(
+        &self,
+        rest: &[Expr],
+        env: &Rc<RefCell<Environment>>,
+    ) -> Result<Value, Error> {
+        self.do_define_like(rest, env, DefineKind::Public)
+    }
+
+    /// `(define-const имя значение)` — неизменяемая связь, как `define`.
+    fn do_define_const(
+        &self,
+        rest: &[Expr],
+        env: &Rc<RefCell<Environment>>,
+    ) -> Result<Value, Error> {
+        self.do_define_like(rest, env, DefineKind::Const)
+    }
+
+    fn do_define_like(
+        &self,
+        rest: &[Expr],
+        env: &Rc<RefCell<Environment>>,
+        kind: DefineKind,
+    ) -> Result<Value, Error> {
         if rest.len() < 2 {
-            return Err(Error::new(format!(
-                "(define ...) требует минимум 2 аргумента, получено {}",
+            return Err(Error::arity(format!(
+                "({} ...) требует минимум 2 аргумента, получено {}",
+                kind.form_name(),
                 rest.len()
             )));
         }
 
-        match &rest[0] {
+        let (name, value) = match &rest[0] {
             // (define имя значение)
             Expr::Symbol(name) => {
                 let value = self.eval(&rest[1], env.clone())?;
-                Environment::define(env, name, value, false);
-                Ok(Value::None)
+                (name.clone(), value)
             }
-            // (define (имя параметры...) тело...)
+            // (define (имя параметры...) [-> тип] тело...)
             Expr::List(header) => {
-                if header.is_empty() {
-                    return Err(Error::new("Пустой список в определении функции"));
-                }
-                let fn_name = match &header[0] {
-                    Expr::Symbol(n) => n.clone(),
-                    _ => return Err(Error::new("Имя функции должно быть символом")),
-                };
-                let mut param_names = Vec::new();
-                for p in &header[1..] {
-                    match p {
-                        Expr::Symbol(s) => param_names.push(s.clone()),
-                        _ => return Err(Error::new("Параметры должны быть символами")),
+                let (fn_name, param_names) = self.parse_function_header(header)?;
+
+                // Необязательная аннотация возвращаемого типа `-> type`.
+                let body_start = if matches!(rest.get(1), Some(Expr::Symbol(s)) if s == "->") {
+                    if rest.len() < 3 {
+                        return Err(Error::type_error(
+                            "missing-return-type",
+                            "После '->' ожидался тип возвращаемого значения",
+                        ));
                     }
-                }
-
-                let body_expr = if rest.len() == 2 {
-                    rest[1].clone()
+                    // Тип проверяется линтом; здесь только пропускаем его.
+                    3
                 } else {
-                    Expr::List(
-                        std::iter::once(Expr::Symbol("begin".to_string()))
-                            .chain(rest[1..].iter().cloned())
-                            .collect(),
-                    )
+                    1
                 };
 
+                let body_forms = &rest[body_start..];
+                if body_forms.is_empty() {
+                    return Err(Error::arity(format!(
+                        "({} ...) требует тело функции",
+                        kind.form_name()
+                    )));
+                }
+                let body_expr = body_from_forms(body_forms);
                 let closure = Closure {
                     params: param_names,
                     body: body_expr,
                     env: env.clone(),
                 };
-                Environment::define(env, &fn_name, Value::Closure(closure), false);
-                Ok(Value::None)
+                (fn_name, Value::Closure(closure))
             }
-            _ => Err(Error::new("Некорректное определение")),
+            _ => {
+                return Err(Error::type_error(
+                    "unexpected-token",
+                    "Некорректное определение: ожидалось имя или заголовок функции",
+                ))
+            }
+        };
+
+        Environment::define(env, &name, value.clone(), false);
+
+        if kind == DefineKind::Public {
+            if let Some(exports) = self.exports.borrow_mut().as_mut() {
+                exports.insert(name, value);
+            }
         }
+
+        Ok(Value::None)
     }
 
-    /// (defstruct имя (поле тип)...)
+    /// Разбирает заголовок функции `(имя параметр...)`.
+    ///
+    /// Параметр — символ или `(имя тип)`; аннотация типа парсится, но не
+    /// проверяется (HM-тайпчекера в V0.5 нет).
+    fn parse_function_header(&self, header: &[Expr]) -> Result<(String, Vec<String>), Error> {
+        if header.is_empty() {
+            return Err(Error::type_error(
+                "unexpected-token",
+                "Пустой список в определении функции",
+            ));
+        }
+        let name = match &header[0] {
+            Expr::Symbol(name) => name.clone(),
+            _ => {
+                return Err(Error::type_error(
+                    "unexpected-token",
+                    "Имя функции должно быть символом",
+                ))
+            }
+        };
+
+        let mut params = Vec::with_capacity(header.len().saturating_sub(1));
+        for param in &header[1..] {
+            match param {
+                Expr::Symbol(name) => params.push(name.clone()),
+                Expr::List(items) if !items.is_empty() => match &items[0] {
+                    Expr::Symbol(name) => params.push(name.clone()),
+                    _ => {
+                        return Err(Error::type_error(
+                            "unexpected-token",
+                            "Имя параметра должно быть символом",
+                        ))
+                    }
+                },
+                _ => {
+                    return Err(Error::type_error(
+                        "unexpected-token",
+                        "Параметры должны быть символами или (имя тип)",
+                    ))
+                }
+            }
+        }
+        Ok((name, params))
+    }
+
+    /// (defstruct имя (поле тип)...) или (defstruct (Имя a b) (поле тип)...)
     ///
     /// Регистрирует тип структуры и автогенерирует конвенцию: конструктор
     /// `(имя значение...)` и аксессоры `(имя-поле структура)`. Аннотации типов
-    /// полей парсятся, но не проверяются (тайпчекера нет). Дубликат имени поля
-    /// — ошибка `duplicate-struct-field`.
+    /// полей и параметры-дженерики парсятся, но не проверяются (тайпчекера нет).
+    /// Дубликат имени поля — ошибка `duplicate-struct-field`.
     fn do_defstruct(&self, rest: &[Expr], _env: &Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() < 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(defstruct ...) требует имя и минимум одно поле, получено {}",
                 rest.len()
             )));
         }
-        let type_name = match &rest[0] {
-            Expr::Symbol(n) => n.clone(),
-            _ => return Err(Error::new("Имя структуры должно быть символом")),
+        let (type_name, type_params) = match &rest[0] {
+            Expr::Symbol(name) => (name.clone(), Vec::new()),
+            Expr::List(header) => match header.first() {
+                Some(Expr::Symbol(name)) => {
+                    let mut params = Vec::new();
+                    for param in &header[1..] {
+                        match param {
+                            Expr::Symbol(param) => params.push(param.clone()),
+                            _ => {
+                                return Err(Error::type_error(
+                                    "unexpected-token",
+                                    "Параметр дженерика должен быть идентификатором",
+                                ))
+                            }
+                        }
+                    }
+                    (name.clone(), params)
+                }
+                _ => {
+                    return Err(Error::type_error(
+                        "unexpected-token",
+                        "Имя структуры должно быть символом",
+                    ))
+                }
+            },
+            _ => {
+                return Err(Error::type_error(
+                    "unexpected-token",
+                    "Имя структуры должно быть символом",
+                ))
+            }
         };
 
         let mut field_names: Vec<String> = Vec::with_capacity(rest.len() - 1);
         for field in &rest[1..] {
             let Expr::List(items) = field else {
-                return Err(Error::new(
+                return Err(Error::type_error(
+                    "unexpected-token",
                     "Каждое поле defstruct должно быть списком (имя тип)",
                 ));
             };
             if items.len() != 2 {
-                return Err(Error::new(
+                return Err(Error::type_error(
+                    "unexpected-token",
                     "Поле defstruct должно быть списком из 2 элементов (имя тип)",
                 ));
             }
             let field_name = match &items[0] {
                 Expr::Symbol(n) => n.clone(),
-                _ => return Err(Error::new("Имя поля должно быть символом")),
+                _ => {
+                    return Err(Error::type_error(
+                        "unexpected-token",
+                        "Имя поля должно быть символом",
+                    ))
+                }
             };
             if field_names.contains(&field_name) {
-                return Err(Error::new(format!(
-                    "duplicate-struct-field: поле '{}' уже объявлено в структуре '{}'",
-                    field_name, type_name
-                )));
+                return Err(Error::type_error(
+                    "duplicate-struct-field",
+                    format!(
+                        "duplicate-struct-field: поле '{}' уже объявлено в структуре '{}'",
+                        field_name, type_name
+                    ),
+                ));
             }
             field_names.push(field_name);
         }
 
-        self.structs
-            .borrow_mut()
-            .insert(type_name.clone(), field_names);
+        self.structs.borrow_mut().insert(
+            type_name.clone(),
+            StructDef {
+                name: type_name,
+                type_params,
+                fields: field_names,
+            },
+        );
         Ok(Value::None)
     }
 
@@ -655,13 +912,13 @@ impl Interpreter {
         let types = self.structs.borrow();
 
         // Конструктор: имя совпадает с зарегистрированным типом.
-        if let Some(fields) = types.get(name) {
+        if let Some(definition) = types.get(name) {
             let args = self.eval_all(rest, env)?;
-            if args.len() != fields.len() {
-                return Err(Error::new(format!(
+            if args.len() != definition.fields.len() {
+                return Err(Error::arity(format!(
                     "({} ...) требует {} аргументов, получено {}",
                     name,
-                    fields.len(),
+                    definition.fields.len(),
                     args.len()
                 )));
             }
@@ -675,13 +932,17 @@ impl Interpreter {
         if let Some(dash) = name.rfind('-') {
             let (type_part, field_part) = name.split_at(dash);
             let field_part = &field_part[1..];
-            if let Some(fields) = types.get(type_part) {
-                let Some((idx, _)) = fields.iter().enumerate().find(|(_, f)| **f == field_part)
+            if let Some(definition) = types.get(type_part) {
+                let Some((idx, _)) = definition
+                    .fields
+                    .iter()
+                    .enumerate()
+                    .find(|(_, f)| f.as_str() == field_part)
                 else {
                     return Ok(None);
                 };
                 if rest.len() != 1 {
-                    return Err(Error::new(format!(
+                    return Err(Error::arity(format!(
                         "({} ...) требует ровно 1 аргумент, получено {}",
                         name,
                         rest.len()
@@ -696,7 +957,7 @@ impl Interpreter {
                         return Ok(Some(sf[idx].clone()));
                     }
                     _ => {
-                        return Err(Error::new(format!(
+                        return Err(Error::type_mismatch(format!(
                             "Аксессор {} нельзя применить к чужой структуре",
                             name
                         )));
@@ -706,6 +967,175 @@ impl Interpreter {
         }
 
         Ok(None)
+    }
+
+    /// (import пакет) / (import пакет :as префикс) / (import пакет :all)
+    /// / (import (пакет модуль) ...).
+    fn do_import(&self, rest: &[Expr], env: &Rc<RefCell<Environment>>) -> Result<Value, Error> {
+        let spec = modules::parse_import(rest)?;
+        let prefix = spec.prefix();
+
+        let imported = if let Some(path) = modules::resolve_file_from(
+            &spec.package,
+            &self
+                .program_dir
+                .borrow()
+                .iter()
+                .cloned()
+                .collect::<Vec<PathBuf>>(),
+        ) {
+            ImportedModule::File(self.load_file_module(&path)?)
+        } else if native::is_native(&spec.package) {
+            ImportedModule::Native {
+                package: spec.package.clone(),
+            }
+        } else {
+            return Err(Error::lint(
+                "unknown-module",
+                format!(
+                    "Неизвестный модуль '{}': нет нативного пакета и файла stdlib/{}.lupus",
+                    spec.package, spec.package
+                ),
+            )
+            .with_hint(format!(
+                "Доступные нативные пакеты V0.5: {}",
+                native::PACKAGES.join(", ")
+            )));
+        };
+
+        if spec.import_all {
+            self.import_all_symbols(&imported, &prefix, env)?;
+        }
+
+        if !spec.import_all || spec.alias.is_some() {
+            self.imports
+                .borrow_mut()
+                .insert(prefix.clone(), imported.clone());
+        }
+
+        Ok(Value::None)
+    }
+
+    /// Импортирует все имена модуля без префикса (модификатор `:all`).
+    fn import_all_symbols(
+        &self,
+        module: &ImportedModule,
+        prefix: &str,
+        env: &Rc<RefCell<Environment>>,
+    ) -> Result<(), Error> {
+        let mut entries: Vec<(String, Value)> = Vec::new();
+        match module {
+            ImportedModule::Native { package } => {
+                for name in native::names(package) {
+                    if let Some(value) = native::symbol_value(package, name) {
+                        entries.push(((*name).to_string(), value));
+                    }
+                }
+            }
+            ImportedModule::File(exports) => {
+                entries.extend(
+                    exports
+                        .iter()
+                        .map(|(name, value)| (name.clone(), value.clone())),
+                );
+            }
+        }
+
+        for (name, value) in entries {
+            if Environment::get(env, &name).is_ok() || builtins::is_core_name(&name) {
+                return Err(Error::lint(
+                    "import-collision",
+                    format!(
+                        "Имя '{}' из модуля '{}' уже существует в текущем окружении",
+                        name, prefix
+                    ),
+                )
+                .with_hint("используйте префиксный импорт или модификатор :as"));
+            }
+            Environment::define(env, &name, value, false);
+        }
+        Ok(())
+    }
+
+    /// Загружает файловый модуль один раз; экспортируются только define-public.
+    fn load_file_module(
+        &self,
+        path: &std::path::Path,
+    ) -> Result<Rc<HashMap<String, Value>>, Error> {
+        let canonical = modules::canonical(path);
+        if let Some(cached) = self.module_cache.borrow().get(&canonical) {
+            return Ok(cached.clone());
+        }
+        if self.module_stack.borrow().contains(&canonical) {
+            return Err(Error::lint(
+                "import-cycle",
+                format!("Циклический импорт модуля: {}", path.display()),
+            ));
+        }
+
+        let source = std::fs::read_to_string(path).map_err(|error| {
+            Error::lint(
+                "unknown-module",
+                format!("Не удалось прочитать модуль {}: {}", path.display(), error),
+            )
+        })?;
+        let tokens = crate::lexer::lex(&source)
+            .map_err(|error| error.with_file_if_located(path.display().to_string()))?;
+        let forms = crate::parser::parse(tokens)
+            .map_err(|error| error.with_file_if_located(path.display().to_string()))?;
+
+        self.module_stack.borrow_mut().push(canonical.clone());
+        let module_env = Environment::new();
+        let previous_exports = self.exports.replace(Some(HashMap::new()));
+
+        let mut outcome = Ok(());
+        for form in &forms {
+            if is_test_form(form) {
+                continue;
+            }
+            if let Err(error) = self.eval(form, module_env.clone()) {
+                outcome = Err(error);
+                break;
+            }
+        }
+
+        let exports = self.exports.replace(previous_exports).unwrap_or_default();
+        self.module_stack.borrow_mut().pop();
+        outcome?;
+
+        let exports = Rc::new(exports);
+        self.module_cache
+            .borrow_mut()
+            .insert(canonical, exports.clone());
+        Ok(exports)
+    }
+
+    /// Обрабатывает директиву `(#lupus ...)`.
+    ///
+    /// FFI-python объявлен заменённым нативными модулями (ERRATA §2).
+    fn do_directive(&self, rest: &[Expr]) -> Result<Value, Error> {
+        let name = match rest.first() {
+            Some(Expr::Symbol(name)) => name.as_str(),
+            _ => "",
+        };
+        match name {
+            "enable-check" => Ok(Value::None),
+            "ffi" => Err(Error::lint(
+                "invalid-directive",
+                "Python-FFI объявлен заменённым нативными модулями",
+            )
+            .with_hint(
+                "используйте (import senko), (import kaltsit) или (import w) вместо (#lupus ffi python ...)",
+            )),
+            "" => Err(Error::lint(
+                "invalid-directive",
+                "Директива #lupus требует имя",
+            )),
+            other => Err(Error::lint(
+                "invalid-directive",
+                format!("Неизвестная директива #lupus {}", other),
+            )),
+        }
     }
 
     /// (define-mutable имя значение).
@@ -777,19 +1207,35 @@ impl Interpreter {
         for p in param_list {
             match p {
                 Expr::Symbol(s) => param_names.push(s.clone()),
-                _ => return Err(Error::new("Параметры lambda должны быть символами")),
+                Expr::List(items) if !items.is_empty() => match &items[0] {
+                    Expr::Symbol(name) => param_names.push(name.clone()),
+                    _ => {
+                        return Err(Error::type_error(
+                            "unexpected-token",
+                            "Имя параметра lambda должно быть символом",
+                        ))
+                    }
+                },
+                _ => {
+                    return Err(Error::type_error(
+                        "unexpected-token",
+                        "Параметры lambda должны быть символами или (имя тип)",
+                    ))
+                }
             }
         }
 
-        let body_expr = if rest.len() == 2 {
-            rest[1].clone()
+        let body_start = if matches!(rest.get(1), Some(Expr::Symbol(s)) if s == "->") {
+            3
         } else {
-            Expr::List(
-                std::iter::once(Expr::Symbol("begin".to_string()))
-                    .chain(rest[1..].iter().cloned())
-                    .collect(),
-            )
+            1
         };
+        if rest.len() <= body_start {
+            return Err(Error::arity(
+                "(lambda ...) требует тело функции после параметров",
+            ));
+        }
+        let body_expr = body_from_forms(&rest[body_start..]);
 
         Ok(Value::Closure(Closure {
             params: param_names,
@@ -909,7 +1355,9 @@ impl Interpreter {
             )));
         }
         let value = self.eval(&rest[0], env)?;
-        builtins::print_arg(&value)?;
+        if !self.suppress_print.get() {
+            builtins::print_arg(&value)?;
+        }
         Ok(Value::None)
     }
 
@@ -1033,7 +1481,7 @@ impl Interpreter {
     /// создаётся дочернее окружение, где выполняются формы тела.
     fn do_let(&self, rest: &[Expr], env: &Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.is_empty() {
-            return Err(Error::new("(let ...) требует список связей и тело"));
+            return Err(Error::arity("(let ...) требует список связей и тело"));
         }
         let bindings = match &rest[0] {
             Expr::List(items) => items,
@@ -1311,6 +1759,123 @@ impl Interpreter {
     }
 }
 
+impl Interpreter {
+    /// Собирает формы `(test "имя" тело...)` верхнего уровня.
+    pub fn collect_tests(forms: &[Expr]) -> Result<Vec<TestDef>, Error> {
+        let mut tests = Vec::new();
+        for form in forms {
+            let Expr::List(items) = form else {
+                continue;
+            };
+            if !matches!(items.first(), Some(Expr::Symbol(name)) if name == "test") {
+                continue;
+            }
+            if items.len() < 2 {
+                return Err(Error::arity(
+                    "(test ...) требует строковое имя и тело теста",
+                ));
+            }
+            let name = match &items[1] {
+                Expr::Str(name) => name.clone(),
+                _ => {
+                    return Err(Error::type_mismatch(
+                        "Имя теста в форме (test ...) должно быть строкой",
+                    ))
+                }
+            };
+            tests.push(TestDef {
+                name,
+                body: items[2..].to_vec(),
+            });
+        }
+        Ok(tests)
+    }
+
+    /// Выполняет программу и все тесты файла.
+    ///
+    /// Тесты изолированы: каждый запускается в дочернем окружении базового
+    /// окружения, поэтому `define` из одного теста не виден другому.
+    /// Формы верхнего уровня (кроме `test`) выполняются один раз до тестов.
+    pub fn run_tests(&mut self, forms: &[Expr], verbose: bool) -> Result<Vec<TestOutcome>, Error> {
+        let tests = Self::collect_tests(forms)?;
+        self.suppress_print.set(!verbose);
+
+        for form in forms {
+            if is_test_form(form) {
+                continue;
+            }
+            self.eval(form, self.global.clone())?;
+        }
+
+        *self.test_base_env.borrow_mut() = Some(self.global.clone());
+        *self.tests.borrow_mut() = tests.clone();
+
+        let mut outcomes = Vec::with_capacity(tests.len());
+        for test in &tests {
+            let started = Instant::now();
+            let result = self.run_test_body(test);
+            outcomes.push(TestOutcome {
+                name: test.name.clone(),
+                passed: result.is_ok(),
+                error: result.err(),
+                duration_ms: started.elapsed().as_secs_f64() * 1000.0,
+            });
+        }
+
+        self.suppress_print.set(false);
+        Ok(outcomes)
+    }
+
+    /// Выполняет тело одного теста в свежем окружении.
+    fn run_test_body(&self, test: &TestDef) -> Result<(), Error> {
+        let base = self
+            .test_base_env
+            .borrow()
+            .clone()
+            .unwrap_or_else(|| self.global.clone());
+        let env = Environment::new_child(base);
+        self.running_tests.borrow_mut().push(test.name.clone());
+        let mut result = Ok(());
+        for form in &test.body {
+            if let Err(error) = self.eval(form, env.clone()) {
+                result = Err(error);
+                break;
+            }
+        }
+        self.running_tests.borrow_mut().pop();
+        result
+    }
+
+    /// Запускает тесты по именам (`w/run`/`w/run-all`).
+    ///
+    /// Пустой список имён означает «все тесты». Возвращает код выхода:
+    /// 0 — все прошли, 1 — есть провалы. Тесты, уже находящиеся в стеке
+    /// выполнения, пропускаются (защита от рекурсии).
+    pub fn run_tests_named(&self, names: &[String]) -> i64 {
+        let tests = self.tests.borrow().clone();
+        let running = self.running_tests.borrow().clone();
+        let selected: Vec<&TestDef> = tests
+            .iter()
+            .filter(|test| names.is_empty() || names.contains(&test.name))
+            .filter(|test| !running.contains(&test.name))
+            .collect();
+
+        let previous = self.suppress_print.replace(true);
+        let mut failed = false;
+        for test in selected {
+            if self.run_test_body(test).is_err() {
+                failed = true;
+            }
+        }
+        self.suppress_print.set(previous);
+        if failed {
+            1
+        } else {
+            0
+        }
+    }
+}
+
 impl Default for Interpreter {
     fn default() -> Self {
         Self::new()
@@ -1321,12 +1886,45 @@ impl Interpreter {
     /// Вычисляет символ (переменную), добавляя в сообщение об ошибке
     /// подсказки с похожими именами из окружения.
     fn eval_symbol(&self, env: &Rc<RefCell<Environment>>, name: &str) -> Result<Value, Error> {
+        // Квалифицированное имя `<префикс>/<символ>`.
+        if let Some((prefix, symbol)) = name.split_once('/') {
+            return self.eval_qualified(prefix, symbol);
+        }
+
         match Environment::get(env, name) {
             Ok(value) => Ok(value),
             Err(e) if e.message.starts_with("Переменная не определена") => {
                 Err(self.undefined_variable_error(env, name))
             }
             Err(e) => Err(e),
+        }
+    }
+
+    /// Вычисляет квалифицированное имя импортированного модуля.
+    fn eval_qualified(&self, prefix: &str, symbol: &str) -> Result<Value, Error> {
+        let module = self.imports.borrow().get(prefix).cloned();
+        let Some(module) = module else {
+            return Err(Error::unknown_identifier(format!(
+                "Префикс модуля '{}' не импортирован",
+                prefix
+            ))
+            .with_hint(format!("добавьте (import {})", prefix)));
+        };
+
+        match module {
+            ImportedModule::Native { package } => native::symbol_value(&package, symbol)
+                .ok_or_else(|| {
+                    Error::runtime(
+                        "unknown-module-symbol",
+                        format!("{}/{}: неизвестный символ модуля", prefix, symbol),
+                    )
+                }),
+            ImportedModule::File(exports) => exports.get(symbol).cloned().ok_or_else(|| {
+                Error::runtime(
+                    "unknown-module-symbol",
+                    format!("{}/{}: неизвестный символ модуля", prefix, symbol),
+                )
+            }),
         }
     }
 
@@ -1356,7 +1954,7 @@ impl Interpreter {
                 suggestions.join(", ")
             ));
         }
-        Error::new(message)
+        Error::unknown_identifier(message)
     }
 }
 
@@ -1394,6 +1992,42 @@ pub fn sanitize_tokens_lenient(tokens: Vec<Token>) -> Vec<Token> {
     }
 
     out
+}
+
+/// Вид определения (`define` / `define-public` / `define-const`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DefineKind {
+    Private,
+    Public,
+    Const,
+}
+
+impl DefineKind {
+    fn form_name(self) -> &'static str {
+        match self {
+            DefineKind::Private => "define",
+            DefineKind::Public => "define-public",
+            DefineKind::Const => "define-const",
+        }
+    }
+}
+
+/// Собирает тело из одной или нескольких форм (неявный `begin`).
+fn body_from_forms(forms: &[Expr]) -> Expr {
+    if forms.len() == 1 {
+        forms[0].clone()
+    } else {
+        Expr::List(
+            std::iter::once(Expr::Symbol("begin".to_string()))
+                .chain(forms.iter().cloned())
+                .collect(),
+        )
+    }
+}
+
+/// Проверяет, является ли форма объявлением теста.
+fn is_test_form(form: &Expr) -> bool {
+    matches!(form, Expr::List(items) if matches!(items.first(), Some(Expr::Symbol(name)) if name == "test"))
 }
 
 /// Расстояние Левенштейна (для подсказок по неопределённым переменным).

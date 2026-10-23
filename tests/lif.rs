@@ -17,12 +17,19 @@ fn test_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests")
 }
 
-/// Запускает бинарник интерпретатора на файле, возвращает (stdout, код выхода).
+/// Результат запуска бинарника: stdout, stderr и код выхода.
+struct RunResult {
+    stdout: String,
+    stderr: String,
+    code: i32,
+}
+
+/// Запускает бинарник интерпретатора на файле.
 ///
 /// Применяется таймаут 5 секунд: если интерпретатор зависает на файле (например,
 /// на неизвестном символе), вместо бесконечного ожидания возвращается код
-/// выхода -1 и пометка времени ожидания в stdout — тест падает, а не виснет.
-fn run_bin(file: &Path) -> (String, i32) {
+/// выхода -1 — тест падает, а не виснет.
+fn run_bin(file: &Path) -> RunResult {
     let file = file.to_path_buf();
     let (tx, rx) = mpsc::channel();
     std::thread::spawn(move || {
@@ -30,16 +37,34 @@ fn run_bin(file: &Path) -> (String, i32) {
             .arg(&file)
             .output()
             .expect("не удалось запустить интерпретатор");
-        let _ = tx.send((
-            String::from_utf8_lossy(&out.stdout).to_string(),
-            out.status.code().unwrap_or(-1),
-        ));
+        let _ = tx.send(RunResult {
+            stdout: String::from_utf8_lossy(&out.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&out.stderr).to_string(),
+            code: out.status.code().unwrap_or(-1),
+        });
     });
 
     match rx.recv_timeout(Duration::from_secs(5)) {
         Ok(result) => result,
-        Err(_) => (String::from("<TIME-OUT: интерпретатор завис на файле>"), -1),
+        Err(_) => RunResult {
+            stdout: String::from("<TIME-OUT: интерпретатор завис на файле>"),
+            stderr: String::new(),
+            code: -1,
+        },
     }
+}
+
+/// Извлекает поле `code` из строгого JSON-объекта в stderr.
+fn extract_code(stderr: &str) -> Option<String> {
+    let trimmed = stderr.trim();
+    if !trimmed.starts_with('{') || !trimmed.ends_with('}') {
+        return None;
+    }
+    let marker = "\"code\":\"";
+    let start = trimmed.find(marker)? + marker.len();
+    let rest = &trimmed[start..];
+    let end = rest.find('"')?;
+    Some(rest[..end].to_string())
 }
 
 /// Возвращает отсортированный список `.lupus`-файлов в каталоге.
@@ -66,17 +91,20 @@ fn lif_golden() {
         let expected_path = file.with_extension("expected");
         let expected = std::fs::read_to_string(&expected_path)
             .unwrap_or_else(|_| String::from("<нет .expected файла>"));
-        let (out, code) = run_bin(file);
+        let result = run_bin(file);
         let name = file.file_name().unwrap().to_string_lossy();
-        if code != 0 {
-            errors.push(format!("[{}] код выхода = {} (ожидался 0)", name, code));
+        if result.code != 0 {
+            errors.push(format!(
+                "[{}] код выхода = {} (ожидался 0); stderr={}",
+                name, result.code, result.stderr
+            ));
         }
-        if out != expected {
+        if result.stdout != expected {
             errors.push(format!(
                 "[{}] stdout не совпадает (ожидалось {}/байт, получено {}/байт)",
                 name,
                 expected.len(),
-                out.len()
+                result.stdout.len()
             ));
         }
     }
@@ -89,7 +117,7 @@ fn lif_golden() {
     );
 }
 
-/// Negative-тесты: ненулевой код выхода и подстрока сообщения в stdout.
+/// Negative-тесты: ненулевой код выхода и код ошибки в JSON stderr.
 #[test]
 fn lif_negative() {
     let dir = test_root().join("negative");
@@ -105,15 +133,16 @@ fn lif_negative() {
         let want = std::fs::read_to_string(&error_path)
             .unwrap_or_else(|_| String::from("<нет .error файла>"));
         let want = want.trim();
-        let (out, code) = run_bin(file);
+        let result = run_bin(file);
         let name = file.file_name().unwrap().to_string_lossy();
-        if code == 0 {
+        if result.code == 0 {
             errors.push(format!("[{}] код выхода = 0 (ожидался ненулевой)", name));
         }
-        if !out.contains(want) {
+        let got = extract_code(&result.stderr);
+        if got.as_deref() != Some(want) {
             errors.push(format!(
-                "[{}] сообщение не содержит подстроку {:?} (получено: {:?})",
-                name, want, out
+                "[{}] ожидался код {:?}, получено {:?} (stderr: {:?})",
+                name, want, got, result.stderr
             ));
         }
     }

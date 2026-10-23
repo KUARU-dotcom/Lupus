@@ -1,7 +1,9 @@
 //! Лексер — токенизация исходного кода Lupus.
 //!
 //! Производит токены: скобки, целые числа, строки, булевы литералы,
-//! литерал `none` и символы. Игнорирует пробелы и комментарии `;;`.
+//! литерал `none` и символы. Игнорирует пробелы, строчные комментарии
+//! (`;` или `;;` до конца строки) и блочные комментарии `#| ... |#`.
+//! Символы вне алфавита языка диагностируются кодом `unknown-token`.
 
 use crate::error::Error;
 
@@ -45,6 +47,18 @@ pub struct Lexer<'a> {
     col: usize,
 }
 
+/// Проверяет, может ли символ входить в простой (неквалифицированный) символ.
+///
+/// Квалифицированные имена (`senko/sqrt`) пока представлены одним токеном:
+/// `/` входит в алфавит, а разделение выполняется интерпретатором/парсером.
+fn is_symbol_char(ch: u8) -> bool {
+    ch.is_ascii_alphanumeric()
+        || matches!(
+            ch,
+            b'_' | b'-' | b'+' | b'*' | b'/' | b'%' | b'=' | b'!' | b'<' | b'>' | b'?' | b':'
+        )
+}
+
 impl<'a> Lexer<'a> {
     /// Создаёт новый лексер для исходного кода.
     pub fn new(src: &'a str) -> Self {
@@ -61,6 +75,11 @@ impl<'a> Lexer<'a> {
         self.src.get(self.pos).copied()
     }
 
+    /// Возвращает байт по смещению от текущей позиции.
+    fn peek_at(&self, offset: usize) -> Option<u8> {
+        self.src.get(self.pos + offset).copied()
+    }
+
     /// Возвращает следующий символ и продвигает позицию.
     fn next(&mut self) -> Option<u8> {
         let ch = self.peek()?;
@@ -74,34 +93,66 @@ impl<'a> Lexer<'a> {
         Some(ch)
     }
 
-    /// Вызывает ошибку лексера с указанием позиции.
-    fn error(&self, message: &str) -> Error {
-        Error::new(format!(
-            "Ошибка лексера на строке {}, колонке {}: {}",
-            self.line, self.col, message
-        ))
+    /// Вызывает ошибку лексера с кодом.
+    fn error(&self, code: &str, message: &str) -> Error {
+        Error::lex(code, message, self.line, self.col)
     }
-}
 
-impl<'a> Lexer<'a> {
-    /// Пропускает пробелы и комментарии `;;`.
-    fn skip_whitespace_and_comments(&mut self) {
+    /// Пропускает пробелы и комментарии.
+    fn skip_whitespace_and_comments(&mut self) -> Result<(), Error> {
         loop {
             match self.peek() {
                 Some(c) if c.is_ascii_whitespace() => {
                     self.next();
                 }
+                // Одиночная `;` тоже начинает комментарий (ERRATA: иначе
+                // лексер зациклился бы на одном символе).
                 Some(b';') => {
-                    // Комментарий до конца строки. Одиночная `;` тоже начинает
-                    // комментарий (символы `;` вне строк недопустимы), иначе
-                    // лексер зациклился бы на одном `;`.
                     while self.peek().is_some() && self.peek() != Some(b'\n') {
                         self.next();
+                    }
+                }
+                // Блочный комментарий `#| ... |#`.
+                Some(b'#') if self.peek_at(1) == Some(b'|') => {
+                    self.next();
+                    self.next();
+                    let (start_line, start_col) = (self.line, self.col);
+                    loop {
+                        match self.peek() {
+                            None => {
+                                return Err(Error::lex(
+                                    "unclosed-comment",
+                                    "Незакрытый блочный комментарий (#| ... |#)",
+                                    start_line,
+                                    start_col,
+                                ));
+                            }
+                            Some(b'|') if self.peek_at(1) == Some(b'#') => {
+                                self.next();
+                                self.next();
+                                break;
+                            }
+                            Some(_) => {
+                                self.next();
+                            }
+                        }
                     }
                 }
                 _ => break,
             }
         }
+        Ok(())
+    }
+
+    /// Читает ровно `count` hex-цифр и возвращает значение.
+    fn read_hex(&mut self, count: usize) -> Option<u32> {
+        let mut value = 0u32;
+        for _ in 0..count {
+            let ch = self.next()?;
+            let digit = (ch as char).to_digit(16)?;
+            value = value * 16 + digit;
+        }
+        Some(value)
     }
 
     /// Разбирает строковый литерал (открывающая кавычка уже в позиции).
@@ -117,12 +168,32 @@ impl<'a> Lexer<'a> {
                 }
                 b'\\' => {
                     self.next();
-                    let esc = self.next().ok_or_else(|| self.error("Незакрытая строка"))?;
+                    let esc = self
+                        .next()
+                        .ok_or_else(|| self.error("unclosed-string", "Незакрытая строка"))?;
                     match esc {
                         b'n' => value.push('\n'),
                         b't' => value.push('\t'),
+                        b'r' => value.push('\r'),
+                        b'0' => value.push('\0'),
                         b'"' => value.push('"'),
                         b'\\' => value.push('\\'),
+                        b'x' => {
+                            let code = self.read_hex(2).ok_or_else(|| {
+                                self.error("unknown-token", "Некорректный \\x-escape в строке")
+                            })?;
+                            if let Some(c) = char::from_u32(code) {
+                                value.push(c);
+                            }
+                        }
+                        b'u' => {
+                            let code = self.read_hex(4).ok_or_else(|| {
+                                self.error("unknown-token", "Некорректный \\u-escape в строке")
+                            })?;
+                            if let Some(c) = char::from_u32(code) {
+                                value.push(c);
+                            }
+                        }
                         other => value.push(other as char),
                     }
                 }
@@ -158,21 +229,20 @@ impl<'a> Lexer<'a> {
                     {
                         Some(c) => value.push(c),
                         None => {
-                            return Err(self.error("Некорректная UTF-8 последовательность в строке"))
+                            return Err(self.error(
+                                "unclosed-string",
+                                "Некорректная UTF-8 последовательность в строке",
+                            ))
                         }
                     }
                 }
             }
         }
 
-        Err(self.error("Незакрытая строка"))
+        Err(self.error("unclosed-string", "Незакрытая строка"))
     }
 
     /// Разбирает число (целое или float). Первый символ — цифра или знак минус.
-    ///
-    /// Отрицательных float-литералов по спеке нет: `(- 0 3.5)` — унарный минус
-    /// как вызов. Поэтому float-литерал всегда начинается с цифры (знак `-`
-    /// возможен только у целого литерала).
     fn parse_number(&mut self) -> Result<TokenKind, Error> {
         let mut is_float = false;
         let mut value = String::new();
@@ -214,27 +284,36 @@ impl<'a> Lexer<'a> {
             value
                 .parse::<f64>()
                 .map(TokenKind::Float)
-                .map_err(|_| self.error("Некорректное число с плавающей точкой"))
+                .map_err(|_| self.error("unknown-token", "Некорректное число с плавающей точкой"))
         } else {
             value
                 .parse::<i64>()
                 .map(TokenKind::Number)
-                .map_err(|_| self.error("Некорректное число"))
+                .map_err(|_| self.error("unknown-token", "Некорректное число"))
         }
     }
 
-    /// Разбирает символ до разделителя (скобка, пробел, точка с запятой).
-    fn parse_symbol(&mut self) -> String {
+    /// Разбирает символ до разделителя (скобка, пробел, комментарий).
+    ///
+    /// Возвращает ошибку `unknown-token`, если встречается символ вне
+    /// алфавита языка (например, `@`, `$`, `.` вне числа).
+    fn parse_symbol(&mut self) -> Result<String, Error> {
         let mut value = String::new();
 
         while let Some(ch) = self.peek() {
             if ch == b'(' || ch == b')' || ch.is_ascii_whitespace() || ch == b';' {
                 break;
             }
+            if !is_symbol_char(ch) {
+                return Err(self.error(
+                    "unknown-token",
+                    &format!("Неизвестный токен: '{}'", ch as char),
+                ));
+            }
             value.push(ch as char);
             self.next();
         }
-        value
+        Ok(value)
     }
 }
 
@@ -244,7 +323,7 @@ impl<'a> Lexer<'a> {
         let mut tokens = Vec::new();
 
         while self.pos < self.src.len() {
-            self.skip_whitespace_and_comments();
+            self.skip_whitespace_and_comments()?;
             if self.pos >= self.src.len() {
                 break;
             }
@@ -290,8 +369,32 @@ impl<'a> Lexer<'a> {
                     let kind = self.parse_number()?;
                     tokens.push(Token { kind, line, col });
                 }
-                _ => {
-                    let symbol = self.parse_symbol();
+                b'#' => {
+                    // Разрешены только `#lupus` (директива) и `#| ... |#`
+                    // (блочный комментарий, обработан выше).
+                    let is_lupus = self.src[self.pos..].starts_with(b"#lupus")
+                        && !self
+                            .src
+                            .get(self.pos + 6)
+                            .is_some_and(|c| is_symbol_char(*c));
+                    if is_lupus {
+                        for _ in 0..6 {
+                            self.next();
+                        }
+                        tokens.push(Token {
+                            kind: TokenKind::Symbol("#lupus".to_string()),
+                            line,
+                            col,
+                        });
+                    } else {
+                        return Err(self.error(
+                            "unknown-token",
+                            "Неизвестный токен: '#' (допустимы '#lupus' и '#| ... |#')",
+                        ));
+                    }
+                }
+                c if is_symbol_char(c) => {
+                    let symbol = self.parse_symbol()?;
                     let kind = match symbol.as_str() {
                         "true" => TokenKind::Bool(true),
                         "false" => TokenKind::Bool(false),
@@ -299,6 +402,12 @@ impl<'a> Lexer<'a> {
                         _ => TokenKind::Symbol(symbol),
                     };
                     tokens.push(Token { kind, line, col });
+                }
+                _ => {
+                    return Err(self.error(
+                        "unknown-token",
+                        &format!("Неизвестный токен: '{}'", ch as char),
+                    ));
                 }
             }
         }

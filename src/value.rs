@@ -19,6 +19,15 @@ pub struct Closure {
     pub env: Rc<RefCell<Environment>>,
 }
 
+/// Нативная функция из стандартной библиотеки (`senko/*`, `kaltsit/*`, `w/*`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeFn {
+    /// Имя пакета: `senko`, `kaltsit` или `w`.
+    pub module: String,
+    /// Имя функции внутри пакета (без префикса).
+    pub name: String,
+}
+
 /// Runtime-значение языка Lupus.
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -34,7 +43,11 @@ pub enum Value {
     List(Vec<Value>),
     /// Кортеж произвольной арности (ЭТАП 2 V0.4).
     Tuple(Vec<Value>),
-    /// Структура, созданная через `defstruct` (ЭТАП 3 V0.4).
+    /// Ассоциативный массив: упорядоченный по вставке список пар.
+    ///
+    /// Ключом может быть любое значение, кроме `Float`-NaN.
+    Map(Vec<(Value, Value)>),
+    /// Структура, созданная через `defstruct` (ЭТАП 3 V0.4 / V0.5).
     /// Поля хранятся позиционно; имя типа — для аксессоров и равенства.
     Struct { name: String, fields: Vec<Value> },
     /// Литерал `none` (отсутствие значения / пустой Option).
@@ -45,8 +58,10 @@ pub enum Value {
     Success(Box<Value>),
     /// Ошибка Result: (failure msg).
     Failure(Box<Value>),
-    /// Замыкание (функция).
+    /// Замыкание (пользовательская функция).
     Closure(Closure),
+    /// Нативная функция стандартной библиотеки.
+    Native(NativeFn),
 }
 
 /// Равенство значений для оператора `=`.
@@ -61,6 +76,14 @@ impl PartialEq for Value {
             (Value::Str(a), Value::Str(b)) => a == b,
             (Value::List(a), Value::List(b)) => a == b,
             (Value::Tuple(a), Value::Tuple(b)) => a == b,
+            (Value::Map(a), Value::Map(b)) => {
+                a.len() == b.len()
+                    && a.iter().all(|(key, value)| {
+                        b.iter()
+                            .find(|(other_key, _)| other_key == key)
+                            .is_some_and(|(_, other_value)| other_value == value)
+                    })
+            }
             (
                 Value::Struct {
                     name: an,
@@ -94,10 +117,12 @@ pub fn is_truthy(value: &Value) -> bool {
         Value::Str(s) => !s.is_empty(),
         Value::List(items) => !items.is_empty(),
         Value::Tuple(items) => !items.is_empty(),
+        Value::Map(pairs) => !pairs.is_empty(),
         Value::Struct { .. } => true,
         Value::Some(_) => true,
         Value::Success(_) => true,
         Value::Closure(_) => true,
+        Value::Native(_) => true,
     }
 }
 
@@ -150,6 +175,18 @@ fn value_to_string_inner(value: &Value, in_container: bool) -> String {
                 .join(" ");
             format!("(tuple {})", inner)
         }
+        Value::Map(pairs) => {
+            let inner = pairs
+                .iter()
+                .map(|(key, value)| {
+                    let key = value_to_string_inner(key, true);
+                    let value = value_to_string_inner(value, true);
+                    format!("(tuple {} {})", key, value)
+                })
+                .collect::<Vec<String>>()
+                .join(" ");
+            format!("(map {})", inner)
+        }
         Value::Struct { name, fields } => {
             let inner = fields
                 .iter()
@@ -162,6 +199,7 @@ fn value_to_string_inner(value: &Value, in_container: bool) -> String {
         Value::Success(v) => format!("(success {})", value_to_string_inner(v, true)),
         Value::Failure(v) => format!("(failure {})", value_to_string_inner(v, true)),
         Value::Closure(_) => "function".to_string(),
+        Value::Native(_) => "function".to_string(),
     }
 }
 

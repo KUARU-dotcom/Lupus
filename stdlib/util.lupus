@@ -1,0 +1,4 @@
+;; util.lupus — демонстрационный файловый модуль V0.5.
+(define-public (double (x int)) -> int (* x 2))
+(define-public (greet (name str)) -> str (string-append "Привет, " name))
+(define hidden 99)

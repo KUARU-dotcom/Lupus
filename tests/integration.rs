@@ -297,7 +297,18 @@ fn error_binary_prints_error_and_exits_1() {
         .unwrap();
     assert_eq!(out.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&out.stdout);
-    assert!(stdout.contains("Деление на ноль"));
+    assert!(
+        stdout.is_empty(),
+        "stdout должен оставаться чистым: {}",
+        stdout
+    );
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.starts_with('{'),
+        "stderr должен быть JSON: {}",
+        stderr
+    );
+    assert!(stderr.contains("\"code\":\"divide-by-zero\""), "{}", stderr);
 }
 
 // ─── V0.3: Option/Result (ЭТАП 1) ─────────────────────────────────────────────

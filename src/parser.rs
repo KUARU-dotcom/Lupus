@@ -1,7 +1,8 @@
 //! Парсер — построение AST из списка токенов.
 //!
 //! Реализует рекурсивный спуск: числа, строки, булевы литералы, `none`,
-//! символы и списки (формы). Обрабатывает несбалансированные скобки с ошибкой.
+//! символы и списки (формы). Обрабатывает несбалансированные скобки с ошибкой
+//! `missing-rparen` и лишние `)` — ошибкой `unexpected-token`.
 
 use crate::ast::Expr;
 use crate::error::Error;
@@ -11,12 +12,20 @@ use crate::lexer::{Token, TokenKind};
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    /// Позиция последнего успешно прочитанного токена (для ошибок в EOF).
+    last_line: usize,
+    last_col: usize,
 }
 
 impl Parser {
     /// Создаёт новый парсер для списка токенов.
     pub fn new(tokens: Vec<Token>) -> Self {
-        Parser { tokens, pos: 0 }
+        Parser {
+            tokens,
+            pos: 0,
+            last_line: 1,
+            last_col: 1,
+        }
     }
 
     /// Возвращает текущий токен, если он есть.
@@ -27,27 +36,33 @@ impl Parser {
     /// Возвращает текущий токен и продвигает позицию.
     fn next(&mut self) -> Option<Token> {
         let token = self.tokens.get(self.pos).cloned();
+        if let Some(token) = &token {
+            self.last_line = token.line;
+            self.last_col = token.col;
+        }
         self.pos += 1;
         token
     }
 
-    /// Формирует ошибку парсера.
-    fn error(&self, message: &str) -> Error {
-        if let Some(token) = self.peek() {
-            Error::new(format!(
-                "Ошибка парсера на строке {}, колонке {}: {}",
-                token.line, token.col, message
-            ))
-        } else {
-            Error::new(format!("Ошибка парсера: {}", message))
-        }
+    /// Формирует ошибку парсера в текущей позиции.
+    fn error(&self, code: &str, message: &str) -> Error {
+        let (line, col) = match self.peek() {
+            Some(token) => (token.line, token.col),
+            None => (self.last_line, self.last_col),
+        };
+        Error::parse(code, message, line, col)
     }
 
     /// Разбирает одну форму и возвращает соответствующее выражение.
     fn parse_form(&mut self) -> Result<Expr, Error> {
         let token = match self.peek() {
             Some(t) => t.clone(),
-            None => return Err(self.error("Неожиданный конец файла")),
+            None => {
+                return Err(self.error(
+                    "unexpected-token",
+                    "Неожиданный конец файла: ожидалось выражение",
+                ))
+            }
         };
 
         match token.kind {
@@ -83,7 +98,7 @@ impl Parser {
                     match self.peek() {
                         None => {
                             return Err(
-                                self.error("Неожиданный конец файла: ожидалась закрывающая скобка")
+                                self.error("missing-rparen", "Пропущена закрывающая скобка ')'")
                             );
                         }
                         Some(token) if token.kind == TokenKind::RParen => {
@@ -101,7 +116,7 @@ impl Parser {
             }
             TokenKind::RParen => {
                 self.next();
-                Err(self.error("Неожиданная закрывающая скобка"))
+                Err(self.error("unexpected-token", "Неожиданная закрывающая скобка ')'"))
             }
         }
     }
