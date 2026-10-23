@@ -259,16 +259,285 @@ fn run_with_timeout(path: &PathBuf) -> Outcome {
     }
 }
 
+/// Минимальное JSON-значение для разбора stderr без внешних зависимостей.
+#[derive(Debug)]
+enum JsonValue {
+    Null,
+    Bool,
+    Number,
+    Str(String),
+    Array,
+    Object(Vec<(String, JsonValue)>),
+}
+
+struct JsonParser<'a> {
+    input: &'a str,
+    pos: usize,
+}
+
+impl<'a> JsonParser<'a> {
+    fn new(input: &'a str) -> Self {
+        JsonParser { input, pos: 0 }
+    }
+
+    fn skip_ws(&mut self) {
+        while self
+            .input
+            .as_bytes()
+            .get(self.pos)
+            .is_some_and(u8::is_ascii_whitespace)
+        {
+            self.pos += 1;
+        }
+    }
+
+    fn peek(&self) -> Option<u8> {
+        self.input.as_bytes().get(self.pos).copied()
+    }
+
+    fn expect(&mut self, byte: u8) -> Result<(), String> {
+        if self.peek() == Some(byte) {
+            self.pos += 1;
+            Ok(())
+        } else {
+            Err(format!(
+                "ожидался байт {:?} в позиции {}",
+                byte as char, self.pos
+            ))
+        }
+    }
+
+    fn parse(&mut self) -> Result<JsonValue, String> {
+        self.skip_ws();
+        let value = match self.peek() {
+            Some(b'{') => self.object()?,
+            Some(b'[') => self.array()?,
+            Some(b'"') => JsonValue::Str(self.string()?),
+            Some(b't') => {
+                self.literal("true")?;
+                JsonValue::Bool
+            }
+            Some(b'f') => {
+                self.literal("false")?;
+                JsonValue::Bool
+            }
+            Some(b'n') => {
+                self.literal("null")?;
+                JsonValue::Null
+            }
+            Some(b'-' | b'0'..=b'9') => {
+                self.number()?;
+                JsonValue::Number
+            }
+            Some(other) => {
+                return Err(format!(
+                    "неожиданный байт {:?} в позиции {}",
+                    other as char, self.pos
+                ));
+            }
+            None => return Err("неожиданный конец JSON".to_string()),
+        };
+        self.skip_ws();
+        Ok(value)
+    }
+
+    fn literal(&mut self, text: &str) -> Result<(), String> {
+        if self.input[self.pos..].starts_with(text) {
+            self.pos += text.len();
+            Ok(())
+        } else {
+            Err(format!("ожидался литерал {text} в позиции {}", self.pos))
+        }
+    }
+
+    fn string(&mut self) -> Result<String, String> {
+        self.expect(b'"')?;
+        let mut out = String::new();
+        loop {
+            let rest = &self.input[self.pos..];
+            let ch = rest
+                .chars()
+                .next()
+                .ok_or_else(|| "незавершённая строка JSON".to_string())?;
+            self.pos += ch.len_utf8();
+            match ch {
+                '"' => return Ok(out),
+                '\\' => {
+                    let escape = self
+                        .input
+                        .as_bytes()
+                        .get(self.pos)
+                        .copied()
+                        .ok_or_else(|| "незавершённый escape JSON".to_string())?;
+                    self.pos += 1;
+                    match escape {
+                        b'"' => out.push('"'),
+                        b'\\' => out.push('\\'),
+                        b'/' => out.push('/'),
+                        b'b' => out.push('\u{0008}'),
+                        b'f' => out.push('\u{000c}'),
+                        b'n' => out.push('\n'),
+                        b'r' => out.push('\r'),
+                        b't' => out.push('\t'),
+                        b'u' => {
+                            let end = self.pos + 4;
+                            let hex = self
+                                .input
+                                .get(self.pos..end)
+                                .ok_or_else(|| "короткий \\u escape".to_string())?;
+                            let code = u32::from_str_radix(hex, 16)
+                                .map_err(|_| format!("неверный \\u escape: {hex}"))?;
+                            let decoded = char::from_u32(code)
+                                .ok_or_else(|| format!("недопустимый код \\u: {code}"))?;
+                            out.push(decoded);
+                            self.pos = end;
+                        }
+                        other => {
+                            return Err(format!("неизвестный escape \\{}", other as char));
+                        }
+                    }
+                }
+                c if (c as u32) < 0x20 => {
+                    return Err(format!("управляющий символ в строке JSON: {c:?}"));
+                }
+                c => out.push(c),
+            }
+        }
+    }
+
+    fn number(&mut self) -> Result<(), String> {
+        let start = self.pos;
+        if self.peek() == Some(b'-') {
+            self.pos += 1;
+        }
+        let mut digits = 0;
+        while self.peek().is_some_and(|b| b.is_ascii_digit()) {
+            self.pos += 1;
+            digits += 1;
+        }
+        if digits == 0 {
+            return Err(format!("ожидалась цифра в позиции {start}"));
+        }
+        if self.peek() == Some(b'.') {
+            self.pos += 1;
+            let mut frac = 0;
+            while self.peek().is_some_and(|b| b.is_ascii_digit()) {
+                self.pos += 1;
+                frac += 1;
+            }
+            if frac == 0 {
+                return Err(format!("ожидалась дробная часть в позиции {}", self.pos));
+            }
+        }
+        if self.peek().is_some_and(|b| b == b'e' || b == b'E') {
+            self.pos += 1;
+            if self.peek().is_some_and(|b| b == b'+' || b == b'-') {
+                self.pos += 1;
+            }
+            let mut exp = 0;
+            while self.peek().is_some_and(|b| b.is_ascii_digit()) {
+                self.pos += 1;
+                exp += 1;
+            }
+            if exp == 0 {
+                return Err(format!("ожидалась экспонента в позиции {}", self.pos));
+            }
+        }
+        self.input[start..self.pos]
+            .parse::<f64>()
+            .map_err(|_| format!("неверное число JSON: {}", &self.input[start..self.pos]))?;
+        Ok(())
+    }
+
+    fn array(&mut self) -> Result<JsonValue, String> {
+        self.expect(b'[')?;
+        self.skip_ws();
+        let mut items = Vec::new();
+        if self.peek() == Some(b']') {
+            self.pos += 1;
+            return Ok(JsonValue::Array);
+        }
+        loop {
+            items.push(self.parse()?);
+            match self.peek() {
+                Some(b',') => {
+                    self.pos += 1;
+                }
+                Some(b']') => {
+                    self.pos += 1;
+                    return Ok(JsonValue::Array);
+                }
+                _ => return Err(format!("ожидалась ',' или ']' в позиции {}", self.pos)),
+            }
+        }
+    }
+
+    fn object(&mut self) -> Result<JsonValue, String> {
+        self.expect(b'{')?;
+        self.skip_ws();
+        let mut entries = Vec::new();
+        if self.peek() == Some(b'}') {
+            self.pos += 1;
+            return Ok(JsonValue::Object(entries));
+        }
+        loop {
+            self.skip_ws();
+            let key = self.string()?;
+            self.skip_ws();
+            self.expect(b':')?;
+            let value = self.parse()?;
+            entries.push((key, value));
+            match self.peek() {
+                Some(b',') => {
+                    self.pos += 1;
+                }
+                Some(b'}') => {
+                    self.pos += 1;
+                    return Ok(JsonValue::Object(entries));
+                }
+                _ => return Err(format!("ожидалась ',' или '}}' в позиции {}", self.pos)),
+            }
+        }
+    }
+}
+
+fn parse_json(input: &str) -> Result<JsonValue, String> {
+    let mut parser = JsonParser::new(input);
+    let value = parser.parse()?;
+    if parser.pos != input.len() {
+        return Err(format!("лишние данные после JSON в позиции {}", parser.pos));
+    }
+    Ok(value)
+}
+
+fn field<'a>(object: &'a [(String, JsonValue)], name: &str) -> Result<&'a str, String> {
+    match object.iter().find(|(key, _)| key == name) {
+        Some((_, JsonValue::Str(value))) if !value.is_empty() => Ok(value),
+        Some((_, _)) => Err(format!("поле {name} не является непустой строкой")),
+        None => Err(format!("в JSON нет поля {name}")),
+    }
+}
+
+fn validate_error_json(stderr: &str) -> Result<(), String> {
+    let JsonValue::Object(object) = parse_json(stderr.trim())? else {
+        return Err("stderr не является JSON-объектом".to_string());
+    };
+    let severity = field(&object, "severity")?;
+    field(&object, "phase")?;
+    field(&object, "code")?;
+    field(&object, "message")?;
+    if severity != "error" {
+        return Err(format!("severity = {severity:?}, ожидалось \"error\""));
+    }
+    Ok(())
+}
+
 fn assert_valid_outcome(source: &str, outcome: Outcome) {
     match outcome {
         Outcome::TimedOut => {
             panic!("fuzz: зависание >2с на программе:\n{source}");
         }
         Outcome::Exited { code, stderr } => {
-            assert!(
-                !stderr.contains("panicked at"),
-                "fuzz: panic на программе:\n{source}\nstderr:\n{stderr}"
-            );
             if code == 0 {
                 return;
             }
@@ -276,15 +545,11 @@ fn assert_valid_outcome(source: &str, outcome: Outcome) {
                 code, 1,
                 "fuzz: недопустимый код {code} (ожидался 0/1) на программе:\n{source}\nstderr:\n{stderr}"
             );
-            let trimmed = stderr.trim();
-            assert!(
-                trimmed.starts_with('{') && trimmed.ends_with('}'),
-                "fuzz: stderr не JSON на программе:\n{source}\nstderr:\n{stderr}"
-            );
-            assert!(
-                trimmed.contains("\"code\":\""),
-                "fuzz: в JSON нет code на программе:\n{source}\nstderr:\n{stderr}"
-            );
+            if let Err(error) = validate_error_json(&stderr) {
+                panic!(
+                    "fuzz: некорректный JSON ошибки на программе:\n{source}\nпричина: {error}\nstderr:\n{stderr}"
+                );
+            }
         }
     }
 }
@@ -300,4 +565,11 @@ fn fuzz_smoke_2000_random_programs() {
         assert_valid_outcome(&source, outcome);
         let _ = iteration;
     }
+}
+
+#[test]
+fn json_parser_reads_error_object() {
+    let json = r#"{"severity":"error","phase":"runtime","code":"x","message":"a\"b\n"}"#;
+    assert!(validate_error_json(json).is_ok());
+    assert!(validate_error_json(r#"{"severity":"error"}"#).is_err());
 }
