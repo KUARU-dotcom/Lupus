@@ -35,7 +35,9 @@ fn contains_unfuzzable_symbol(src: &str) -> bool {
         Ok(tokens) => tokens.iter().any(|token| {
             matches!(
                 &token.kind,
-                TokenKind::Symbol(name) if name == "exit" || name == "loop"
+                TokenKind::Symbol(name)
+                if name == "exit" || name == "loop"
+                    || name == "while" || name == "for"
             )
         }),
         // Лексическая ошибка — не наша забота: `run_source` вернёт её же.
