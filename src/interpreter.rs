@@ -4,7 +4,7 @@
 //! (`define`, `define-mutable`, `set!`, `if`, `while`, `begin`, `and`, `or`,
 //! `lambda`) и вызов встроенных / пользовательских функций.
 
-use crate::ast::Expr;
+use crate::ast::{Expr, ExprKind};
 use crate::builtins;
 use crate::environment::Environment;
 use crate::error::Error;
@@ -193,16 +193,20 @@ impl Interpreter {
     }
 
     /// Оценка одного выражения в контексте окружения.
+    ///
+    /// Ошибка без готовой location получает span и позицию текущего узла.
+    /// Это не перезаписывает location лексических/синтаксических ошибок.
     pub fn eval(&self, expr: &Expr, env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
-        match expr {
-            Expr::Number(n) => Ok(Value::Int(*n)),
-            Expr::Float(f) => Ok(Value::Float(*f)),
-            Expr::Str(s) => Ok(Value::Str(s.clone())),
-            Expr::Bool(b) => Ok(Value::Bool(*b)),
-            Expr::None => Ok(Value::None),
-            Expr::Symbol(name) => self.eval_symbol(&env, name),
-            Expr::List(elems) => self.eval_list(elems, env),
-        }
+        let result = match &expr.kind {
+            ExprKind::Number(n) => Ok(Value::Int(*n)),
+            ExprKind::Float(f) => Ok(Value::Float(*f)),
+            ExprKind::Str(s) => Ok(Value::Str(s.clone())),
+            ExprKind::Bool(b) => Ok(Value::Bool(*b)),
+            ExprKind::None => Ok(Value::None),
+            ExprKind::Symbol(name) => self.eval_symbol(&env, name),
+            ExprKind::List(elems) => self.eval_list(elems, env),
+        };
+        result.map_err(|error| attach_node_location(expr, error))
     }
 }
 
@@ -217,7 +221,7 @@ impl Interpreter {
         let rest = &elems[1..];
 
         // Специальные формы, опознаваемые по имени-символу.
-        if let Expr::Symbol(name) = first {
+        if let ExprKind::Symbol(name) = &first.kind {
             match name.as_str() {
                 "define" => return self.do_define(rest, &env),
                 "define-public" => return self.do_define_public(rest, &env),
@@ -435,18 +439,19 @@ impl Interpreter {
             )));
         }
 
-        let (name, value) = match &rest[0] {
+        let (name, value) = match &rest[0].kind {
             // (define имя значение)
-            Expr::Symbol(name) => {
+            ExprKind::Symbol(name) => {
                 let value = self.eval(&rest[1], env.clone())?;
                 (name.clone(), value)
             }
             // (define (имя параметры...) [-> тип] тело...)
-            Expr::List(header) => {
+            ExprKind::List(header) => {
                 let (fn_name, param_names) = self.parse_function_header(header)?;
 
                 // Необязательная аннотация возвращаемого типа `-> type`.
-                let body_start = if matches!(rest.get(1), Some(Expr::Symbol(s)) if s == "->") {
+                let body_start = if matches!(rest.get(1), Some(Expr { kind: ExprKind::Symbol(s), .. }) if s == "->")
+                {
                     if rest.len() < 3 {
                         return Err(Error::type_error(
                             "missing-return-type",
@@ -504,8 +509,8 @@ impl Interpreter {
                 "Пустой список в определении функции",
             ));
         }
-        let name = match &header[0] {
-            Expr::Symbol(name) => name.clone(),
+        let name = match &header[0].kind {
+            ExprKind::Symbol(name) => name.clone(),
             _ => {
                 return Err(Error::type_error(
                     "unexpected-token",
@@ -516,10 +521,10 @@ impl Interpreter {
 
         let mut params = Vec::with_capacity(header.len().saturating_sub(1));
         for param in &header[1..] {
-            match param {
-                Expr::Symbol(name) => params.push(name.clone()),
-                Expr::List(items) if !items.is_empty() => match &items[0] {
-                    Expr::Symbol(name) => params.push(name.clone()),
+            match &param.kind {
+                ExprKind::Symbol(name) => params.push(name.clone()),
+                ExprKind::List(items) if !items.is_empty() => match &items[0].kind {
+                    ExprKind::Symbol(name) => params.push(name.clone()),
                     _ => {
                         return Err(Error::type_error(
                             "unexpected-token",
@@ -551,14 +556,17 @@ impl Interpreter {
                 rest.len()
             )));
         }
-        let (type_name, type_params) = match &rest[0] {
-            Expr::Symbol(name) => (name.clone(), Vec::new()),
-            Expr::List(header) => match header.first() {
-                Some(Expr::Symbol(name)) => {
+        let (type_name, type_params) = match &rest[0].kind {
+            ExprKind::Symbol(name) => (name.clone(), Vec::new()),
+            ExprKind::List(header) => match header.first() {
+                Some(Expr {
+                    kind: ExprKind::Symbol(name),
+                    ..
+                }) => {
                     let mut params = Vec::new();
                     for param in &header[1..] {
-                        match param {
-                            Expr::Symbol(param) => params.push(param.clone()),
+                        match &param.kind {
+                            ExprKind::Symbol(param) => params.push(param.clone()),
                             _ => {
                                 return Err(Error::type_error(
                                     "unexpected-token",
@@ -586,7 +594,7 @@ impl Interpreter {
 
         let mut field_names: Vec<String> = Vec::with_capacity(rest.len() - 1);
         for field in &rest[1..] {
-            let Expr::List(items) = field else {
+            let Some(items) = field.as_list() else {
                 return Err(Error::type_error(
                     "unexpected-token",
                     "Каждое поле defstruct должно быть списком (имя тип)",
@@ -598,8 +606,8 @@ impl Interpreter {
                     "Поле defstruct должно быть списком из 2 элементов (имя тип)",
                 ));
             }
-            let field_name = match &items[0] {
-                Expr::Symbol(n) => n.clone(),
+            let field_name = match &items[0].kind {
+                ExprKind::Symbol(n) => n.clone(),
                 _ => {
                     return Err(Error::type_error(
                         "unexpected-token",
@@ -859,7 +867,10 @@ impl Interpreter {
     /// FFI-python объявлен заменённым нативными модулями (ERRATA §2).
     fn do_directive(&self, rest: &[Expr]) -> Result<Value, Error> {
         let name = match rest.first() {
-            Some(Expr::Symbol(name)) => name.as_str(),
+            Some(Expr {
+                kind: ExprKind::Symbol(name),
+                ..
+            }) => name.as_str(),
             _ => "",
         };
         match name {
@@ -894,8 +905,8 @@ impl Interpreter {
                 rest.len()
             )));
         }
-        let name = match &rest[0] {
-            Expr::Symbol(n) => n,
+        let name = match &rest[0].kind {
+            ExprKind::Symbol(n) => n,
             _ => {
                 return Err(Error::type_mismatch(
                     "Первый аргумент define-mutable должен быть символом",
@@ -915,8 +926,8 @@ impl Interpreter {
                 rest.len()
             )));
         }
-        let name = match &rest[0] {
-            Expr::Symbol(n) => n,
+        let name = match &rest[0].kind {
+            ExprKind::Symbol(n) => n,
             _ => {
                 return Err(Error::type_mismatch(
                     "Первый аргумент set! должен быть символом",
@@ -928,7 +939,8 @@ impl Interpreter {
             Ok(()) => Ok(Value::None),
             Err(e) if e.code == "unknown-identifier" => {
                 // Улучшенное сообщение с подсказками по похожим именам.
-                Err(self.undefined_variable_error(env, name))
+                let error = self.undefined_variable_error(env, name);
+                Err(attach_node_location(&rest[0], error))
             }
             Err(e) => Err(e),
         }
@@ -942,8 +954,8 @@ impl Interpreter {
                 rest.len()
             )));
         }
-        let param_list = match &rest[0] {
-            Expr::List(items) => items,
+        let param_list = match &rest[0].kind {
+            ExprKind::List(items) => items,
             _ => {
                 return Err(Error::type_mismatch(
                     "Первый аргумент lambda должен быть списком параметров",
@@ -953,10 +965,10 @@ impl Interpreter {
 
         let mut param_names = Vec::new();
         for p in param_list {
-            match p {
-                Expr::Symbol(s) => param_names.push(s.clone()),
-                Expr::List(items) if !items.is_empty() => match &items[0] {
-                    Expr::Symbol(name) => param_names.push(name.clone()),
+            match &p.kind {
+                ExprKind::Symbol(s) => param_names.push(s.clone()),
+                ExprKind::List(items) if !items.is_empty() => match &items[0].kind {
+                    ExprKind::Symbol(name) => param_names.push(name.clone()),
                     _ => {
                         return Err(Error::type_error(
                             "unexpected-token",
@@ -973,7 +985,8 @@ impl Interpreter {
             }
         }
 
-        let body_start = if matches!(rest.get(1), Some(Expr::Symbol(s)) if s == "->") {
+        let body_start = if matches!(rest.get(1), Some(Expr { kind: ExprKind::Symbol(s), .. }) if s == "->")
+        {
             3
         } else {
             1
@@ -1119,7 +1132,7 @@ impl Interpreter {
     /// возвращается `None`.
     fn do_cond(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         for clause in rest {
-            let Expr::List(items) = clause else {
+            let Some(items) = clause.as_list() else {
                 return Err(Error::type_mismatch(
                     "Каждая ветка cond должна быть списком",
                 ));
@@ -1131,7 +1144,7 @@ impl Interpreter {
             let body = &items[1..];
 
             // Ветка (else тело...) — безусловная.
-            if let Expr::Symbol(name) = header {
+            if let Some(name) = header.as_symbol() {
                 if name == "else" {
                     if body.is_empty() {
                         return Ok(Value::None);
@@ -1170,15 +1183,15 @@ impl Interpreter {
                 "(for ...) требует форму: (for var in iter тело...)".to_string(),
             ));
         }
-        let var = match &rest[0] {
-            Expr::Symbol(s) => s.clone(),
+        let var = match &rest[0].kind {
+            ExprKind::Symbol(s) => s.clone(),
             _ => {
                 return Err(Error::type_mismatch(
                     "Переменная цикла for должна быть символом",
                 ))
             }
         };
-        if !matches!(&rest[1], Expr::Symbol(s) if s == "in") {
+        if !matches!(&rest[1].kind, ExprKind::Symbol(s) if s == "in") {
             return Err(Error::type_mismatch("for: ожидалось ключевое слово 'in'"));
         }
         let iter_expr = &rest[2];
@@ -1248,8 +1261,8 @@ impl Interpreter {
         if rest.is_empty() {
             return Err(Error::arity("(let ...) требует список связей и тело"));
         }
-        let bindings = match &rest[0] {
-            Expr::List(items) => items,
+        let bindings = match &rest[0].kind {
+            ExprKind::List(items) => items,
             _ => {
                 return Err(Error::type_mismatch(
                     "Первым аргументом let должен быть список связей",
@@ -1260,7 +1273,7 @@ impl Interpreter {
         // 1) Вычисляем все значения в ВНЕШНЕМ окружении (параллельно).
         let mut pairs: Vec<(String, Value)> = Vec::with_capacity(bindings.len());
         for b in bindings {
-            let Expr::List(inner) = b else {
+            let Some(inner) = b.as_list() else {
                 return Err(Error::type_mismatch(
                     "Каждая связь let должна быть списком (имя значение)",
                 ));
@@ -1270,8 +1283,8 @@ impl Interpreter {
                     "Связь let должна быть списком из 2 элементов",
                 ));
             }
-            let name = match &inner[0] {
-                Expr::Symbol(s) => s.clone(),
+            let name = match &inner[0].kind {
+                ExprKind::Symbol(s) => s.clone(),
                 _ => return Err(Error::type_mismatch("Имя в связи let должно быть символом")),
             };
             let value = self.eval(&inner[1], env.clone())?;
@@ -1309,7 +1322,7 @@ impl Interpreter {
         let clauses = &rest[1..];
 
         for clause in clauses {
-            let Expr::List(items) = clause else {
+            let Some(items) = clause.as_list() else {
                 return Err(Error::type_mismatch(
                     "Каждая ветка match должна быть списком",
                 ));
@@ -1350,40 +1363,40 @@ impl Interpreter {
         pattern: &Expr,
         value: &Value,
     ) -> Result<Option<Vec<(String, Value)>>, Error> {
-        match pattern {
+        match &pattern.kind {
             // `_` — совпадает с чем угодно, без связываний.
-            Expr::Symbol(name) if name == "_" => Ok(Some(Vec::new())),
+            ExprKind::Symbol(name) if name == "_" => Ok(Some(Vec::new())),
             // Переменная — совпадает с чем угодно, связывает имя со значением.
-            Expr::Symbol(name) => Ok(Some(vec![(name.clone(), value.clone())])),
-            Expr::Number(n) => {
+            ExprKind::Symbol(name) => Ok(Some(vec![(name.clone(), value.clone())])),
+            ExprKind::Number(n) => {
                 if *value == Value::Int(*n) {
                     Ok(Some(Vec::new()))
                 } else {
                     Ok(None)
                 }
             }
-            Expr::Float(f) => {
+            ExprKind::Float(f) => {
                 if *value == Value::Float(*f) {
                     Ok(Some(Vec::new()))
                 } else {
                     Ok(None)
                 }
             }
-            Expr::Str(s) => {
+            ExprKind::Str(s) => {
                 if *value == Value::Str(s.clone()) {
                     Ok(Some(Vec::new()))
                 } else {
                     Ok(None)
                 }
             }
-            Expr::Bool(b) => {
+            ExprKind::Bool(b) => {
                 if *value == Value::Bool(*b) {
                     Ok(Some(Vec::new()))
                 } else {
                     Ok(None)
                 }
             }
-            Expr::None => {
+            ExprKind::None => {
                 if *value == Value::None {
                     Ok(Some(Vec::new()))
                 } else {
@@ -1392,8 +1405,8 @@ impl Interpreter {
             }
             // Составные паттерны: (tuple ...), (none), (some p), (success p),
             // (failure p).
-            Expr::List(items) => {
-                if let Some(Expr::Symbol(name)) = items.first() {
+            ExprKind::List(items) => {
+                if let Some(name) = items.first().and_then(Expr::as_symbol) {
                     // (tuple подпаттерны...) — позиционное связывание.
                     if name == "tuple" {
                         let Value::Tuple(elems) = value else {
@@ -1446,8 +1459,8 @@ impl Interpreter {
                     }
                 }
                 if items.len() == 2 {
-                    if let Expr::Symbol(name) = &items[0] {
-                        let inner = match name.as_str() {
+                    if let Some(name) = items[0].as_symbol() {
+                        let inner = match name {
                             "some" => match value {
                                 Value::Some(v) => Some(v),
                                 _ => None,
@@ -1483,16 +1496,16 @@ impl Interpreter {
                 rest.len()
             )));
         }
-        let binding = match &rest[0] {
-            Expr::List(items) if items.len() == 2 => items,
+        let binding = match &rest[0].kind {
+            ExprKind::List(items) if items.len() == 2 => items,
             _ => {
                 return Err(Error::type_mismatch(
                     "Первый аргумент if-let должен быть списком (имя выражение)",
                 ))
             }
         };
-        let name = match &binding[0] {
-            Expr::Symbol(s) => s.clone(),
+        let name = match &binding[0].kind {
+            ExprKind::Symbol(s) => s.clone(),
             _ => return Err(Error::type_mismatch("Имя в if-let должно быть символом")),
         };
         let val = self.eval(&binding[1], env.clone())?;
@@ -1541,10 +1554,11 @@ impl Interpreter {
     pub fn collect_tests(forms: &[Expr]) -> Result<Vec<TestDef>, Error> {
         let mut tests = Vec::new();
         for form in forms {
-            let Expr::List(items) = form else {
+            let Some(items) = form.as_list() else {
                 continue;
             };
-            if !matches!(items.first(), Some(Expr::Symbol(name)) if name == "test") {
+            if !matches!(items.first(), Some(Expr { kind: ExprKind::Symbol(name), .. }) if name == "test")
+            {
                 continue;
             }
             if items.len() < 2 {
@@ -1552,8 +1566,8 @@ impl Interpreter {
                     "(test ...) требует строковое имя и тело теста",
                 ));
             }
-            let name = match &items[1] {
-                Expr::Str(name) => name.clone(),
+            let name = match &items[1].kind {
+                ExprKind::Str(name) => name.clone(),
                 _ => {
                     return Err(Error::type_mismatch(
                         "Имя теста в форме (test ...) должно быть строкой",
@@ -1798,17 +1812,28 @@ fn body_from_forms(forms: &[Expr]) -> Expr {
     if forms.len() == 1 {
         forms[0].clone()
     } else {
-        Expr::List(
-            std::iter::once(Expr::Symbol("begin".to_string()))
+        Expr::unspanned(ExprKind::List(
+            std::iter::once(Expr::unspanned(ExprKind::Symbol("begin".to_string())))
                 .chain(forms.iter().cloned())
                 .collect(),
-        )
+        ))
+    }
+}
+
+/// Прикрепляет к ошибке span и позицию узла, если error ещё не локализована.
+fn attach_node_location(expr: &Expr, error: Error) -> Error {
+    if error.location.is_some() {
+        return error;
+    }
+    match expr.source_location() {
+        Some((span, line, col)) => error.with_span_location(line, col, span),
+        None => error,
     }
 }
 
 /// Проверяет, является ли форма объявлением теста.
 fn is_test_form(form: &Expr) -> bool {
-    matches!(form, Expr::List(items) if matches!(items.first(), Some(Expr::Symbol(name)) if name == "test"))
+    matches!(&form.kind, ExprKind::List(items) if matches!(items.first(), Some(Expr { kind: ExprKind::Symbol(name), .. }) if name == "test"))
 }
 
 /// Расстояние Левенштейна (для подсказок по неопределённым переменным).

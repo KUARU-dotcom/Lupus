@@ -1,10 +1,10 @@
 //! Сериализация AST в JSON по спецификации §7 (V0.5).
 //!
-//! Формат узла: `{"kind": ..., "span": ..., "data": {...}}`. Span'ы в AST
-//! появятся в V0.6 (ERRATA §3), поэтому поле `span` присутствует и равно
-//! `null`; порядок ключей детерминирован. Комментарии в AST не попадают.
+//! Формат узла: `{"kind": ..., "span": ..., "data": {...}}`. Span'ы узлов
+//! уже используются runtime-диагностиками, но в AST JSON пока сериализуются
+//! как `null`; порядок ключей детерминирован. Комментарии в AST не попадают.
 
-use crate::ast::Expr;
+use crate::ast::{Expr, ExprKind};
 use crate::json::Json;
 use crate::modules;
 
@@ -50,19 +50,23 @@ fn body_array(forms: &[Expr]) -> Json {
 }
 
 fn expr_node(expr: &Expr) -> Json {
-    match expr {
-        Expr::Number(value) => literal_node("LiteralInt", Json::Int(*value)),
-        Expr::Float(value) => literal_node("LiteralFloat", Json::Float(*value)),
-        Expr::Str(value) => literal_node("LiteralStr", Json::str(value.clone())),
-        Expr::Bool(value) => literal_node("LiteralBool", Json::Bool(*value)),
-        Expr::None => node("LiteralNone", vec![]),
-        Expr::Symbol(name) => symbol_node(name),
-        Expr::List(items) => list_node(items),
+    match &expr.kind {
+        ExprKind::Number(value) => literal_node("LiteralInt", Json::Int(*value)),
+        ExprKind::Float(value) => literal_node("LiteralFloat", Json::Float(*value)),
+        ExprKind::Str(value) => literal_node("LiteralStr", Json::str(value.clone())),
+        ExprKind::Bool(value) => literal_node("LiteralBool", Json::Bool(*value)),
+        ExprKind::None => node("LiteralNone", vec![]),
+        ExprKind::Symbol(name) => symbol_node(name),
+        ExprKind::List(items) => list_node(items),
     }
 }
 
 fn list_node(items: &[Expr]) -> Json {
-    let Some(Expr::Symbol(head)) = items.first() else {
+    let Some(Expr {
+        kind: ExprKind::Symbol(head),
+        ..
+    }) = items.first()
+    else {
         return call_node(items);
     };
     match head.as_str() {
@@ -95,8 +99,8 @@ fn list_node(items: &[Expr]) -> Json {
                     "name",
                     items
                         .get(1)
-                        .map(|value| match value {
-                            Expr::Str(name) => Json::str(name.clone()),
+                        .map(|value| match &value.kind {
+                            ExprKind::Str(name) => Json::str(name.clone()),
                             other => Json::str(format!("{:?}", other)),
                         })
                         .unwrap_or(Json::Null),
@@ -115,8 +119,8 @@ fn list_node(items: &[Expr]) -> Json {
                     "name",
                     items
                         .get(1)
-                        .map(|value| match value {
-                            Expr::Symbol(name) => Json::str(name.clone()),
+                        .map(|value| match &value.kind {
+                            ExprKind::Symbol(name) => Json::str(name.clone()),
                             other => Json::str(format!("{:?}", other)),
                         })
                         .unwrap_or(Json::Null),
@@ -126,9 +130,9 @@ fn list_node(items: &[Expr]) -> Json {
                     Json::Array(
                         items[2..]
                             .iter()
-                            .map(|value| match value {
-                                Expr::Symbol(name) => Json::str(name.clone()),
-                                Expr::Str(name) => Json::str(name.clone()),
+                            .map(|value| match &value.kind {
+                                ExprKind::Symbol(name) => Json::str(name.clone()),
+                                ExprKind::Str(name) => Json::str(name.clone()),
                                 other => Json::str(format!("{:?}", other)),
                             })
                             .collect(),
@@ -159,7 +163,10 @@ fn define_node(head: &str, rest: &[Expr]) -> Json {
     let constant = head == "define-const";
 
     match rest.first() {
-        Some(Expr::Symbol(name)) => node(
+        Some(Expr {
+            kind: ExprKind::Symbol(name),
+            ..
+        }) => node(
             "Define",
             vec![
                 ("name", Json::str(name.clone())),
@@ -170,7 +177,10 @@ fn define_node(head: &str, rest: &[Expr]) -> Json {
                 ("type_annotation", Json::Null),
             ],
         ),
-        Some(Expr::List(header)) => {
+        Some(Expr {
+            kind: ExprKind::List(header),
+            ..
+        }) => {
             let (name, params, return_type, body) = function_header(head, header, &rest[1..]);
             let lambda = node(
                 "Lambda",
@@ -213,29 +223,32 @@ fn function_header<'a>(
     rest: &'a [Expr],
 ) -> (String, Vec<Json>, Json, &'a [Expr]) {
     let name = match header.first() {
-        Some(Expr::Symbol(name)) => name.clone(),
+        Some(Expr {
+            kind: ExprKind::Symbol(name),
+            ..
+        }) => name.clone(),
         _ => String::new(),
     };
     let params = header
         .iter()
         .skip(1)
-        .map(|param| match param {
-            Expr::Symbol(name) => node(
+        .map(|param| match &param.kind {
+            ExprKind::Symbol(name) => node(
                 "Param",
                 vec![
                     ("name", Json::str(name.clone())),
                     ("type_annotation", Json::Null),
                 ],
             ),
-            Expr::List(items) => node(
+            ExprKind::List(items) => node(
                 "Param",
                 vec![
                     (
                         "name",
                         items
                             .first()
-                            .map(|value| match value {
-                                Expr::Symbol(name) => Json::str(name.clone()),
+                            .map(|value| match &value.kind {
+                                ExprKind::Symbol(name) => Json::str(name.clone()),
                                 other => Json::str(format!("{:?}", other)),
                             })
                             .unwrap_or(Json::Null),
@@ -253,7 +266,7 @@ fn function_header<'a>(
         })
         .collect();
 
-    if matches!(rest.first(), Some(Expr::Symbol(arrow)) if arrow == "->") {
+    if matches!(rest.first(), Some(Expr { kind: ExprKind::Symbol(arrow), .. }) if arrow == "->") {
         let return_type = type_node(rest.get(1));
         let body = if rest.len() > 2 {
             &rest[2..]
@@ -270,17 +283,20 @@ fn type_node(expr: Option<&Expr>) -> Json {
     let Some(expr) = expr else {
         return Json::Null;
     };
-    match expr {
-        Expr::Symbol(kind) => node(
+    match &expr.kind {
+        ExprKind::Symbol(kind) => node(
             "Type",
             vec![
                 ("kind", Json::str(kind.clone())),
                 ("params", Json::Array(Vec::new())),
             ],
         ),
-        Expr::List(items) => {
+        ExprKind::List(items) => {
             let kind = match items.first() {
-                Some(Expr::Symbol(name)) => name.clone(),
+                Some(Expr {
+                    kind: ExprKind::Symbol(name),
+                    ..
+                }) => name.clone(),
                 _ => String::new(),
             };
             node(
@@ -317,8 +333,8 @@ fn set_node(rest: &[Expr]) -> Json {
             (
                 "name",
                 rest.first()
-                    .map(|value| match value {
-                        Expr::Symbol(name) => Json::str(name.clone()),
+                    .map(|value| match &value.kind {
+                        ExprKind::Symbol(name) => Json::str(name.clone()),
                         other => Json::str(format!("{:?}", other)),
                     })
                     .unwrap_or(Json::Null),
@@ -351,16 +367,16 @@ fn if_node(rest: &[Expr]) -> Json {
 fn cond_node(rest: &[Expr]) -> Json {
     let clauses = rest
         .iter()
-        .map(|clause| match clause {
-            Expr::List(items) => Json::object(vec![
+        .map(|clause| match &clause.kind {
+            ExprKind::List(items) => Json::object(vec![
                 (
                     "condition",
                     items.first().map(expr_node).unwrap_or(Json::Null),
                 ),
                 ("body", body_array(&items[1..])),
             ]),
-            other => Json::object(vec![
-                ("condition", expr_node(other)),
+            _ => Json::object(vec![
+                ("condition", expr_node(clause)),
                 ("body", Json::Array(Vec::new())),
             ]),
         })
@@ -372,16 +388,16 @@ fn match_node(rest: &[Expr]) -> Json {
     let clauses = rest
         .iter()
         .skip(1)
-        .map(|clause| match clause {
-            Expr::List(items) => Json::object(vec![
+        .map(|clause| match &clause.kind {
+            ExprKind::List(items) => Json::object(vec![
                 (
                     "pattern",
                     items.first().map(pattern_node).unwrap_or(Json::Null),
                 ),
                 ("body", body_array(&items[1..])),
             ]),
-            other => Json::object(vec![
-                ("pattern", pattern_node(other)),
+            _ => Json::object(vec![
+                ("pattern", pattern_node(clause)),
                 ("body", Json::Array(Vec::new())),
             ]),
         })
@@ -396,13 +412,16 @@ fn match_node(rest: &[Expr]) -> Json {
 }
 
 fn pattern_node(pattern: &Expr) -> Json {
-    match pattern {
-        Expr::Symbol(name) if name == "_" => node("PatternWildcard", vec![]),
-        Expr::Symbol(name) => node("PatternVar", vec![("name", Json::str(name.clone()))]),
-        Expr::None => node("PatternLiteralNone", vec![]),
-        Expr::List(items) => {
+    match &pattern.kind {
+        ExprKind::Symbol(name) if name == "_" => node("PatternWildcard", vec![]),
+        ExprKind::Symbol(name) => node("PatternVar", vec![("name", Json::str(name.clone()))]),
+        ExprKind::None => node("PatternLiteralNone", vec![]),
+        ExprKind::List(items) => {
             let constructor = match items.first() {
-                Some(Expr::Symbol(name)) => name.clone(),
+                Some(Expr {
+                    kind: ExprKind::Symbol(name),
+                    ..
+                }) => name.clone(),
                 _ => String::new(),
             };
             let args = Json::Array(items.iter().skip(1).map(pattern_node).collect());
@@ -426,13 +445,16 @@ fn pattern_node(pattern: &Expr) -> Json {
 
 fn if_let_node(rest: &[Expr]) -> Json {
     let binding = match rest.first() {
-        Some(Expr::List(items)) if items.len() == 2 => Json::object(vec![
+        Some(Expr {
+            kind: ExprKind::List(items),
+            ..
+        }) if items.len() == 2 => Json::object(vec![
             (
                 "name",
                 items
                     .first()
-                    .map(|value| match value {
-                        Expr::Symbol(name) => Json::str(name.clone()),
+                    .map(|value| match &value.kind {
+                        ExprKind::Symbol(name) => Json::str(name.clone()),
                         other => Json::str(format!("{:?}", other)),
                     })
                     .unwrap_or(Json::Null),
@@ -464,8 +486,8 @@ fn for_node(rest: &[Expr]) -> Json {
             (
                 "var",
                 rest.first()
-                    .map(|value| match value {
-                        Expr::Symbol(name) => Json::str(name.clone()),
+                    .map(|value| match &value.kind {
+                        ExprKind::Symbol(name) => Json::str(name.clone()),
                         other => Json::str(format!("{:?}", other)),
                     })
                     .unwrap_or(Json::Null),
@@ -507,17 +529,26 @@ fn import_node(rest: &[Expr]) -> Json {
 
 fn defstruct_node(rest: &[Expr]) -> Json {
     let (name, type_params) = match rest.first() {
-        Some(Expr::Symbol(name)) => (name.clone(), Vec::new()),
-        Some(Expr::List(header)) => {
+        Some(Expr {
+            kind: ExprKind::Symbol(name),
+            ..
+        }) => (name.clone(), Vec::new()),
+        Some(Expr {
+            kind: ExprKind::List(header),
+            ..
+        }) => {
             let name = match header.first() {
-                Some(Expr::Symbol(name)) => name.clone(),
+                Some(Expr {
+                    kind: ExprKind::Symbol(name),
+                    ..
+                }) => name.clone(),
                 _ => String::new(),
             };
             let params = header
                 .iter()
                 .skip(1)
-                .filter_map(|param| match param {
-                    Expr::Symbol(name) => Some(Json::str(name.clone())),
+                .filter_map(|param| match &param.kind {
+                    ExprKind::Symbol(name) => Some(Json::str(name.clone())),
                     _ => None,
                 })
                 .collect();
@@ -529,14 +560,14 @@ fn defstruct_node(rest: &[Expr]) -> Json {
     let fields = rest
         .iter()
         .skip(1)
-        .map(|field| match field {
-            Expr::List(items) => Json::object(vec![
+        .map(|field| match &field.kind {
+            ExprKind::List(items) => Json::object(vec![
                 (
                     "name",
                     items
                         .first()
-                        .map(|value| match value {
-                            Expr::Symbol(name) => Json::str(name.clone()),
+                        .map(|value| match &value.kind {
+                            ExprKind::Symbol(name) => Json::str(name.clone()),
                             other => Json::str(format!("{:?}", other)),
                         })
                         .unwrap_or(Json::Null),

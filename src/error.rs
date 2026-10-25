@@ -72,8 +72,9 @@ pub struct Span {
 
 /// Позиция ошибки в исходном коде.
 ///
-/// Для runtime/lint-ошибок location равен `None` (span'ы в AST появятся
-/// в V0.6 — см. `docs/ERRATA.md`).
+/// Заполняется для lex/parse-ошибок и для runtime/lint/type-ошибок,
+/// возникших при вычислении узла AST со span. Для ошибок без привязки
+/// к исходнику location равен `None`.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Location {
     /// Путь к файлу, если известен.
@@ -106,7 +107,7 @@ pub struct Error {
     pub code: String,
     /// Человекочитаемое сообщение (на русском языке).
     pub message: String,
-    /// Позиция в исходном коде (только lex/parse).
+    /// Позиция в исходном коде (lex/parse или узел AST со span).
     pub location: Option<Box<Location>>,
     /// Подсказка по исправлению.
     pub hint: Option<String>,
@@ -257,10 +258,22 @@ impl Error {
         self
     }
 
-    /// Прикрепляет путь к файлу, не создавая location для runtime-ошибок.
+    /// Прикрепляет позицию узла AST, если location ещё не задана.
     ///
-    /// Используется CLI: runtime/lint-ошибки по ERRATA имеют `location = null`,
-    /// даже если известно имя файла.
+    /// Не перезаписывает location лексических/синтаксических ошибок.
+    pub fn with_span_location(mut self, line: usize, col: usize, span: Span) -> Self {
+        if self.location.is_none() {
+            self.location = Some(Box::new(Location {
+                file: None,
+                line,
+                col,
+                span: Some(span),
+            }));
+        }
+        self
+    }
+
+    /// Прикрепляет путь к файлу, если location уже есть.
     pub fn with_file_if_located(mut self, file: impl Into<String>) -> Self {
         if let Some(location) = &mut self.location {
             if location.file.is_none() {

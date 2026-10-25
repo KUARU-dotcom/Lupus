@@ -146,13 +146,111 @@ fn json_flag_suppresses_pretty() {
 }
 
 #[test]
-fn runtime_error_has_null_location_and_clean_stdout() {
+fn runtime_error_has_source_location_and_clean_stdout() {
     let path = temp_file("runtime", "(print \"before\")\n(/ 1 0)");
     let result = run_file(&path, &[]);
     assert_eq!(result.code, 1);
     assert_eq!(result.stdout, "before\n");
     assert_eq!(field(&result.stderr, "phase").as_deref(), Some("runtime"));
-    assert!(result.stderr.contains("\"location\":null"));
+    assert!(
+        result.stderr.contains("\"location\":{"),
+        "{}",
+        result.stderr
+    );
+    assert!(result.stderr.contains("\"line\":2"), "{}", result.stderr);
+    assert!(result.stderr.contains("\"col\":1"), "{}", result.stderr);
+    assert!(
+        result.stderr.contains("\"span\":{\"start\":17,\"end\":24}"),
+        "{}",
+        result.stderr
+    );
+    assert!(result.stderr.contains("main.lupus"), "{}", result.stderr);
+}
+
+#[test]
+fn runtime_col_counts_characters_not_bytes() {
+    // `(length 5)` начинается с 18-го символа, но с 24-го байта:
+    // кириллица занимает по два байта на символ.
+    let path = temp_file("runtime-col", "(print \"привет\") (length 5)");
+    let result = run_file(&path, &[]);
+    assert_eq!(result.code, 1);
+    assert!(result.stderr.contains("\"line\":1"), "{}", result.stderr);
+    assert!(result.stderr.contains("\"col\":18"), "{}", result.stderr);
+    assert!(
+        result.stderr.contains("\"span\":{\"start\":23,\"end\":33}"),
+        "{}",
+        result.stderr
+    );
+}
+
+#[test]
+fn negative_runtime_errors_have_exact_source_locations() {
+    let cases = [
+        (
+            "tests/negative/divide_by_zero.lupus",
+            "divide-by-zero",
+            1,
+            1,
+            0,
+            7,
+        ),
+        (
+            "tests/negative/index_out_of_bounds.lupus",
+            "index-out-of-bounds",
+            1,
+            1,
+            0,
+            16,
+        ),
+        (
+            "tests/negative/unknown_identifier.lupus",
+            "unknown-identifier",
+            1,
+            8,
+            7,
+            18,
+        ),
+        (
+            "tests/negative/length_type.lupus",
+            "type-mismatch",
+            1,
+            1,
+            0,
+            10,
+        ),
+    ];
+
+    for (path, code, line, col, start, end) in cases {
+        let result = run_file(Path::new(path), &[]);
+        assert_eq!(result.code, 1, "{path}: {}", result.stderr);
+        assert!(
+            result.stderr.contains(&format!("\"code\":\"{code}\"")),
+            "{path}"
+        );
+        assert!(
+            result.stderr.contains("\"location\":{"),
+            "{path}: {}",
+            result.stderr
+        );
+        assert!(
+            result.stderr.contains(&format!("\"line\":{line}")),
+            "{path}: {}",
+            result.stderr
+        );
+        assert!(
+            result.stderr.contains(&format!("\"col\":{col}")),
+            "{path}: {}",
+            result.stderr
+        );
+        assert!(
+            result
+                .stderr
+                .contains(&format!("\"span\":{{\"start\":{start},\"end\":{end}}}")),
+            "{path}: {}",
+            result.stderr
+        );
+        assert!(result.stderr.contains(path), "{path}: {}", result.stderr);
+    }
 }
 
 #[test]
