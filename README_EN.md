@@ -1,7 +1,7 @@
 # Lupus V0.5
 
 Prototype interpreter repository for [Lupus](https://github.com/KUARU-dotcom/Lupus)
-(V0.5 phase). Release artifacts are placed under `dist/`.
+(V0.5 phase). Release artifacts are published on the [Releases](https://github.com/KUARU-dotcom/Lupus/releases) page.
 
 ## What's new in V0.5
 

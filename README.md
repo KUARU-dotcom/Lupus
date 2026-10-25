@@ -1,7 +1,7 @@
 # Lupus V0.5
 
 Репозиторий прототипа интерпретатора [Lupus](https://github.com/KUARU-dotcom/Lupus)
-(фаза V0.5). Дистрибутивы и релизные артефакты лежат в `dist/`.
+(фаза V0.5). Дистрибутивы и релизные артефакты публикуются в [Releases](https://github.com/KUARU-dotcom/Lupus/releases).
 
 ## Что нового в V0.5
 
