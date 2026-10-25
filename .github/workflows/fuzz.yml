@@ -1,0 +1,97 @@
+name: fuzz
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: "Сколько секунд крутить каждый таргет"
+        default: "600"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [parse_eval, lexer]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: fuzz
+      - name: cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+      - name: Корпус из golden/examples (затравка)
+        run: |
+          mkdir -p fuzz/corpus/${{ matrix.target }}
+          i=0
+          for f in tests/golden/*.lupus examples/*.lupus; do
+            [ -f "$f" ] || continue
+            cp "$f" "fuzz/corpus/${{ matrix.target }}/seed_$i"
+            i=$((i + 1))
+          done
+          echo "затравка: $i файлов"
+      - name: Fuzz ${{ matrix.target }}
+        run: |
+          SECONDS_TO_RUN="${{ github.event.inputs.seconds || '600' }}"
+          cargo +nightly fuzz run ${{ matrix.target }} -- \
+            -max_total_time="$SECONDS_TO_RUN" \
+            -timeout=10 \
+            -rss_limit_mb=2048 \
+            -detect_leaks=0 \
+            -print_final_stats=1 \
+            -artifact_prefix=fuzz/artifacts/${{ matrix.target }}/
+        continue-on-error: true
+      - name: Минимизировать находки
+        if: always()
+        run: |
+          mkdir -p minimized
+          for crash in fuzz/artifacts/${{ matrix.target }}/crash-*; do
+            [ -f "$crash" ] || continue
+            name=$(basename "$crash")
+            cargo +nightly fuzz tmin ${{ matrix.target }} "$crash" \
+              -artifact_prefix=minimized/ || true
+            mv "$crash" "minimized/${name}" 2>/dev/null || true
+          done
+          ls -la minimized || true
+      - name: Артефакты
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-${{ matrix.target }}-${{ github.run_id }}
+          path: |
+            minimized/
+            fuzz/corpus/${{ matrix.target }}/
+          retention-days: 30
+      - name: Issue при находке
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          crashes=(minimized/crash-* minimized/leak-* minimized/timeout-*)
+          if [ ${#crashes[@]} -eq 0 ]; then
+            echo "находок нет"
+            exit 0
+          fi
+          body="Таргет: \`${{ matrix.target }}\`
+          Найдено файлов: ${#crashes[@]}
+
+          Артефакты: run ${{ github.run_id }} (Actions → artifacts).
+
+          Воспроизведение:
+          \`\`\`
+          cargo +nightly fuzz run ${{ matrix.target }} minimized/crash-XXXX
+          \`\`\`"
+          gh issue create \
+            --title "fuzz: падение в таргете ${{ matrix.target }}" \
+            --body "$body" \
+            --label "fuzz" || true
