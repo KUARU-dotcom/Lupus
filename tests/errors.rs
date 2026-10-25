@@ -169,3 +169,25 @@ fn lex_error_has_file_line_and_col() {
     assert!(result.stderr.contains("\"col\":8"), "{}", result.stderr);
     assert!(result.stderr.contains("main.lupus"), "{}", result.stderr);
 }
+
+#[test]
+fn lex_error_col_counts_characters_not_bytes() {
+    // Символ '@' — 18-я позиция в символах, но 24-й байт из-за кириллицы.
+    let path = temp_file("col", "(print \"привет\") @");
+    let result = run_file(&path, &[]);
+    assert_eq!(result.code, 1);
+    assert_eq!(
+        field(&result.stderr, "code").as_deref(),
+        Some("unknown-token")
+    );
+    assert!(
+        result.stderr.contains("\"col\":18"),
+        "col должен считаться в символах: {}",
+        result.stderr
+    );
+    assert!(
+        !result.stderr.contains("\"col\":24"),
+        "col не должен считаться в байтах: {}",
+        result.stderr
+    );
+}

@@ -1,0 +1,7 @@
+(define привет 42)
+(print (int->str привет))
+(define-mutable счётчик 0)
+(set! счётчик 1)
+(print (int->str счётчик))
+(define x-тест 7)
+(print (int->str x-тест))

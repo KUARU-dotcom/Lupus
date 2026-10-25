@@ -266,6 +266,12 @@ fn corpus() -> Vec<PathBuf> {
 /// Возвращает причину пропуска для файлов, использующих возможности V0.5,
 /// которых нет в v0.4.0.
 fn skip_reason(source: &str) -> Option<&'static str> {
+    if source.starts_with('\u{feff}') {
+        return Some("BOM (V0.5.1)");
+    }
+    if has_unicode_identifier(source) {
+        return Some("Unicode-идентификаторы (V0.5.1)");
+    }
     if source.contains("(import ") {
         return Some("import (V0.5)");
     }
@@ -292,6 +298,52 @@ fn skip_reason(source: &str) -> Option<&'static str> {
         return Some("escape-последовательности V0.5");
     }
     None
+}
+
+/// Есть ли в исходнике Unicode-буква вне строкового литерала/комментария.
+fn has_unicode_identifier(source: &str) -> bool {
+    let mut chars = source.chars().peekable();
+    let mut in_string = false;
+    let mut escaped = false;
+    let mut in_line_comment = false;
+    let mut in_block_comment = false;
+
+    while let Some(ch) = chars.next() {
+        if in_line_comment {
+            if ch == '\n' {
+                in_line_comment = false;
+            }
+            continue;
+        }
+        if in_block_comment {
+            if ch == '|' && chars.peek() == Some(&'#') {
+                chars.next();
+                in_block_comment = false;
+            }
+            continue;
+        }
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+        match ch {
+            '"' => in_string = true,
+            ';' => in_line_comment = true,
+            '#' if chars.peek() == Some(&'|') => {
+                chars.next();
+                in_block_comment = true;
+            }
+            c if !c.is_ascii() && c.is_alphabetic() => return true,
+            _ => {}
+        }
+    }
+    false
 }
 
 /// v0.4.0 печатает диагностику в stdout, V0.5 — JSON в stderr. Для exit 1

@@ -63,12 +63,42 @@ fn is_symbol_char(ch: u8) -> bool {
         )
 }
 
+/// Первый символ идентификатора: Unicode alphabetic или `_`.
+///
+/// ASCII-символы операторов (`+`, `=`, `/` и т.п.) остаются допустимыми
+/// началами символьных токенов — это сохраняет операторы и квалифицированные
+/// имена (`senko/sqrt`) в прежнем виде.
+fn is_identifier_start(ch: char) -> bool {
+    ch.is_alphabetic() || ch == '_'
+}
+
+/// Продолжение идентификатора: alphabetic / decimal digit / `_` / `-`.
+fn is_identifier_continue(ch: char) -> bool {
+    ch.is_alphabetic() || ch.is_numeric() || ch == '_' || ch == '-'
+}
+
+/// Может ли символ начинать символьный токен.
+fn is_symbol_start(ch: char) -> bool {
+    is_identifier_start(ch) || (ch.is_ascii() && is_symbol_char(ch as u8))
+}
+
+/// Может ли символ продолжаться внутри символьного токена.
+///
+/// Для ASCII сохраняется исторический алфавит символов (включая `/` и `>`),
+/// чтобы `int->str` и `senko/sqrt` оставались одним токеном. Для Unicode
+/// действует правило идентификатора из ERRATA §1.1.
+fn is_symbol_continue(ch: char) -> bool {
+    is_identifier_continue(ch) || (ch.is_ascii() && is_symbol_char(ch as u8))
+}
+
 impl<'a> Lexer<'a> {
     /// Создаёт новый лексер для исходного кода.
     pub fn new(src: &'a str) -> Self {
+        // UTF-8 BOM в начале источника пропускается (ERRATA: BOM).
+        let pos = if src.starts_with('\u{feff}') { 3 } else { 0 };
         Lexer {
             src: src.as_bytes(),
-            pos: 0,
+            pos,
             line: 1,
             col: 1,
         }
@@ -79,20 +109,41 @@ impl<'a> Lexer<'a> {
         self.src.get(self.pos).copied()
     }
 
+    /// Возвращает текущий Unicode-символ без продвижения позиции.
+    fn peek_char(&self) -> Option<char> {
+        self.src
+            .get(self.pos..)
+            .and_then(|rest| std::str::from_utf8(rest).ok())
+            .and_then(|rest| rest.chars().next())
+    }
+
     /// Возвращает байт по смещению от текущей позиции.
     fn peek_at(&self, offset: usize) -> Option<u8> {
         self.src.get(self.pos + offset).copied()
     }
 
     /// Возвращает следующий символ и продвигает позицию.
+    ///
+    /// `col` считается в символах (не в байтах): байты продолжения UTF-8
+    /// (`10xxxxxx`) не увеличивают колонку. `span` токенов остаётся в байтах.
     fn next(&mut self) -> Option<u8> {
         let ch = self.peek()?;
         self.pos += 1;
         if ch == b'\n' {
             self.line += 1;
             self.col = 1;
-        } else {
+        } else if ch & 0xC0 != 0x80 {
             self.col += 1;
+        }
+        Some(ch)
+    }
+
+    /// Возвращает следующий Unicode-символ и продвигает позицию по всем
+    /// байтам его UTF-8-последовательности.
+    fn next_char(&mut self) -> Option<char> {
+        let ch = self.peek_char()?;
+        for _ in 0..ch.len_utf8() {
+            self.next();
         }
         Some(ch)
     }
@@ -184,21 +235,83 @@ impl<'a> Lexer<'a> {
                         b'\\' => value.push('\\'),
                         b'x' => {
                             let code = self.read_hex(2).ok_or_else(|| {
-                                self.error("unknown-token", "Некорректный \\x-escape в строке")
+                                self.error("invalid-escape", "Некорректный \\x-escape в строке")
                             })?;
                             if let Some(c) = char::from_u32(code) {
                                 value.push(c);
                             }
                         }
                         b'u' => {
+                            let (escape_line, escape_col) = (self.line, self.col);
                             let code = self.read_hex(4).ok_or_else(|| {
-                                self.error("unknown-token", "Некорректный \\u-escape в строке")
+                                Error::lex(
+                                    "invalid-escape",
+                                    "Некорректный \\u-escape в строке",
+                                    escape_line,
+                                    escape_col,
+                                )
                             })?;
-                            if let Some(c) = char::from_u32(code) {
-                                value.push(c);
-                            }
+                            let scalar = if (0xD800..=0xDBFF).contains(&code) {
+                                // Старший суррогат обязан сопровождаться
+                                // младшим: `\uD83D\uDE00`.
+                                if self.peek() != Some(b'\\') || self.peek_at(1) != Some(b'u') {
+                                    return Err(Error::lex(
+                                        "invalid-escape",
+                                        "Одинокий суррогат в \\u-escape",
+                                        escape_line,
+                                        escape_col,
+                                    ));
+                                }
+                                self.next();
+                                self.next();
+                                let low = self.read_hex(4).ok_or_else(|| {
+                                    Error::lex(
+                                        "invalid-escape",
+                                        "Некорректный \\u-escape в строке",
+                                        escape_line,
+                                        escape_col,
+                                    )
+                                })?;
+                                if !(0xDC00..=0xDFFF).contains(&low) {
+                                    return Err(Error::lex(
+                                        "invalid-escape",
+                                        "Одинокий суррогат в \\u-escape",
+                                        escape_line,
+                                        escape_col,
+                                    ));
+                                }
+                                0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00)
+                            } else if (0xDC00..=0xDFFF).contains(&code) {
+                                return Err(Error::lex(
+                                    "invalid-escape",
+                                    "Одинокий суррогат в \\u-escape",
+                                    escape_line,
+                                    escape_col,
+                                ));
+                            } else {
+                                code
+                            };
+                            let c = char::from_u32(scalar).ok_or_else(|| {
+                                Error::lex(
+                                    "invalid-escape",
+                                    "Недопустимый code point в \\u-escape",
+                                    escape_line,
+                                    escape_col,
+                                )
+                            })?;
+                            value.push(c);
                         }
-                        other => value.push(other as char),
+                        other => {
+                            return Err(Error::lex(
+                                "invalid-escape",
+                                format!(
+                                    "Неизвестная escape-последовательность: '\\{}'",
+                                    other as char
+                                ),
+                                self.line,
+                                self.col.saturating_sub(1),
+                            ));
+                        }
                     }
                 }
                 _ => {
@@ -300,22 +413,24 @@ impl<'a> Lexer<'a> {
     /// Разбирает символ до разделителя (скобка, пробел, комментарий).
     ///
     /// Возвращает ошибку `unknown-token`, если встречается символ вне
-    /// алфавита языка (например, `@`, `$`, `.` вне числа).
+    /// алфавита языка (например, `@`, `$`, `.` вне числа, эмодзи).
     fn parse_symbol(&mut self) -> Result<String, Error> {
         let mut value = String::new();
 
-        while let Some(ch) = self.peek() {
-            if ch == b'(' || ch == b')' || ch.is_ascii_whitespace() || ch == b';' {
+        while let Some(ch) = self.peek_char() {
+            if ch == '(' || ch == ')' || ch.is_whitespace() || ch == ';' {
                 break;
             }
-            if !is_symbol_char(ch) {
-                return Err(self.error(
-                    "unknown-token",
-                    &format!("Неизвестный токен: '{}'", ch as char),
-                ));
+            let allowed = if value.is_empty() {
+                is_symbol_start(ch)
+            } else {
+                is_symbol_continue(ch)
+            };
+            if !allowed {
+                return Err(self.error("unknown-token", &format!("Неизвестный токен: '{}'", ch)));
             }
-            value.push(ch as char);
-            self.next();
+            self.next_char();
+            value.push(ch);
         }
         Ok(value)
     }
@@ -336,6 +451,7 @@ impl<'a> Lexer<'a> {
             let col = self.col;
             let start = self.pos;
             let ch = self.peek().unwrap();
+            let current_char = self.peek_char().unwrap_or('\u{fffd}');
 
             match ch {
                 b'(' => {
@@ -418,7 +534,7 @@ impl<'a> Lexer<'a> {
                         ));
                     }
                 }
-                c if is_symbol_char(c) => {
+                _ if is_symbol_start(current_char) => {
                     let symbol = self.parse_symbol()?;
                     let kind = match symbol.as_str() {
                         "true" => TokenKind::Bool(true),
@@ -437,7 +553,7 @@ impl<'a> Lexer<'a> {
                 _ => {
                     return Err(self.error(
                         "unknown-token",
-                        &format!("Неизвестный токен: '{}'", ch as char),
+                        &format!("Неизвестный токен: '{}'", current_char),
                     ));
                 }
             }
