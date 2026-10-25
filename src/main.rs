@@ -54,6 +54,27 @@ fn print_usage_stderr() {
     eprintln!("{}", usage_text());
 }
 
+/// Завершает CLI с кодом 2: сообщение и usage всегда в stderr.
+///
+/// Используется для любой ошибки разбора вызова (нет позиционного аргумента,
+/// лишние позиционные, неизвестный флаг, вызов без аргументов). Это не
+/// диагностика языка, поэтому JSON не печатается, а stdout остаётся пустым.
+fn usage_error(message: &str) -> ! {
+    if !message.is_empty() {
+        eprintln!("{}", message);
+    }
+    print_usage_stderr();
+    process::exit(2);
+}
+
+/// Возвращает единственный позиционный аргумент или завершает CLI с кодом 2.
+fn one_positional<'a>(args: &'a Args, form: &str) -> &'a str {
+    if args.positional.len() != 1 {
+        usage_error(&format!("{}: ожидается ровно один аргумент", form));
+    }
+    &args.positional[0]
+}
+
 fn parse_args(args: &[String]) -> Result<Args, String> {
     let mut parsed = Args::default();
     let mut index = 0;
@@ -394,49 +415,30 @@ fn run_cli(raw: Vec<String>) {
 
     let args = match parse_args(&raw) {
         Ok(args) => args,
-        Err(message) => {
-            // Ошибка использования CLI — plain-text usage в stderr, exit 2.
-            // Это не диагностика языка, поэтому JSON здесь не печатается.
-            eprintln!("{}", message);
-            print_usage_stderr();
-            process::exit(2);
-        }
+        Err(message) => usage_error(&message),
     };
 
     let command = args.command.unwrap_or(Command::Run);
     let result = match command {
         Command::Run => {
-            if args.positional.len() != 1 {
-                print_usage();
-                process::exit(1);
-            }
-            run_file(Path::new(&args.positional[0]), &args)
+            let path = one_positional(&args, "lupus run");
+            run_file(Path::new(path), &args)
         }
         Command::Check => {
-            if args.positional.len() != 1 {
-                print_usage();
-                process::exit(1);
-            }
-            check_file(Path::new(&args.positional[0]), &args)
+            let path = one_positional(&args, "lupus check");
+            check_file(Path::new(path), &args)
         }
         Command::Ast => {
-            if args.positional.len() != 1 {
-                print_usage();
-                process::exit(1);
-            }
-            ast_file(Path::new(&args.positional[0]), &args)
+            let path = one_positional(&args, "lupus ast");
+            ast_file(Path::new(path), &args)
         }
         Command::Eval => {
-            if args.positional.len() != 1 {
-                print_usage();
-                process::exit(1);
-            }
-            eval_expression(&args.positional[0], &args)
+            let expression = one_positional(&args, "lupus eval");
+            eval_expression(expression, &args)
         }
         Command::Test => {
             if args.positional.is_empty() {
-                print_usage();
-                process::exit(1);
+                usage_error("lupus test: укажите файл или каталог");
             }
             let mut all_ok = true;
             let mut found_any = false;

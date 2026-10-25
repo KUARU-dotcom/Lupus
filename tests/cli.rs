@@ -38,6 +38,25 @@ fn run(args: &[&str]) -> Output {
     }
 }
 
+/// Проверяет, что ошибка использования даёт exit 2, usage в stderr и пустой
+/// stdout без JSON-диагностики.
+fn assert_usage_error(args: &[&str]) {
+    let result = run(args);
+    assert_eq!(result.code, 2, "args={args:?}, stderr: {}", result.stderr);
+    assert_eq!(result.stdout, "", "args={args:?}");
+    assert!(!result.stderr.trim().is_empty(), "args={args:?}");
+    assert!(
+        result.stderr.contains("Использование:"),
+        "args={args:?}, stderr: {}",
+        result.stderr
+    );
+    assert!(
+        !result.stderr.trim_start().starts_with('{'),
+        "usage-ошибка не должна быть JSON, args={args:?}: {}",
+        result.stderr
+    );
+}
+
 #[test]
 fn cli_eval_prints_value() {
     let result = run(&["eval", "(+ 2 3)"]);
@@ -143,6 +162,46 @@ fn cli_unknown_flag_exits_2_with_plain_usage() {
             result.stderr
         );
     }
+}
+
+#[test]
+fn cli_usage_run_without_file_exits_2() {
+    assert_usage_error(&["run"]);
+}
+
+#[test]
+fn cli_usage_check_without_file_exits_2() {
+    assert_usage_error(&["check"]);
+}
+
+#[test]
+fn cli_usage_eval_without_expression_exits_2() {
+    assert_usage_error(&["eval"]);
+}
+
+#[test]
+fn cli_usage_flag_without_command_exits_2() {
+    assert_usage_error(&["--pretty"]);
+}
+
+#[test]
+fn cli_usage_run_extra_positional_exits_2() {
+    assert_usage_error(&["run", "a", "b"]);
+}
+
+#[test]
+fn cli_usage_no_args_exits_2() {
+    assert_usage_error(&[]);
+}
+
+#[test]
+fn cli_usage_ast_without_file_exits_2() {
+    assert_usage_error(&["ast"]);
+}
+
+#[test]
+fn cli_usage_test_without_path_exits_2() {
+    assert_usage_error(&["test"]);
 }
 
 #[test]

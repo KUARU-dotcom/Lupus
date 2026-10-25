@@ -126,4 +126,4 @@
 # --- V0.5.1: CLI-коды (проверяются Rust-тестами tests/cli.rs) ---
 [cli_codes]
 "no-tests-found" = { positive = ["cli_test_file_without_tests_reports_no_tests"], negative = ["cli_test_empty_directory_reports_no_tests"] }
-"cli-usage-exit-2" = { positive = ["cli_help_prints_usage"], negative = ["cli_unknown_flag_exits_2_with_plain_usage"] }
+"cli-usage-exit-2" = { positive = ["cli_help_prints_usage"], negative = ["cli_unknown_flag_exits_2_with_plain_usage", "cli_usage_run_without_file_exits_2", "cli_usage_check_without_file_exits_2", "cli_usage_eval_without_expression_exits_2", "cli_usage_flag_without_command_exits_2", "cli_usage_run_extra_positional_exits_2", "cli_usage_no_args_exits_2", "cli_usage_ast_without_file_exits_2", "cli_usage_test_without_path_exits_2"] }
