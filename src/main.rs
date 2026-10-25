@@ -108,12 +108,23 @@ fn parse_args(args: &[String]) -> Result<Args, String> {
             other if other.starts_with("--") => {
                 return Err(format!("Неизвестный флаг: {}", other));
             }
+            // Однодефисный флаг: `-x`, `-я` и т.п. Одиночный `-` и
+            // отрицательные числа (`-1`, `-42`) остаются позиционными.
+            other if is_single_dash_flag(other) => {
+                return Err(format!("Неизвестный флаг: {}", other));
+            }
             other => parsed.positional.push(other.to_string()),
         }
         index += 1;
     }
 
     Ok(parsed)
+}
+
+/// Токен вида `-x`, где после дефиса идёт буква (однодефисный флаг).
+fn is_single_dash_flag(arg: &str) -> bool {
+    let mut chars = arg.chars();
+    chars.next() == Some('-') && chars.next().is_some_and(char::is_alphabetic)
 }
 
 /// Печатает диагностику в stderr: строгий JSON либо `--pretty`-рендер.

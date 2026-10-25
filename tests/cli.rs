@@ -205,6 +205,20 @@ fn cli_usage_test_without_path_exits_2() {
 }
 
 #[test]
+fn cli_single_dash_flag_exits_2() {
+    assert_usage_error(&["-x"]);
+    assert_usage_error(&["run", "-x"]);
+}
+
+#[test]
+fn cli_negative_number_is_positional() {
+    let result = run(&["eval", "-1"]);
+    assert_eq!(result.code, 0, "stderr: {}", result.stderr);
+    assert_eq!(result.stdout, "-1\n");
+    assert!(result.stderr.is_empty(), "stderr: {}", result.stderr);
+}
+
+#[test]
 fn cli_test_file_without_tests_reports_no_tests() {
     let path = temp_file("(print 1)");
     let result = run(&["test", path.to_str().unwrap()]);
