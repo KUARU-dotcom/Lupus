@@ -15,6 +15,7 @@ pub mod lint;
 pub mod modules;
 pub mod native;
 pub mod parser;
+pub mod unicode_marks;
 pub mod value;
 
 pub use error::Error;

@@ -1,0 +1,4 @@
+(define ко́фе 1)
+(print (int->str ко́фе))
+(define café 2)
+(print (int->str café))

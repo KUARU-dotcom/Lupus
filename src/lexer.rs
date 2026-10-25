@@ -6,6 +6,7 @@
 //! Символы вне алфавита языка диагностируются кодом `unknown-token`.
 
 use crate::error::Error;
+use crate::unicode_marks::is_combining_mark;
 
 /// Вид токена.
 #[derive(Debug, Clone, PartialEq)]
@@ -72,9 +73,13 @@ fn is_identifier_start(ch: char) -> bool {
     ch.is_alphabetic() || ch == '_'
 }
 
-/// Продолжение идентификатора: alphabetic / decimal digit / `_` / `-`.
+/// Продолжение идентификатора: alphabetic / decimal digit / `_` / `-`
+/// или комбинирующий знак Mn/Mc (например, U+0301 в NFD-имени).
+///
+/// Начало идентификатора комбинирующие знаки не образуют: первый символ
+/// по-прежнему должен быть alphabetic или `_` (ERRATA V0.5.2, BUG-45).
 fn is_identifier_continue(ch: char) -> bool {
-    ch.is_alphabetic() || ch.is_numeric() || ch == '_' || ch == '-'
+    ch.is_alphabetic() || ch.is_numeric() || ch == '_' || ch == '-' || is_combining_mark(ch)
 }
 
 /// Может ли символ начинать символьный токен.
