@@ -45,9 +45,35 @@ lupus eval "(+ 2 3)"              # 5
 lupus test examples/v05_tests.lupus
 ```
 
-Exit codes: `0` — success, `1` — program/lint/test failure. Diagnostics always go
-to stderr; stdout stays clean program output. `--pretty` enables a human-readable
+Exit codes: `0` — success, `1` — program/lint/test failure, `2` — CLI usage
+error (unknown flag; plain-text usage on stderr). Diagnostics always go to
+stderr; stdout stays clean program output. `--pretty` enables a human-readable
 rendering, `--json` (the default) emits strict JSON.
+
+## Loops and variable capture
+
+Capture semantics differ between `while` and `for`:
+
+- `while` — the body runs in the same environment. Closures see the final value
+  of the variable (late binding, like Python's `while`).
+- `for` — a fresh child environment is created on every iteration. Closures
+  capture the value of their own iteration (like `let` in JavaScript's `for`).
+
+```lisp
+(define-mutable i 0)
+(define-mutable fs (list))
+(while (< i 3)
+    (set! fs (append fs (list (lambda () i))))
+    (set! i (+ i 1)))
+; all closures return 3
+
+(define-mutable fs2 (list))
+(for x in (range 0 3)
+    (set! fs2 (append fs2 (list (lambda () x)))))
+; closures return 0, 1, 2
+```
+
+See [ERRATA §10](./docs/ERRATA.md) for details.
 
 ## LiF test system (release gates)
 
@@ -74,6 +100,24 @@ Layout:
 - `tests/modules.rs`, `tests/stdlib.rs`, `tests/types.rs`, `tests/errors.rs`,
   `tests/cli.rs` — integration tests for stages A–E.
 
+## Benchmark
+
+The benchmark is 100 tasks (`tasks.json`), run via `run_experiment.py`. All model
+results live under [`results/`](./results/); each model has one JSON file with
+per-task answers and statuses.
+
+| Model | Result | Data |
+|-------|--------|------|
+| `merged-lupus-2bv2` | 81/100 | [`results/merged-lupus-2bv2.json`](./results/merged-lupus-2bv2.json) |
+| Qwen3.5 2B (base) | run not stored | [`results/`](./results/) |
+| Qwen3.5 4B (base) | run not stored | [`results/`](./results/) |
+| Qwen3.5 9B (base) | run not stored | [`results/`](./results/) |
+| Qwen3.8 4B (base) | run not stored | [`results/`](./results/) |
+
+Reproduce: `python3 run_experiment.py --model merged-lupus-2bv2`. To validate the
+interpreter itself on the same 100 tasks:
+`python3 validate_tasks.py` — `PASSED: 100/100`.
+
 ## Build
 
 Requires Rust (stable, edition 2021). No external dependencies.
@@ -93,5 +137,6 @@ cargo build --release
 - `examples/v05_*.lupus` — V0.5 demos; `examples/v03_demo.lupus`,
   `examples/v04_demo.lupus` — demos from earlier phases.
 - `scripts/fetch-oracle.sh` — v0.4.0 oracle download.
+- `results/` — benchmark JSON results per model.
 - `run_experiment.py` / `validate_tasks.py` / `tasks.json` — benchmark tooling.
 - `legacy/` — materials from earlier phases.

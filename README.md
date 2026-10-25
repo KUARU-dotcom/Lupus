@@ -45,9 +45,35 @@ lupus eval "(+ 2 3)"              # 5
 lupus test examples/v05_tests.lupus
 ```
 
-Коды выхода: `0` — успех, `1` — ошибка программы/линта/теста. Диагностика всегда
-пишется в stderr; stdout остаётся чистым выводом программы. `--pretty` включает
-человекочитаемый рендер, `--json` (по умолчанию) — строгий JSON.
+Коды выхода: `0` — успех, `1` — ошибка программы/линта/теста, `2` — ошибка
+использования CLI (неизвестный флаг; plain-text usage в stderr). Диагностика
+всегда пишется в stderr; stdout остаётся чистым выводом программы. `--pretty`
+включает человекочитаемый рендер, `--json` (по умолчанию) — строгий JSON.
+
+## Циклы и захват переменных
+
+Семантика захвата различается между `while` и `for`:
+
+- `while` — тело выполняется в том же окружении. Замыкания видят финальное
+  значение переменной (позднее связывание, как `while` в Python).
+- `for` — на каждую итерацию создаётся свежее дочернее окружение. Замыкания
+  захватывают значение своей итерации (как `let` в `for` в JavaScript).
+
+```lisp
+(define-mutable i 0)
+(define-mutable fs (list))
+(while (< i 3)
+    (set! fs (append fs (list (lambda () i))))
+    (set! i (+ i 1)))
+; все замыкания вернут 3
+
+(define-mutable fs2 (list))
+(for x in (range 0 3)
+    (set! fs2 (append fs2 (list (lambda () x)))))
+; замыкания вернут 0, 1, 2
+```
+
+Подробнее — в [ERRATA §10](./docs/ERRATA.md).
 
 ## Тест-система LiF (выпускные ворота)
 
@@ -75,6 +101,24 @@ python3 validate_tasks.py      # PASSED: 100/100
 - `tests/modules.rs`, `tests/stdlib.rs`, `tests/types.rs`, `tests/errors.rs`,
   `tests/cli.rs` — интеграционные тесты этапов A–E.
 
+## Бенчмарк
+
+Бенчмарк — 100 задач (`tasks.json`), запуск через `run_experiment.py`. Все
+результаты моделей лежат в [`results/`](./results/); для каждой модели — один
+JSON-файл с ответами и статусами по задачам.
+
+| Модель | Результат | Данные |
+|--------|-----------|--------|
+| `merged-lupus-2bv2` | 81/100 | [`results/merged-lupus-2bv2.json`](./results/merged-lupus-2bv2.json) |
+| Qwen3.5 2B (базовая) | прогон не сохранён | [`results/`](./results/) |
+| Qwen3.5 4B (базовая) | прогон не сохранён | [`results/`](./results/) |
+| Qwen3.5 9B (базовая) | прогон не сохранён | [`results/`](./results/) |
+| Qwen3.8 4B (базовая) | прогон не сохранён | [`results/`](./results/) |
+
+Воспроизведение: `python3 run_experiment.py --model merged-lupus-2bv2`. Для
+проверки самого интерпретатора на тех же 100 задачах:
+`python3 validate_tasks.py` — `PASSED: 100/100`.
+
 ## Сборка
 
 Требуется Rust (stable, edition 2021). Внешних зависимостей нет.
@@ -94,5 +138,6 @@ cargo build --release
 - `examples/v05_*.lupus` — демонстрации V0.5; `examples/v03_demo.lupus`,
   `examples/v04_demo.lupus` — демонстрации прошлых фаз.
 - `scripts/fetch-oracle.sh` — загрузка эталонного бинарника v0.4.0.
+- `results/` — JSON-результаты бенчмарка по моделям.
 - `run_experiment.py` / `validate_tasks.py` / `tasks.json` — инструменты бенчмарка.
 - `legacy/` — материалы предыдущих фаз.
