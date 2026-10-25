@@ -189,20 +189,50 @@ fn parse_coverage_line(line: &str) -> (String, Vec<String>, Vec<String>) {
 fn lif_coverage_map() {
     let path = test_root().join("coverage_map.toml");
     let text = std::fs::read_to_string(&path).expect("отсутствует tests/coverage_map.toml");
+    let cli_source = std::fs::read_to_string(test_root().join("cli.rs"))
+        .expect("отсутствует tests/cli.rs для [cli_codes]");
 
     let mut errors = Vec::new();
     let mut symbol_count = 0usize;
+    let mut cli_count = 0usize;
 
     let mut in_symbols = false;
+    let mut in_cli = false;
     for raw in text.lines() {
         let line = raw.trim();
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        if line == "[symbols]" {
-            in_symbols = true;
+        if line.starts_with('[') {
+            in_symbols = line == "[symbols]";
+            in_cli = line == "[cli_codes]";
             continue;
         }
+
+        if in_cli {
+            let (code, pos, neg) = parse_coverage_line(line);
+            if code.is_empty() {
+                errors.push(format!("строка [cli_codes] не разобрана: {}", line));
+                continue;
+            }
+            cli_count += 1;
+            if pos.is_empty() {
+                errors.push(format!("[cli:{}] нет ни одной positive-проверки", code));
+            }
+            if neg.is_empty() {
+                errors.push(format!("[cli:{}] нет ни одной negative-проверки", code));
+            }
+            for name in pos.iter().chain(neg.iter()) {
+                if !cli_source.contains(&format!("fn {}(", name)) {
+                    errors.push(format!(
+                        "[cli:{}] Rust-тест отсутствует в tests/cli.rs: {}",
+                        code, name
+                    ));
+                }
+            }
+            continue;
+        }
+
         if !in_symbols {
             continue;
         }
@@ -263,9 +293,14 @@ fn lif_coverage_map() {
         "секция [symbols] пуста или отсутствует в coverage_map.toml"
     );
     assert!(
+        cli_count >= 1,
+        "секция [cli_codes] пуста или отсутствует в coverage_map.toml"
+    );
+    assert!(
         errors.is_empty(),
-        "Ошибки карты покрытия (символов: {}):\n{}",
+        "Ошибки карты покрытия (символов: {}, CLI-кодов: {}):\n{}",
         symbol_count,
+        cli_count,
         errors.join("\n")
     );
 }

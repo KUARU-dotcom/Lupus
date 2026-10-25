@@ -6,6 +6,7 @@
 
 use lupus::error::Error;
 use lupus::json::Json;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process;
 
@@ -31,15 +32,26 @@ struct Args {
     lenient: bool,
 }
 
+fn usage_text() -> String {
+    [
+        "Использование:",
+        "  lupus [--lenient-parens] [--no-lint] файл.lupus",
+        "  lupus run [флаги] файл.lupus",
+        "  lupus test [--verbose] файл_или_каталог...",
+        "  lupus check [--no-lint] файл.lupus",
+        "  lupus ast файл.lupus",
+        "  lupus eval \"<выражение>\"",
+        "Флаги: --pretty, --json, --no-lint, --lenient-parens, --verbose, --version",
+    ]
+    .join("\n")
+}
+
 fn print_usage() {
-    println!("Использование:");
-    println!("  lupus [--lenient-parens] [--no-lint] файл.lupus");
-    println!("  lupus run [флаги] файл.lupus");
-    println!("  lupus test [--verbose] файл_или_каталог...");
-    println!("  lupus check [--no-lint] файл.lupus");
-    println!("  lupus ast файл.lupus");
-    println!("  lupus eval \"<выражение>\"");
-    println!("Флаги: --pretty, --json, --no-lint, --lenient-parens, --verbose, --version");
+    println!("{}", usage_text());
+}
+
+fn print_usage_stderr() {
+    eprintln!("{}", usage_text());
 }
 
 fn parse_args(args: &[String]) -> Result<Args, String> {
@@ -145,6 +157,10 @@ fn eval_expression(expression: &str, args: &Args) -> Result<(), Error> {
 }
 
 /// Собирает `.lupus`-файлы из пути (файл или каталог рекурсивно).
+///
+/// Каталоги-симлинки не обходятся (защита от циклов вида `dir/self -> .`).
+/// Найденные файлы дедуплицируются по `fs::canonicalize`, поэтому один и тот же
+/// файл через разные ссылки исполняется ровно один раз.
 fn collect_lupus_files(path: &Path) -> Result<Vec<PathBuf>, Error> {
     if path.is_file() {
         return Ok(vec![path.to_path_buf()]);
@@ -171,19 +187,56 @@ fn collect_lupus_files(path: &Path) -> Result<Vec<PathBuf>, Error> {
                 )
             })?;
             let path = entry.path();
-            if path.is_dir() {
+            let file_type = entry.file_type().map_err(|error| {
+                Error::lint(
+                    "unknown-module",
+                    format!("Ошибка чтения {}: {}", path.display(), error),
+                )
+            })?;
+
+            if file_type.is_symlink() {
+                // Симлинк на каталог не обходим; симлинк на файл допускаем,
+                // но позже дедуплицируем по каноническому пути.
+                let Ok(metadata) = std::fs::metadata(&path) else {
+                    continue;
+                };
+                if metadata.is_dir() {
+                    continue;
+                }
+                if metadata.is_file() && path.extension().is_some_and(|ext| ext == "lupus") {
+                    output.push(path);
+                }
+            } else if file_type.is_dir() {
                 walk(&path, output)?;
-            } else if path.extension().is_some_and(|ext| ext == "lupus") {
+            } else if file_type.is_file() && path.extension().is_some_and(|ext| ext == "lupus") {
                 output.push(path);
             }
         }
         Ok(())
     }
 
-    let mut files = Vec::new();
-    walk(path, &mut files)?;
+    let mut candidates = Vec::new();
+    walk(path, &mut candidates)?;
+    candidates.sort();
+
+    let mut seen = HashSet::new();
+    let mut files = Vec::with_capacity(candidates.len());
+    for candidate in candidates {
+        let canonical = std::fs::canonicalize(&candidate).unwrap_or(candidate);
+        if seen.insert(canonical.clone()) {
+            files.push(canonical);
+        }
+    }
     files.sort();
     Ok(files)
+}
+
+/// Диагностика «в пути нет ни одного теста».
+fn no_tests_found(path: &Path) -> Error {
+    Error::runtime(
+        "no-tests-found",
+        format!("в {} не найдено ни одного теста", path.display()),
+    )
 }
 
 /// JSON-описание ошибки внутри test-fail (код, location, message).
@@ -298,6 +351,11 @@ fn run_test_file(path: &Path, args: &Args) -> bool {
         ])
     );
 
+    if total == 0 {
+        report(&no_tests_found(path), args.pretty, args.json);
+        return false;
+    }
+
     failed == 0
 }
 
@@ -308,11 +366,21 @@ fn main() {
     // расходует заметный объём стека на вызов, поэтому вычисление выполняется
     // в отдельном потоке с большим стеком; глубина всё равно ограничена
     // счётчиком `MAX_CALL_DEPTH`.
-    let worker = std::thread::Builder::new()
+    let worker = match std::thread::Builder::new()
         .name("lupus-eval".to_string())
         .stack_size(1024 * 1024 * 1024)
         .spawn(move || run_cli(raw))
-        .expect("не удалось запустить поток интерпретатора");
+    {
+        Ok(worker) => worker,
+        Err(error) => {
+            let error = Error::runtime(
+                "io-error",
+                format!("Не удалось запустить поток интерпретатора: {}", error),
+            );
+            eprintln!("{}", error.to_json());
+            process::exit(1);
+        }
+    };
     if worker.join().is_err() {
         process::exit(101);
     }
@@ -327,8 +395,11 @@ fn run_cli(raw: Vec<String>) {
     let args = match parse_args(&raw) {
         Ok(args) => args,
         Err(message) => {
-            eprintln!("{}", Error::lint("unexpected-token", message).to_json());
-            process::exit(1);
+            // Ошибка использования CLI — plain-text usage в stderr, exit 2.
+            // Это не диагностика языка, поэтому JSON здесь не печатается.
+            eprintln!("{}", message);
+            print_usage_stderr();
+            process::exit(2);
         }
     };
 
@@ -368,9 +439,16 @@ fn run_cli(raw: Vec<String>) {
                 process::exit(1);
             }
             let mut all_ok = true;
+            let mut found_any = false;
             for path in &args.positional {
                 match collect_lupus_files(Path::new(path)) {
                     Ok(files) => {
+                        if files.is_empty() {
+                            report(&no_tests_found(Path::new(path)), args.pretty, args.json);
+                            all_ok = false;
+                            continue;
+                        }
+                        found_any = true;
                         for file in files {
                             if !run_test_file(&file, &args) {
                                 all_ok = false;
@@ -382,6 +460,9 @@ fn run_cli(raw: Vec<String>) {
                         all_ok = false;
                     }
                 }
+            }
+            if !found_any {
+                all_ok = false;
             }
             if all_ok {
                 Ok(())

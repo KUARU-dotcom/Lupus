@@ -114,3 +114,15 @@
 "integer-overflow" = { positive = ["arithmetic", "v05_i64_boundaries_ok"], negative = ["div_overflow_min", "mod_overflow_min", "abs_overflow_min", "sub_overflow_min", "v05_add_overflow", "v05_sub_overflow", "v05_mul_overflow", "v05_unary_neg_overflow", "v05_pow_overflow"] }
 "invalid-exit-code" = { positive = ["loop", "v05_exit_boundary_ok"], negative = ["exit_out_of_range", "v05_exit_negative", "v05_exit_1000"] }
 "import-collision" = { positive = ["v05_modules"], negative = ["v05_import_all_collision"] }
+
+# --- V0.5.1: Unicode, BOM, escape, диагностика позиций ---
+"BOM" = { positive = ["v051_bom"], negative = ["bom_midfile"] }
+"unicode-identifier" = { positive = ["v051_unicode_identifiers"], negative = ["unicode_emoji_identifier"] }
+"surrogate-pair" = { positive = ["v051_surrogate_pair"], negative = ["lone_surrogate"] }
+"invalid-escape" = { positive = ["v05_utf8_escape"], negative = ["invalid_escape"] }
+"col-in-characters" = { positive = ["v05_cyrillic_strings"], negative = ["cyrillic_col"] }
+
+# --- V0.5.1: CLI-коды (проверяются Rust-тестами tests/cli.rs) ---
+[cli_codes]
+"no-tests-found" = { positive = ["cli_test_file_without_tests_reports_no_tests"], negative = ["cli_test_empty_directory_reports_no_tests"] }
+"cli-usage-exit-2" = { positive = ["cli_help_prints_usage"], negative = ["cli_unknown_flag_exits_2_with_plain_usage"] }
