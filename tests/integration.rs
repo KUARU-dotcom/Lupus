@@ -288,6 +288,17 @@ fn error_set_immutable() {
 }
 
 #[test]
+fn error_set_codes_are_stable() {
+    let mut interp = Interpreter::new();
+    let undefined = interp.eval_source("(set! nonexistent 1)").unwrap_err();
+    assert_eq!(undefined.code, "unknown-identifier");
+
+    let mut interp = Interpreter::new();
+    let immutable = interp.eval_source("(define x 1) (set! x 2)").unwrap_err();
+    assert_eq!(immutable.code, "immutable-assignment");
+}
+
+#[test]
 fn error_binary_prints_error_and_exits_1() {
     let file = std::env::temp_dir().join("lupus_err.lupus");
     std::fs::write(&file, "(/ 1 0)").unwrap();

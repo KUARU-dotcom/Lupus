@@ -10,7 +10,7 @@ use crate::value::{is_truthy, Value};
 fn list_arg<'a>(args: &'a [Value], function: &str) -> Result<&'a [Value], Error> {
     match &args[0] {
         Value::List(items) => Ok(items),
-        _ => Err(Error::new(format!(
+        _ => Err(Error::type_mismatch(format!(
             "Первый аргумент {function} должен быть списком"
         ))),
     }
@@ -19,7 +19,7 @@ fn list_arg<'a>(args: &'a [Value], function: &str) -> Result<&'a [Value], Error>
 fn callable_arg<'a>(value: &'a Value, function: &str, position: &str) -> Result<&'a Value, Error> {
     match value {
         Value::Closure(_) | Value::Native { .. } => Ok(value),
-        _ => Err(Error::new(format!(
+        _ => Err(Error::type_mismatch(format!(
             "{position} аргумент {function} должен быть функцией"
         ))),
     }

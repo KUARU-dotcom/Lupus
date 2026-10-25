@@ -58,7 +58,10 @@ impl Environment {
             return Self::get(parent, name);
         }
 
-        Err(Error::new(format!("Переменная не определена: {}", name)))
+        Err(Error::unknown_identifier(format!(
+            "Переменная не определена: {}",
+            name
+        )))
     }
 
     /// Возвращает все видимые имена переменных по всей цепочке окружений.
@@ -86,7 +89,10 @@ impl Environment {
 
         if let Some(binding) = this.bindings.get_mut(name) {
             if !binding.1 {
-                return Err(Error::new(format!("Переменная {} не изменяемая", name)));
+                return Err(Error::runtime(
+                    "immutable-assignment",
+                    format!("Переменная {} не изменяемая", name),
+                ));
             }
             binding.0 = value;
             return Ok(());
@@ -98,6 +104,9 @@ impl Environment {
             return Self::set(&parent, name, value);
         }
 
-        Err(Error::new(format!("Переменная не определена: {}", name)))
+        Err(Error::unknown_identifier(format!(
+            "Переменная не определена: {}",
+            name
+        )))
     }
 }

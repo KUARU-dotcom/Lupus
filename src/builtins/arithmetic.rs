@@ -15,7 +15,7 @@ enum Num {
 fn as_int(value: &Value, op: &str) -> Result<i64, Error> {
     match value {
         Value::Int(i) => Ok(*i),
-        _ => Err(Error::new(format!("{} требует целых чисел", op))),
+        _ => Err(Error::type_mismatch(format!("{} требует целых чисел", op))),
     }
 }
 
@@ -24,7 +24,7 @@ fn as_num(value: &Value, op: &str) -> Result<Num, Error> {
     match value {
         Value::Int(i) => Ok(Num::Int(*i)),
         Value::Float(f) => Ok(Num::Float(*f)),
-        _ => Err(Error::new(format!("{} требует чисел", op))),
+        _ => Err(Error::type_mismatch(format!("{} требует чисел", op))),
     }
 }
 
@@ -34,7 +34,10 @@ fn check_no_mix(nums: &[Num], op: &str) -> Result<(), Error> {
     let has_int = nums.iter().any(|n| matches!(n, Num::Int(_)));
     let has_float = nums.iter().any(|n| matches!(n, Num::Float(_)));
     if has_int && has_float {
-        return Err(Error::new(format!("{}: нельзя смешивать int и float", op)));
+        return Err(Error::type_mismatch(format!(
+            "{}: нельзя смешивать int и float",
+            op
+        )));
     }
     Ok(())
 }
@@ -78,7 +81,7 @@ pub fn sub(args: &[Value]) -> Result<Value, Error> {
                 Error::runtime("integer-overflow", "Переполнение при унарном минусе")
             }),
             Value::Float(v) => Ok(Value::Float(-v)),
-            _ => Err(Error::new("- требует чисел")),
+            _ => Err(Error::type_mismatch("- требует чисел")),
         };
     }
 
@@ -174,7 +177,7 @@ pub fn div(args: &[Value]) -> Result<Value, Error> {
 /// float `%` — ошибка.
 pub fn rem(args: &[Value]) -> Result<Value, Error> {
     if matches!(args[0], Value::Float(_)) || matches!(args[1], Value::Float(_)) {
-        return Err(Error::new("% не поддерживается для float"));
+        return Err(Error::type_mismatch("% не поддерживается для float"));
     }
     let dividend = as_int(&args[0], "%")?;
     let divisor = as_int(&args[1], "%")?;
@@ -200,7 +203,7 @@ pub fn pow(args: &[Value]) -> Result<Value, Error> {
     let base = as_int(&args[0], "pow")?;
     let exp = as_int(&args[1], "pow")?;
     if exp < 0 {
-        return Err(Error::new(
+        return Err(Error::type_mismatch(
             "pow: показатель степени не может быть отрицательным",
         ));
     }
@@ -252,7 +255,7 @@ pub fn abs(args: &[Value]) -> Result<Value, Error> {
 pub fn int_to_float(args: &[Value]) -> Result<Value, Error> {
     match &args[0] {
         Value::Int(i) => Ok(Value::Float(*i as f64)),
-        _ => Err(Error::new("int->float требует целого числа")),
+        _ => Err(Error::type_mismatch("int->float требует целого числа")),
     }
 }
 
@@ -265,6 +268,6 @@ pub fn int_to_float(args: &[Value]) -> Result<Value, Error> {
 pub fn float_to_int(args: &[Value]) -> Result<Value, Error> {
     match &args[0] {
         Value::Float(f) => Ok(Value::Int(*f as i64)),
-        _ => Err(Error::new("float->int требует float")),
+        _ => Err(Error::type_mismatch("float->int требует float")),
     }
 }

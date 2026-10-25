@@ -16,15 +16,18 @@ fn compare_nums(op: &str, args: &[Value]) -> Result<(Num, Num), Error> {
     let a = match &args[0] {
         Value::Int(i) => Num::Int(*i),
         Value::Float(f) => Num::Float(*f),
-        _ => return Err(Error::new(format!("{} требует чисел", op))),
+        _ => return Err(Error::type_mismatch(format!("{} требует чисел", op))),
     };
     let b = match &args[1] {
         Value::Int(i) => Num::Int(*i),
         Value::Float(f) => Num::Float(*f),
-        _ => return Err(Error::new(format!("{} требует чисел", op))),
+        _ => return Err(Error::type_mismatch(format!("{} требует чисел", op))),
     };
     if matches!(a, Num::Int(_)) != matches!(b, Num::Int(_)) {
-        return Err(Error::new(format!("{}: нельзя смешивать int и float", op)));
+        return Err(Error::type_mismatch(format!(
+            "{}: нельзя смешивать int и float",
+            op
+        )));
     }
     Ok((a, b))
 }

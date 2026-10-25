@@ -14,7 +14,11 @@ pub fn list(args: &[Value]) -> Result<Value, Error> {
 pub fn cons(args: &[Value]) -> Result<Value, Error> {
     let list = match &args[1] {
         Value::List(items) => items.clone(),
-        _ => return Err(Error::new("Второй аргумент cons должен быть списком")),
+        _ => {
+            return Err(Error::type_mismatch(
+                "Второй аргумент cons должен быть списком",
+            ))
+        }
     };
     let mut result = vec![args[0].clone()];
     result.extend(list);
@@ -43,7 +47,7 @@ pub fn tail(args: &[Value]) -> Result<Value, Error> {
 pub fn is_empty(args: &[Value]) -> Result<Value, Error> {
     match &args[0] {
         Value::List(items) => Ok(Value::Bool(items.is_empty())),
-        _ => Err(Error::new("empty? требует список")),
+        _ => Err(Error::type_mismatch("empty? требует список")),
     }
 }
 
@@ -55,7 +59,7 @@ pub fn append(args: &[Value]) -> Result<Value, Error> {
             result.extend(b.clone());
             Ok(Value::List(result))
         }
-        _ => Err(Error::new("append требует два списка")),
+        _ => Err(Error::type_mismatch("append требует два списка")),
     }
 }
 
@@ -63,16 +67,27 @@ pub fn append(args: &[Value]) -> Result<Value, Error> {
 pub fn nth(args: &[Value]) -> Result<Value, Error> {
     let list = match &args[0] {
         Value::List(items) => items,
-        _ => return Err(Error::new("Первый аргумент nth должен быть списком")),
+        _ => {
+            return Err(Error::type_mismatch(
+                "Первый аргумент nth должен быть списком",
+            ))
+        }
     };
 
     let index = match &args[1] {
         Value::Int(i) => *i,
-        _ => return Err(Error::new("Второй аргумент nth должен быть целым числом")),
+        _ => {
+            return Err(Error::type_mismatch(
+                "Второй аргумент nth должен быть целым числом",
+            ))
+        }
     };
 
     if index < 0 || index as usize >= list.len() {
-        return Err(Error::new(format!("Индекс вне диапазона: {}", index)));
+        return Err(Error::runtime(
+            "index-out-of-bounds",
+            format!("Индекс вне диапазона: {}", index),
+        ));
     }
 
     Ok(list[index as usize].clone())
@@ -82,7 +97,7 @@ pub fn nth(args: &[Value]) -> Result<Value, Error> {
 pub fn length(args: &[Value]) -> Result<Value, Error> {
     let list = match &args[0] {
         Value::List(items) => items,
-        _ => return Err(Error::new("length требует списка")),
+        _ => return Err(Error::type_mismatch("length требует списка")),
     };
 
     Ok(Value::Int(list.len() as i64))
@@ -95,7 +110,11 @@ pub fn length(args: &[Value]) -> Result<Value, Error> {
 pub fn contains(args: &[Value]) -> Result<Value, Error> {
     let list = match &args[0] {
         Value::List(items) => items,
-        _ => return Err(Error::new("Первый аргумент contains? должен быть списком")),
+        _ => {
+            return Err(Error::type_mismatch(
+                "Первый аргумент contains? должен быть списком",
+            ))
+        }
     };
 
     Ok(Value::Bool(list.iter().any(|item| *item == args[1])))

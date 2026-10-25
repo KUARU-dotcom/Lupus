@@ -349,7 +349,7 @@ impl Interpreter {
     ) -> Result<Value, Error> {
         let _depth = self.enter_call()?;
         if actual_args.len() != closure.params.len() {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "Функция ожидает {} аргументов, получено {}",
                 closure.params.len(),
                 actual_args.len()
@@ -380,7 +380,7 @@ impl Interpreter {
     ) -> Result<Value, Error> {
         let _depth = self.enter_call()?;
         if arg_vals.len() != closure.params.len() {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "Функция ожидает {} аргументов, получено {}",
                 closure.params.len(),
                 arg_vals.len()
@@ -889,7 +889,7 @@ impl Interpreter {
         env: &Rc<RefCell<Environment>>,
     ) -> Result<Value, Error> {
         if rest.len() != 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(define-mutable ...) требует ровно 2 аргумента, получено {}",
                 rest.len()
             )));
@@ -897,7 +897,7 @@ impl Interpreter {
         let name = match &rest[0] {
             Expr::Symbol(n) => n,
             _ => {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "Первый аргумент define-mutable должен быть символом",
                 ))
             }
@@ -910,19 +910,23 @@ impl Interpreter {
     /// (set! имя значение).
     fn do_set(&self, rest: &[Expr], env: &Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(set! ...) требует ровно 2 аргумента, получено {}",
                 rest.len()
             )));
         }
         let name = match &rest[0] {
             Expr::Symbol(n) => n,
-            _ => return Err(Error::new("Первый аргумент set! должен быть символом")),
+            _ => {
+                return Err(Error::type_mismatch(
+                    "Первый аргумент set! должен быть символом",
+                ))
+            }
         };
         let new_value = self.eval(&rest[1], env.clone())?;
         match Environment::set(env, name, new_value) {
             Ok(()) => Ok(Value::None),
-            Err(e) if e.message.starts_with("Переменная не определена") => {
+            Err(e) if e.code == "unknown-identifier" => {
                 // Улучшенное сообщение с подсказками по похожим именам.
                 Err(self.undefined_variable_error(env, name))
             }
@@ -933,7 +937,7 @@ impl Interpreter {
     /// (lambda (параметры...) тело...).
     fn do_lambda(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() < 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(lambda ...) требует минимум 2 аргумента, получено {}",
                 rest.len()
             )));
@@ -941,7 +945,7 @@ impl Interpreter {
         let param_list = match &rest[0] {
             Expr::List(items) => items,
             _ => {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "Первый аргумент lambda должен быть списком параметров",
                 ))
             }
@@ -991,7 +995,7 @@ impl Interpreter {
     /// (if условие then else).
     fn do_if(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 3 && rest.len() != 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(if ...) требует ровно 2 или 3 аргумента, получено {}",
                 rest.len()
             )));
@@ -1011,7 +1015,7 @@ impl Interpreter {
     /// (while условие тело...).
     fn do_while(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() < 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(while ...) требует минимум 2 аргумента, получено {}",
                 rest.len()
             )));
@@ -1047,14 +1051,14 @@ impl Interpreter {
     /// (exit n) — немедленно завершает процесс с кодом n.
     fn do_exit(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 1 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(exit ...) требует ровно 1 аргумент, получено {}",
                 rest.len()
             )));
         }
         let code = match self.eval(&rest[0], env)? {
             Value::Int(c) => c,
-            _ => return Err(Error::new("exit требует целого числа")),
+            _ => return Err(Error::type_mismatch("exit требует целого числа")),
         };
         if !(0..=255).contains(&code) {
             return Err(Error::runtime(
@@ -1116,10 +1120,12 @@ impl Interpreter {
     fn do_cond(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         for clause in rest {
             let Expr::List(items) = clause else {
-                return Err(Error::new("Каждая ветка cond должна быть списком"));
+                return Err(Error::type_mismatch(
+                    "Каждая ветка cond должна быть списком",
+                ));
             };
             if items.is_empty() {
-                return Err(Error::new("Пустая ветка cond"));
+                return Err(Error::type_mismatch("Пустая ветка cond"));
             }
             let header = &items[0];
             let body = &items[1..];
@@ -1160,16 +1166,20 @@ impl Interpreter {
     fn do_for(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         // Ожидаем: [var, "in", iter, тело...]
         if rest.len() < 3 {
-            return Err(Error::new(
+            return Err(Error::type_mismatch(
                 "(for ...) требует форму: (for var in iter тело...)".to_string(),
             ));
         }
         let var = match &rest[0] {
             Expr::Symbol(s) => s.clone(),
-            _ => return Err(Error::new("Переменная цикла for должна быть символом")),
+            _ => {
+                return Err(Error::type_mismatch(
+                    "Переменная цикла for должна быть символом",
+                ))
+            }
         };
         if !matches!(&rest[1], Expr::Symbol(s) if s == "in") {
-            return Err(Error::new("for: ожидалось ключевое слово 'in'"));
+            return Err(Error::type_mismatch("for: ожидалось ключевое слово 'in'"));
         }
         let iter_expr = &rest[2];
         let body_forms = &rest[3..];
@@ -1178,7 +1188,7 @@ impl Interpreter {
         let items = match iter_val {
             Value::List(items) => items,
             _ => {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "for: выражение после 'in' должно вычисляться в список",
                 ))
             }
@@ -1199,18 +1209,26 @@ impl Interpreter {
     /// Если `start >= end` — пустой список.
     fn do_range(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(range ...) требует ровно 2 аргумента, получено {}",
                 rest.len()
             )));
         }
         let start = match self.eval(&rest[0], env.clone())? {
             Value::Int(v) => v,
-            _ => return Err(Error::new("Первый аргумент range должен быть целым числом")),
+            _ => {
+                return Err(Error::type_mismatch(
+                    "Первый аргумент range должен быть целым числом",
+                ))
+            }
         };
         let end = match self.eval(&rest[1], env.clone())? {
             Value::Int(v) => v,
-            _ => return Err(Error::new("Второй аргумент range должен быть целым числом")),
+            _ => {
+                return Err(Error::type_mismatch(
+                    "Второй аргумент range должен быть целым числом",
+                ))
+            }
         };
 
         let mut items = Vec::new();
@@ -1233,7 +1251,7 @@ impl Interpreter {
         let bindings = match &rest[0] {
             Expr::List(items) => items,
             _ => {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "Первым аргументом let должен быть список связей",
                 ))
             }
@@ -1243,16 +1261,18 @@ impl Interpreter {
         let mut pairs: Vec<(String, Value)> = Vec::with_capacity(bindings.len());
         for b in bindings {
             let Expr::List(inner) = b else {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "Каждая связь let должна быть списком (имя значение)",
                 ));
             };
             if inner.len() != 2 {
-                return Err(Error::new("Связь let должна быть списком из 2 элементов"));
+                return Err(Error::type_mismatch(
+                    "Связь let должна быть списком из 2 элементов",
+                ));
             }
             let name = match &inner[0] {
                 Expr::Symbol(s) => s.clone(),
-                _ => return Err(Error::new("Имя в связи let должно быть символом")),
+                _ => return Err(Error::type_mismatch("Имя в связи let должно быть символом")),
             };
             let value = self.eval(&inner[1], env.clone())?;
             pairs.push((name, value));
@@ -1281,7 +1301,7 @@ impl Interpreter {
     /// runtime-ошибка.
     fn do_match(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() < 2 {
-            return Err(Error::new(
+            return Err(Error::type_mismatch(
                 "(match ...) требует выражение и минимум одну ветку".to_string(),
             ));
         }
@@ -1290,10 +1310,12 @@ impl Interpreter {
 
         for clause in clauses {
             let Expr::List(items) = clause else {
-                return Err(Error::new("Каждая ветка match должна быть списком"));
+                return Err(Error::type_mismatch(
+                    "Каждая ветка match должна быть списком",
+                ));
             };
             if items.is_empty() {
-                return Err(Error::new("Пустая ветка match"));
+                return Err(Error::type_mismatch("Пустая ветка match"));
             }
             let pattern = &items[0];
             let body = &items[1..];
@@ -1311,7 +1333,10 @@ impl Interpreter {
             }
         }
 
-        Err(Error::new("match: ни одна ветка не совпала"))
+        Err(Error::runtime(
+            "match-non-exhaustive",
+            "match: ни одна ветка не совпала",
+        ))
     }
 
     /// Сопоставляет паттерн со значением, возвращая новые связывания
@@ -1375,7 +1400,7 @@ impl Interpreter {
                             return Ok(None);
                         };
                         if items.len() - 1 != elems.len() {
-                            return Err(Error::new(format!(
+                            return Err(Error::arity(format!(
                                 "tuple-паттерн ожидает {} элементов, получено {}",
                                 items.len() - 1,
                                 elems.len()
@@ -1403,7 +1428,7 @@ impl Interpreter {
                             return Ok(None);
                         }
                         if items.len() - 1 != fields.len() {
-                            return Err(Error::new(format!(
+                            return Err(Error::arity(format!(
                                 "Паттерн структуры '{}' ожидает {} полей, получено {}",
                                 name,
                                 items.len() - 1,
@@ -1453,7 +1478,7 @@ impl Interpreter {
     /// иначе — выполнить `else`. Работает только с Option (по спеке V1.0).
     fn do_if_let(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 3 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(if-let ...) требует ровно 3 аргумента, получено {}",
                 rest.len()
             )));
@@ -1461,14 +1486,14 @@ impl Interpreter {
         let binding = match &rest[0] {
             Expr::List(items) if items.len() == 2 => items,
             _ => {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "Первый аргумент if-let должен быть списком (имя выражение)",
                 ))
             }
         };
         let name = match &binding[0] {
             Expr::Symbol(s) => s.clone(),
-            _ => return Err(Error::new("Имя в if-let должно быть символом")),
+            _ => return Err(Error::type_mismatch("Имя в if-let должно быть символом")),
         };
         let val = self.eval(&binding[1], env.clone())?;
         let then_form = &rest[1];
@@ -1481,7 +1506,7 @@ impl Interpreter {
                 self.eval(then_form, branch_env)
             }
             Value::None => self.eval(else_form, env.clone()),
-            _ => Err(Error::new(
+            _ => Err(Error::type_mismatch(
                 "if-let: выражение должно вычисляться в (some v) или none",
             )),
         }
@@ -1493,7 +1518,7 @@ impl Interpreter {
     /// с указанием формы для отладки.
     fn do_assert(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 1 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(assert ...) требует ровно 1 аргумент, получено {}",
                 rest.len()
             )));
@@ -1503,7 +1528,10 @@ impl Interpreter {
             Ok(Value::None)
         } else {
             let form_text = crate::ast::expr_to_source(&rest[0]);
-            Err(Error::new(format!("Assert не выполнен: <{}>", form_text)))
+            Err(Error::runtime(
+                "assert-failed",
+                format!("Assert не выполнен: <{}>", form_text),
+            ))
         }
     }
 }
@@ -1642,7 +1670,7 @@ impl Interpreter {
 
         match Environment::get(env, name) {
             Ok(value) => Ok(value),
-            Err(e) if e.message.starts_with("Переменная не определена") => {
+            Err(e) if e.code == "unknown-identifier" => {
                 if let Some(builtin) = builtins::lookup(name) {
                     Ok(builtin.value())
                 } else {
