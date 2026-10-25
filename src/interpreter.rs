@@ -11,7 +11,7 @@ use crate::error::Error;
 use crate::lexer::{Token, TokenKind};
 use crate::modules;
 use crate::native;
-use crate::value::{is_truthy, Closure, Value};
+use crate::value::{is_truthy, Arity, BuiltinImpl, Closure, NativeImpl, Value};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -242,354 +242,15 @@ impl Interpreter {
                 "match" => return self.do_match(rest, env),
                 "if-let" => return self.do_if_let(rest, env),
                 "assert" => return self.do_assert(rest, env),
-                "not" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::not(&args);
-                }
-                "print" => return self.do_print(rest, env),
-                "int->str" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::int_to_str(&args);
-                }
-                "float->str" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::float_to_str(&args);
-                }
-                "int->float" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::int_to_float(&args);
-                }
-                "float->int" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::float_to_int(&args);
-                }
-                "str->float" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::str_to_float(&args);
-                }
-                "string-append" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::string_append(&args);
-                }
-                "string-length" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::string_length(&args);
-                }
-                "string-split" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::string_split(&args);
-                }
-                "string-reverse" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::string_reverse(&args);
-                }
-                "str->int" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::str_to_int(&args);
-                }
-                "list" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return Ok(builtins::make_list(&args));
-                }
-                // Конструктор кортежа: (tuple элем...) — арность 0+ любая.
-                "tuple" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return Ok(Value::Tuple(args));
-                }
-                // ─── Map (V0.5) ────────────────────────────────────────────────
-                "map" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::make_map(&args);
-                }
-                "map-get" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::map_get(&args);
-                }
-                "map-set" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::map_set(&args);
-                }
-                "map-keys" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::map_keys(&args);
-                }
-                "map-values" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::map_values(&args);
-                }
-                "map-has?" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::map_has(&args);
-                }
-                // Конструкторы Option/Result: (some e), (success e), (failure e).
-                "some" => {
-                    if rest.len() != 1 {
-                        return Err(Error::new(format!(
-                            "(some ...) требует ровно 1 аргумент, получено {}",
-                            rest.len()
-                        )));
-                    }
-                    let v = self.eval(&rest[0], env)?;
-                    return Ok(Value::Some(Box::new(v)));
-                }
-                "success" => {
-                    if rest.len() != 1 {
-                        return Err(Error::new(format!(
-                            "(success ...) требует ровно 1 аргумент, получено {}",
-                            rest.len()
-                        )));
-                    }
-                    let v = self.eval(&rest[0], env)?;
-                    return Ok(Value::Success(Box::new(v)));
-                }
-                "failure" => {
-                    if rest.len() != 1 {
-                        return Err(Error::new(format!(
-                            "(failure ...) требует ровно 1 аргумент, получено {}",
-                            rest.len()
-                        )));
-                    }
-                    let v = self.eval(&rest[0], env)?;
-                    return Ok(Value::Failure(Box::new(v)));
-                }
-                // ─── Функции списков (ЭТАП 2) ───────────────────────────────────
-                "cons" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 2 {
-                        return Err(Error::new(
-                            "(cons ...) требует ровно 2 аргумента".to_string(),
-                        ));
-                    }
-                    let list = match &args[1] {
-                        Value::List(items) => items.clone(),
-                        _ => return Err(Error::new("Второй аргумент cons должен быть списком")),
-                    };
-                    let mut result = vec![args[0].clone()];
-                    result.extend(list);
-                    return Ok(Value::List(result));
-                }
-                "head" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 1 {
-                        return Err(Error::new(
-                            "(head ...) требует ровно 1 аргумент".to_string(),
-                        ));
-                    }
-                    match &args[0] {
-                        Value::List(items) if !items.is_empty() => {
-                            return Ok(Value::Some(Box::new(items[0].clone())));
-                        }
-                        _ => return Ok(Value::None),
-                    }
-                }
-                "tail" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 1 {
-                        return Err(Error::new(
-                            "(tail ...) требует ровно 1 аргумент".to_string(),
-                        ));
-                    }
-                    match &args[0] {
-                        Value::List(items) if items.len() > 1 => {
-                            return Ok(Value::Some(Box::new(Value::List(items[1..].to_vec()))));
-                        }
-                        _ => return Ok(Value::None),
-                    }
-                }
-                "empty?" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 1 {
-                        return Err(Error::new(
-                            "(empty? ...) требует ровно 1 аргумент".to_string(),
-                        ));
-                    }
-                    match &args[0] {
-                        Value::List(items) => return Ok(Value::Bool(items.is_empty())),
-                        _ => return Err(Error::new("empty? требует список")),
-                    }
-                }
-                "append" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 2 {
-                        return Err(Error::new(
-                            "(append ...) требует ровно 2 аргумента".to_string(),
-                        ));
-                    }
-                    match (&args[0], &args[1]) {
-                        (Value::List(a), Value::List(b)) => {
-                            let mut result = a.clone();
-                            result.extend(b.clone());
-                            return Ok(Value::List(result));
-                        }
-                        _ => return Err(Error::new("append требует два списка")),
-                    }
-                }
-                "list-map" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 2 {
-                        return Err(Error::new(
-                            "(list-map ...) требует ровно 2 аргумента".to_string(),
-                        ));
-                    }
-                    let list = match &args[0] {
-                        Value::List(items) => items.clone(),
-                        _ => {
-                            return Err(Error::new("Первый аргумент list-map должен быть списком"))
-                        }
-                    };
-                    let f = match &args[1] {
-                        Value::Closure(c) => c,
-                        _ => {
-                            return Err(Error::new("Второй аргумент list-map должен быть функцией"))
-                        }
-                    };
-                    let mut result = Vec::with_capacity(list.len());
-                    for item in list {
-                        let mapped = self.call_closure_with_values(f, vec![item.clone()], &env)?;
-                        result.push(mapped);
-                    }
-                    return Ok(Value::List(result));
-                }
-                "list-filter" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 2 {
-                        return Err(Error::new(
-                            "(list-filter ...) требует ровно 2 аргумента".to_string(),
-                        ));
-                    }
-                    let list = match &args[0] {
-                        Value::List(items) => items.clone(),
-                        _ => {
-                            return Err(Error::new(
-                                "Первый аргумент list-filter должен быть списком",
-                            ))
-                        }
-                    };
-                    let f = match &args[1] {
-                        Value::Closure(c) => c,
-                        _ => {
-                            return Err(Error::new(
-                                "Второй аргумент list-filter должен быть функцией",
-                            ))
-                        }
-                    };
-                    let mut result = Vec::new();
-                    for item in list {
-                        let keep = self.call_closure_with_values(f, vec![item.clone()], &env)?;
-                        if is_truthy(&keep) {
-                            result.push(item);
-                        }
-                    }
-                    return Ok(Value::List(result));
-                }
-                "list-fold" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 3 {
-                        return Err(Error::new(
-                            "(list-fold ...) требует ровно 3 аргумента".to_string(),
-                        ));
-                    }
-                    let list = match &args[0] {
-                        Value::List(items) => items.clone(),
-                        _ => {
-                            return Err(Error::new("Первый аргумент list-fold должен быть списком"))
-                        }
-                    };
-                    let f = match &args[2] {
-                        Value::Closure(c) => c,
-                        _ => {
-                            return Err(Error::new(
-                                "Третий аргумент list-fold должен быть функцией",
-                            ))
-                        }
-                    };
-                    let mut acc = args[1].clone();
-                    for item in list {
-                        acc = self.call_closure_with_values(f, vec![acc, item], &env)?;
-                    }
-                    return Ok(acc);
-                }
-                "nth" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::nth(&args);
-                }
-                // `length` и алиас `len` — одно и то же.
-                "length" | "len" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::length(&args);
-                }
-                // Встроенная проверка наличия значения в списке (см. задачу #60).
-                "contains?" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::contains(&args);
-                }
-                "+" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::add(&args);
-                }
-                "-" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::sub(&args);
-                }
-                "*" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::mul(&args);
-                }
-                "/" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::div(&args);
-                }
-                "%" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::rem(&args);
-                }
-                // Алиас `mod` для `%` (по прецеденту с алиасом `len` для `length`).
-                "mod" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::rem(&args);
-                }
-                "pow" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::pow(&args);
-                }
-                "min" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::min(&args);
-                }
-                "max" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::max(&args);
-                }
-                "abs" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::abs(&args);
-                }
-                "=" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::eq(&args);
-                }
-                "!=" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::neq(&args);
-                }
-                "<" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::lt(&args);
-                }
-                ">" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::gt(&args);
-                }
-                "<=" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::le(&args);
-                }
-                ">=" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::ge(&args);
-                }
                 "test" => return Ok(Value::None),
                 _ => {}
+            }
+
+            // Остальные встроенные функции — из статической таблицы.
+            if let Some(builtin) = builtins::lookup(name) {
+                builtin.arity.check(builtin.name, rest.len())?;
+                let args = self.eval_all(rest, &env)?;
+                return self.invoke_native(&NativeImpl::Builtin(builtin.func), &args);
             }
 
             // Конструкторы и аксессоры структур (ЭТАП 3 V0.4).
@@ -620,10 +281,48 @@ impl Interpreter {
 
         match func_val {
             Value::Closure(closure) => self.call_closure(&closure, actual_args, &env),
-            Value::Native(function) => {
+            Value::Native { name, arity, func } => {
+                arity.check(&name, actual_args.len())?;
                 let args = self.eval_all(actual_args, &env)?;
-                native::call(self, &function, &args)
+                self.invoke_native(&func, &args)
             }
+            _ => Err(Error::type_mismatch("Не могу вызвать не-функцию")),
+        }
+    }
+
+    /// Проверяет арность и вызывает нативную функцию с готовыми аргументами.
+    fn call_native(
+        &self,
+        name: &str,
+        arity: Arity,
+        func: &NativeImpl,
+        args: &[Value],
+    ) -> Result<Value, Error> {
+        arity.check(name, args.len())?;
+        self.invoke_native(func, args)
+    }
+
+    /// Вызывает нативную функцию; арность уже проверена вызывающим кодом.
+    fn invoke_native(&self, func: &NativeImpl, args: &[Value]) -> Result<Value, Error> {
+        match func {
+            NativeImpl::Builtin(BuiltinImpl::Pure(function)) => function(args),
+            NativeImpl::Builtin(BuiltinImpl::Context(function)) => function(self, args),
+            NativeImpl::Module { package, symbol } => native::call(self, package, symbol, args),
+        }
+    }
+
+    /// Вызывает значение-функцию с уже вычисленными аргументами.
+    ///
+    /// Используется функциями высшего порядка (`list-map`, `list-filter`,
+    /// `list-fold`): функция-аргумент может быть замыканием или builtin.
+    pub(crate) fn call_value_with_values(
+        &self,
+        callable: &Value,
+        args: Vec<Value>,
+    ) -> Result<Value, Error> {
+        match callable {
+            Value::Closure(closure) => self.call_closure_with_values(closure, args),
+            Value::Native { name, arity, func } => self.call_native(name, *arity, func, &args),
             _ => Err(Error::type_mismatch("Не могу вызвать не-функцию")),
         }
     }
@@ -678,7 +377,6 @@ impl Interpreter {
         &self,
         closure: &Closure,
         arg_vals: Vec<Value>,
-        _caller_env: &Rc<RefCell<Environment>>,
     ) -> Result<Value, Error> {
         let _depth = self.enter_call()?;
         if arg_vals.len() != closure.params.len() {
@@ -1402,18 +1100,12 @@ impl Interpreter {
     }
 
     /// (print строка).
-    fn do_print(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
-        if rest.len() != 1 {
-            return Err(Error::new(format!(
-                "(print ...) требует ровно 1 аргумент, получено {}",
-                rest.len()
-            )));
-        }
-        let value = self.eval(&rest[0], env)?;
+    /// Печатает значение с учётом подавления вывода в тестах.
+    pub(crate) fn print_value(&self, value: &Value) -> Result<(), Error> {
         if !self.suppress_print.get() {
-            builtins::print_arg(&value)?;
+            builtins::print_arg(value)?;
         }
-        Ok(Value::None)
+        Ok(())
     }
 
     /// (cond (условие тело...) ... (else тело...))
@@ -1951,7 +1643,11 @@ impl Interpreter {
         match Environment::get(env, name) {
             Ok(value) => Ok(value),
             Err(e) if e.message.starts_with("Переменная не определена") => {
-                Err(self.undefined_variable_error(env, name))
+                if let Some(builtin) = builtins::lookup(name) {
+                    Ok(builtin.value())
+                } else {
+                    Err(self.undefined_variable_error(env, name))
+                }
             }
             Err(e) => Err(e),
         }

@@ -1,28 +1,66 @@
-//! Встроенные функции списков: `list`, `nth`, `length`, `contains?`.
+//! Встроенные функции списков.
+//!
+//! Арность проверяется централизованно по таблице [`super::BUILTINS`].
 
 use crate::error::Error;
 use crate::value::Value;
 
 /// Создаёт список `(list элем...)`.
-pub fn make_list(args: &[Value]) -> Value {
-    Value::List(args.to_vec())
+pub fn list(args: &[Value]) -> Result<Value, Error> {
+    Ok(Value::List(args.to_vec()))
+}
+
+/// Добавляет элемент в голову списка `(cons элемент список)`.
+pub fn cons(args: &[Value]) -> Result<Value, Error> {
+    let list = match &args[1] {
+        Value::List(items) => items.clone(),
+        _ => return Err(Error::new("Второй аргумент cons должен быть списком")),
+    };
+    let mut result = vec![args[0].clone()];
+    result.extend(list);
+    Ok(Value::List(result))
+}
+
+/// Возвращает голову списка `(head список)` как `(some x)` или `none`.
+pub fn head(args: &[Value]) -> Result<Value, Error> {
+    match &args[0] {
+        Value::List(items) if !items.is_empty() => Ok(Value::Some(Box::new(items[0].clone()))),
+        _ => Ok(Value::None),
+    }
+}
+
+/// Возвращает хвост списка `(tail список)` как `(some список)` или `none`.
+pub fn tail(args: &[Value]) -> Result<Value, Error> {
+    match &args[0] {
+        Value::List(items) if items.len() > 1 => {
+            Ok(Value::Some(Box::new(Value::List(items[1..].to_vec()))))
+        }
+        _ => Ok(Value::None),
+    }
+}
+
+/// Проверяет, пуст ли список `(empty? список)`.
+pub fn is_empty(args: &[Value]) -> Result<Value, Error> {
+    match &args[0] {
+        Value::List(items) => Ok(Value::Bool(items.is_empty())),
+        _ => Err(Error::new("empty? требует список")),
+    }
+}
+
+/// Конкатенация двух списков `(append список список)`.
+pub fn append(args: &[Value]) -> Result<Value, Error> {
+    match (&args[0], &args[1]) {
+        (Value::List(a), Value::List(b)) => {
+            let mut result = a.clone();
+            result.extend(b.clone());
+            Ok(Value::List(result))
+        }
+        _ => Err(Error::new("append требует два списка")),
+    }
 }
 
 /// Возвращает элемент списка по индексу `(nth список индекс)` (0-based).
-///
-/// # Ошибки
-/// — не ровно два аргумента;
-/// — первый аргумент не список;
-/// — второй аргумент не целое число;
-/// — индекс вне диапазона.
 pub fn nth(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 2 {
-        return Err(Error::new(format!(
-            "(nth ...) требует ровно 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
-
     let list = match &args[0] {
         Value::List(items) => items,
         _ => return Err(Error::new("Первый аргумент nth должен быть списком")),
@@ -41,18 +79,7 @@ pub fn nth(args: &[Value]) -> Result<Value, Error> {
 }
 
 /// Возвращает длину списка `(length список)`. Синоним: `(len список)`.
-///
-/// # Ошибки
-/// — не ровно один аргумент;
-/// — аргумент не список.
 pub fn length(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(length ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
-
     let list = match &args[0] {
         Value::List(items) => items,
         _ => return Err(Error::new("length требует списка")),
@@ -65,18 +92,7 @@ pub fn length(args: &[Value]) -> Result<Value, Error> {
 ///
 /// Возвращает `true`, если среди элементов списка есть элемент, равный
 /// значению (по семантике оператора `=`).
-///
-/// # Ошибки
-/// — не ровно два аргумента;
-/// — первый аргумент не список.
 pub fn contains(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 2 {
-        return Err(Error::new(format!(
-            "(contains? ...) требует ровно 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
-
     let list = match &args[0] {
         Value::List(items) => items,
         _ => return Err(Error::new("Первый аргумент contains? должен быть списком")),
