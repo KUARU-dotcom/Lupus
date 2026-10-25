@@ -45,8 +45,12 @@ lupus eval "(+ 2 3)"              # 5
 lupus test examples/v05_tests.lupus
 ```
 
+`lupus eval` uses a core-only environment; use `lupus run` for modules
+(see [ERRATA §12](./docs/ERRATA.md)).
+
 Exit codes: `0` — success, `1` — program/lint/test failure, `2` — CLI usage
-error (unknown flag; plain-text usage on stderr). Diagnostics always go to
+error (missing argument, extra positional arguments, unknown flag; plain-text
+usage on stderr). Diagnostics always go to
 stderr; stdout stays clean program output. `--pretty` enables a human-readable
 rendering, `--json` (the default) emits strict JSON.
 
@@ -81,7 +85,7 @@ LiF (Lupus in Fabula) is the integration test suite and release gate:
 
 ```bash
 cargo test
-cargo clippy --all-targets
+cargo clippy --all-targets -- -D warnings
 cargo fmt --check
 python3 validate_tasks.py      # PASSED: 100/100
 ```
@@ -93,7 +97,7 @@ Layout:
   harness extracts `code` from the JSON on stderr and requires a non-zero exit.
 - `tests/coverage_map.toml` — V0.4/V0.5 coverage map: every symbol has positive
   and negative checks.
-- `tests/fuzz.rs` — fuzz smoke: 2000 deterministic programs, 2 s timeout.
+- `tests/fuzz.rs` — fuzz smoke: 10 000 deterministic programs, 2 s timeout.
 - `tests/oracle.rs` — differential test against Lupus v0.4.0. The binary is
   fetched by `scripts/fetch-oracle.sh` into `oracles/` (gitignored); without it
   the test is marked SKIP.

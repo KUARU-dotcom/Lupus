@@ -45,8 +45,12 @@ lupus eval "(+ 2 3)"              # 5
 lupus test examples/v05_tests.lupus
 ```
 
+`lupus eval` работает в окружении только core; модули — через `lupus run`
+(см. [ERRATA §12](./docs/ERRATA.md)).
+
 Коды выхода: `0` — успех, `1` — ошибка программы/линта/теста, `2` — ошибка
-использования CLI (неизвестный флаг; plain-text usage в stderr). Диагностика
+использования CLI (нет аргумента, лишние позиционные, неизвестный флаг;
+plain-text usage в stderr). Диагностика
 всегда пишется в stderr; stdout остаётся чистым выводом программы. `--pretty`
 включает человекочитаемый рендер, `--json` (по умолчанию) — строгий JSON.
 
@@ -81,7 +85,7 @@ LiF (Lupus in Fabula) — интеграционные тесты и выпус�
 
 ```bash
 cargo test
-cargo clippy --all-targets
+cargo clippy --all-targets -- -D warnings
 cargo fmt --check
 python3 validate_tasks.py      # PASSED: 100/100
 ```
@@ -94,7 +98,7 @@ python3 validate_tasks.py      # PASSED: 100/100
   извлекает `code` из JSON в stderr и требует ненулевой код выхода.
 - `tests/coverage_map.toml` — карта покрытия V0.4/V0.5: у каждого символа есть
   positive- и negative-проверки.
-- `tests/fuzz.rs` — fuzz-smoke: 2000 детерминированных программ, таймаут 2 с.
+- `tests/fuzz.rs` — fuzz-smoke: 10 000 детерминированных программ, таймаут 2 с.
 - `tests/oracle.rs` — дифференциальный тест против Lupus v0.4.0. Бинарник
   скачивается скриптом `scripts/fetch-oracle.sh` в `oracles/` (каталог в
   `.gitignore`); без него тест помечается SKIP.
