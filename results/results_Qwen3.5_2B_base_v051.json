@@ -1,0 +1,1902 @@
+{
+  "1": {
+    "id": 1,
+    "cat": "arithmetic",
+    "name": "Сложение",
+    "expected": "22",
+    "ts": "2026-06-08T06:40:41.681146",
+    "lupus": {
+      "status": "error",
+      "code": "(print (+ 7 15))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 776
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(7 + 15)",
+      "output": "22",
+      "ms": 950
+    }
+  },
+  "2": {
+    "id": 2,
+    "cat": "arithmetic",
+    "name": "Вычитание",
+    "expected": "63",
+    "ts": "2026-06-08T06:40:43.410487",
+    "lupus": {
+      "status": "error",
+      "code": "(print (- 100 37))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 2199
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(100 - 37)",
+      "output": "63",
+      "ms": 1030
+    }
+  },
+  "3": {
+    "id": 3,
+    "cat": "arithmetic",
+    "name": "Умножение",
+    "expected": "54",
+    "ts": "2026-06-08T06:40:46.642779",
+    "lupus": {
+      "status": "error",
+      "code": "(print (* 6 9))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 1971
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(6 * 9)",
+      "output": "54",
+      "ms": 918
+    }
+  },
+  "4": {
+    "id": 4,
+    "cat": "arithmetic",
+    "name": "Деление",
+    "expected": "4",
+    "ts": "2026-06-08T06:40:49.534319",
+    "lupus": {
+      "status": "error",
+      "code": "(print (/ 17 4))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 2125
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(17 // 4)",
+      "output": "4",
+      "ms": 953
+    }
+  },
+  "5": {
+    "id": 5,
+    "cat": "arithmetic",
+    "name": "Остаток",
+    "expected": "2",
+    "ts": "2026-06-08T06:40:52.640372",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (% 17 5)))",
+      "output": "2",
+      "ms": 2193
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(17 % 5)",
+      "output": "2",
+      "ms": 917
+    }
+  },
+  "6": {
+    "id": 6,
+    "cat": "arithmetic",
+    "name": "Квадрат",
+    "expected": "169",
+    "ts": "2026-06-08T06:40:55.754179",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (* 13 13)))",
+      "output": "169",
+      "ms": 2172
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(13**2)",
+      "output": "169",
+      "ms": 894
+    }
+  },
+  "7": {
+    "id": 7,
+    "cat": "arithmetic",
+    "name": "Куб",
+    "expected": "64",
+    "ts": "2026-06-08T06:40:58.823912",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (* 4 4 4)))",
+      "output": "64",
+      "ms": 2286
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(4 ** 3)",
+      "output": "64",
+      "ms": 953
+    }
+  },
+  "8": {
+    "id": 8,
+    "cat": "arithmetic",
+    "name": "Степень 2^10",
+    "expected": "1024",
+    "ts": "2026-06-08T06:41:02.067135",
+    "lupus": {
+      "status": "error",
+      "code": "(print (* 2 10))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 2159
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(2 ** 10)",
+      "output": "1024",
+      "ms": 897
+    }
+  },
+  "9": {
+    "id": 9,
+    "cat": "arithmetic",
+    "name": "Степень 3^5",
+    "expected": "243",
+    "ts": "2026-06-08T06:41:05.126952",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (power base exp)\n  (if (= exp 0)\n    1\n    (* base (power base (- exp 1)))))\n\n(print (int->str (power 3 5)))",
+      "output": "243",
+      "ms": 4724
+    },
+    "python": {
+      "status": "pass",
+      "code": "def power(base, exponent):\n    if exponent == 0:\n        return 1\n    else:\n        return base * power(base, exponent - 1)\n\nprint(power(3, 5))",
+      "output": "243",
+      "ms": 2129
+    }
+  },
+  "10": {
+    "id": 10,
+    "cat": "arithmetic",
+    "name": "Макс двух чисел",
+    "expected": "42",
+    "ts": "2026-06-08T06:41:11.983639",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print (int->str (+ 42 17)))",
+      "output": "59",
+      "ms": 2223
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(max(17, 42))",
+      "output": "42",
+      "ms": 1032
+    }
+  },
+  "11": {
+    "id": 11,
+    "cat": "logic",
+    "name": "Чётность 4",
+    "expected": "even",
+    "ts": "2026-06-08T06:41:15.244559",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print (if (= 4 2) \"even\" \"odd\"))",
+      "output": "odd",
+      "ms": 2383
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print(4 % 2 == 0)",
+      "output": "True",
+      "ms": 985
+    }
+  },
+  "12": {
+    "id": 12,
+    "cat": "logic",
+    "name": "Нечётность 7",
+    "expected": "odd",
+    "ts": "2026-06-08T06:41:18.617782",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (if (= 7 2) \"even\" \"odd\"))",
+      "output": "odd",
+      "ms": 2304
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print(7 % 2 == 0)",
+      "output": "False",
+      "ms": 1054
+    }
+  },
+  "13": {
+    "id": 13,
+    "cat": "logic",
+    "name": "Делимость на 3",
+    "expected": "yes",
+    "ts": "2026-06-08T06:41:21.978644",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print (if (= (/ 15 3) 0) \"yes\" \"no\"))",
+      "output": "no",
+      "ms": 4079
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print(15 % 3 == 0)",
+      "output": "True",
+      "ms": 1145
+    }
+  },
+  "14": {
+    "id": 14,
+    "cat": "logic",
+    "name": "Не делится на 7",
+    "expected": "no",
+    "ts": "2026-06-08T06:41:27.208579",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print (if (= (/ 10 7) 1) \"yes\" \"no\"))",
+      "output": "yes",
+      "ms": 2650
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print(10 % 7 == 0)",
+      "output": "False",
+      "ms": 1128
+    }
+  },
+  "15": {
+    "id": 15,
+    "cat": "logic",
+    "name": "И",
+    "expected": "ok",
+    "ts": "2026-06-08T06:41:30.991301",
+    "lupus": {
+      "status": "error",
+      "code": "(print (if (> 5 3)\n          (< 10 20)\n        \"fail\"))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 2835
+    },
+    "python": {
+      "status": "pass",
+      "code": "print('ok') if (5 > 3) and (10 < 20) else print('fail')",
+      "output": "ok",
+      "ms": 1638
+    }
+  },
+  "16": {
+    "id": 16,
+    "cat": "logic",
+    "name": "ИЛИ",
+    "expected": "ok",
+    "ts": "2026-06-08T06:41:35.468844",
+    "lupus": {
+      "status": "error",
+      "code": "(print (or (> 5 10) (< 3 7)))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 2541
+    },
+    "python": {
+      "status": "pass",
+      "code": "print('ok')",
+      "output": "ok",
+      "ms": 952
+    }
+  },
+  "17": {
+    "id": 17,
+    "cat": "logic",
+    "name": "НЕ",
+    "expected": "ok",
+    "ts": "2026-06-08T06:41:38.965224",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (if (= 5 3) \"fail\" \"ok\"))",
+      "output": "ok",
+      "ms": 2394
+    },
+    "python": {
+      "status": "pass",
+      "code": "print('ok')",
+      "output": "ok",
+      "ms": 908
+    }
+  },
+  "18": {
+    "id": 18,
+    "cat": "logic",
+    "name": "Знак числа",
+    "expected": "positive",
+    "ts": "2026-06-08T06:41:42.271639",
+    "lupus": {
+      "status": "error",
+      "code": "(print (if (> 42 0) \"positive\" (< 42 0) \"zero\")))",
+      "output": "Ошибка парсера на строке 1, колонке 49: Неожиданный токен: RPAREN",
+      "ms": 2652
+    },
+    "python": {
+      "status": "pass",
+      "code": "print('positive')",
+      "output": "positive",
+      "ms": 901
+    }
+  },
+  "19": {
+    "id": 19,
+    "cat": "logic",
+    "name": "Знак нуля",
+    "expected": "zero",
+    "ts": "2026-06-08T06:41:45.828832",
+    "lupus": {
+      "status": "error",
+      "code": "(print (if (> 0 0) \"positive\" (< 0 0) \"zero\")))",
+      "output": "Ошибка парсера на строке 1, колонке 47: Неожиданный токен: RPAREN",
+      "ms": 2638
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print('positive')",
+      "output": "positive",
+      "ms": 910
+    }
+  },
+  "20": {
+    "id": 20,
+    "cat": "logic",
+    "name": "Знак отрицательного",
+    "expected": "negative",
+    "ts": "2026-06-08T06:41:49.380817",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (if (> (- 5) 0) \"positive\" \"negative\"))",
+      "output": "negative",
+      "ms": 2511
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print('positive')",
+      "output": "positive",
+      "ms": 910
+    }
+  },
+  "21": {
+    "id": 21,
+    "cat": "loops",
+    "name": "Числа 1..5",
+    "expected": "1\n2\n3\n4\n5",
+    "ts": "2026-06-08T06:41:52.808715",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str 1))\n(print (int->str 2))\n(print (int->str 3))\n(print (int->str 4))\n(print (int->str 5))",
+      "output": "1\n2\n3\n4\n5",
+      "ms": 3213
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(1)\nprint(2)\nprint(3)\nprint(4)\nprint(5)",
+      "output": "1\n2\n3\n4\n5",
+      "ms": 1363
+    }
+  },
+  "22": {
+    "id": 22,
+    "cat": "loops",
+    "name": "Обратный счёт 5..1",
+    "expected": "5\n4\n3\n2\n1",
+    "ts": "2026-06-08T06:41:57.390681",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str 5))\n(print (int->str 4))\n(print (int->str 3))\n(print (int->str 2))\n(print (int->str 1))",
+      "output": "5\n4\n3\n2\n1",
+      "ms": 3150
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(5)\nprint(4)\nprint(3)\nprint(2)\nprint(1)",
+      "output": "5\n4\n3\n2\n1",
+      "ms": 1401
+    }
+  },
+  "23": {
+    "id": 23,
+    "cat": "loops",
+    "name": "Сумма 1..10",
+    "expected": "55",
+    "ts": "2026-06-08T06:42:01.948377",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable sum 0)\n(define-mutable i 1)\n(while (<= i 10)\n  (set! sum (+ sum i))\n  (set! i (+ i 1)))\n(print (int->str sum))",
+      "output": "55",
+      "ms": 5148
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10)",
+      "output": "55",
+      "ms": 1684
+    }
+  },
+  "24": {
+    "id": 24,
+    "cat": "loops",
+    "name": "Произведение 1..5",
+    "expected": "120",
+    "ts": "2026-06-08T06:42:08.787239",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable product 1)\n(define-mutable i 1)\n(while (< i 6)\n  (set! product (* product i))\n  (set! i (+ i 1)))\n(print (int->str product))",
+      "output": "120",
+      "ms": 3693
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(1 * 2 * 3 * 4 * 5)",
+      "output": "120",
+      "ms": 1178
+    }
+  },
+  "25": {
+    "id": 25,
+    "cat": "loops",
+    "name": "Чётные 2..10",
+    "expected": "2\n4\n6\n8\n10",
+    "ts": "2026-06-08T06:42:13.663015",
+    "lupus": {
+      "status": "error",
+      "code": "(print (int->str (nth (list 2 3 4 5 6 7 8 9 10) 0)))\n(print (int->str (nth (list 2 3 4 5 6 7 8 9 10) 1)))\n(print (int->str (nth (list 2 3 4 5 6 7 8 9 10) 2)))\n(print (int->str (nth (list 2 3 4 5 6 7 8 9 10) 3)))\n(print (int->str (nth (list 2 3 4 5 6 7 8 9 10) 4)))\n(print (int->str (nth (list 2 3 4 5 6 7 8 9 10) 5)))\n(print (int->str (nth (list 2 3 4 5 6 7 8 9 10) 6)))\n(print (int->str (nth (list 2 3 4 5 6 7 8 9 10) 7)))\n(print (int->str (nth (list 2 3 4 5 6 7 8 9 10) 8)))\n(print (int->str (nth (list 2 3 4 5 6 7 8 9 10) 9)))",
+      "output": "2\n3\n4\n5\n6\n7\n8\n9\n10\nОшибка выполнения: Индекс вне диапазона: 9",
+      "ms": 12154
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(2)\nprint(4)\nprint(6)\nprint(8)\nprint(10)",
+      "output": "2\n4\n6\n8\n10",
+      "ms": 1460
+    }
+  },
+  "26": {
+    "id": 26,
+    "cat": "loops",
+    "name": "Нечётные 1..9",
+    "expected": "1\n3\n5\n7\n9",
+    "ts": "2026-06-08T06:42:27.281122",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (nth (list 1 3 5 7 9) 0)))\n(print (int->str (nth (list 1 3 5 7 9) 1)))\n(print (int->str (nth (list 1 3 5 7 9) 2)))\n(print (int->str (nth (list 1 3 5 7 9) 3)))\n(print (int->str (nth (list 1 3 5 7 9) 4)))",
+      "output": "1\n3\n5\n7\n9",
+      "ms": 5719
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(1)\nprint(3)\nprint(5)\nprint(7)\nprint(9)",
+      "output": "1\n3\n5\n7\n9",
+      "ms": 1386
+    }
+  },
+  "27": {
+    "id": 27,
+    "cat": "loops",
+    "name": "Сумма чётных 1..20",
+    "expected": "110",
+    "ts": "2026-06-08T06:42:34.392661",
+    "lupus": {
+      "status": "error",
+      "code": "(define-mutable sum 0)\n(define-mutable i 1)\n(while (< i 21)\n  (if (= (mod i 2) 0)\n    (set! sum (+ sum i))\n    (set! i (+ i 1)))\n(print (int->str sum))",
+      "output": "Ошибка парсера: Неожиданный конец файла: ожидалась закрывающая скобка",
+      "ms": 4382
+    },
+    "python": {
+      "status": "pass",
+      "code": "sum = 0\nfor i in range(2, 21):\n    if i % 2 == 0:\n        sum += i\nprint(sum)",
+      "output": "110",
+      "ms": 1933
+    }
+  },
+  "28": {
+    "id": 28,
+    "cat": "loops",
+    "name": "Сумма нечётных 1..9",
+    "expected": "25",
+    "ts": "2026-06-08T06:42:40.712819",
+    "lupus": {
+      "status": "error",
+      "code": "(define-mutable sum 0)\n(define-mutable i 1)\n(while (< i 10)\n  (if (= (int->str i) \"1\")\n    (set! sum (+ sum (int->str i)))\n    (print (int->str i))\n    (set! i (+ i 2))))\n(print (int->str sum))",
+      "output": "Ошибка выполнения: (if ...) требует ровно 3 аргумента",
+      "ms": 4849
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(1 + 3 + 5 + 7 + 9)",
+      "output": "25",
+      "ms": 1262
+    }
+  },
+  "29": {
+    "id": 29,
+    "cat": "loops",
+    "name": "Квадраты 1..5",
+    "expected": "1\n4\n9\n16\n25",
+    "ts": "2026-06-08T06:42:46.829659",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (* 1 1)))\n(print (int->str (* 2 2)))\n(print (int->str (* 3 3)))\n(print (int->str (* 4 4)))\n(print (int->str (* 5 5)))",
+      "output": "1\n4\n9\n16\n25",
+      "ms": 3712
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(1**2)\nprint(2**2)\nprint(3**2)\nprint(4**2)\nprint(5**2)",
+      "output": "1\n4\n9\n16\n25",
+      "ms": 1788
+    }
+  },
+  "30": {
+    "id": 30,
+    "cat": "loops",
+    "name": "Умнож. таблица 3",
+    "expected": "3\n6\n9\n12\n15",
+    "ts": "2026-06-08T06:42:52.334065",
+    "lupus": {
+      "status": "error",
+      "code": "(print (* 3 1))\n(print (* 3 2))\n(print (* 3 3))\n(print (* 3 4))\n(print (* 3 5))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 3147
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(3 * 1)\nprint(3 * 2)\nprint(3 * 3)\nprint(3 * 4)\nprint(3 * 5)",
+      "output": "3\n6\n9\n12\n15",
+      "ms": 1943
+    }
+  },
+  "31": {
+    "id": 31,
+    "cat": "loops",
+    "name": "Степени 2: 1..8",
+    "expected": "2\n4\n8\n16\n32\n64\n128\n256",
+    "ts": "2026-06-08T06:42:57.429442",
+    "lupus": {
+      "status": "error",
+      "code": "(print (int->str (2 ** 1)))\n(print (int->str (2 ** 2)))\n(print (int->str (2 ** 3)))\n(print (int->str (2 ** 4)))\n(print (int->str (2 ** 5)))\n(print (int->str (2 ** 6)))\n(print (int->str (2 ** 7)))\n(print (int->str (2 ** 8)))",
+      "output": "Ошибка выполнения: Не могу вызвать не-функцию",
+      "ms": 4942
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(2**1)\nprint(2**2)\nprint(2**3)\nprint(2**4)\nprint(2**5)\nprint(2**6)\nprint(2**7)\nprint(2**8)",
+      "output": "2\n4\n8\n16\n32\n64\n128\n256",
+      "ms": 2464
+    }
+  },
+  "32": {
+    "id": 32,
+    "cat": "loops",
+    "name": "Сумма квадратов",
+    "expected": "30",
+    "ts": "2026-06-08T06:43:04.843365",
+    "lupus": {
+      "status": "error",
+      "code": "(print (+ (int->str (pow 1 2)) (int->str (pow 2 2)) (int->str (pow 3 2)) (int->str (pow 4 2))))",
+      "output": "Ошибка выполнения: Переменная не определена: pow",
+      "ms": 3607
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(1**2 + 2**2 + 3**2 + 4**2)",
+      "output": "30",
+      "ms": 1435
+    }
+  },
+  "33": {
+    "id": 33,
+    "cat": "loops",
+    "name": "Счётчик делений",
+    "expected": "5",
+    "ts": "2026-06-08T06:43:09.888513",
+    "lupus": {
+      "status": "error",
+      "code": "(print (int->str (count-divisible-by-4)))\n\n(define-mutable count-divisible-by-4 0)\n\n(define (count-divisible-by-4 n)\n  (if (= n 21)\n    (set! count-divisible-by-4 (+ count-divisible-by-4 1))\n    (if (> n 0)\n      (count-divisible-by-4 (- n 1))\n      0)))\n\n(print (int->str count-divisible-by-4))",
+      "output": "Ошибка выполнения: Переменная не определена: count-divisible-by-4",
+      "ms": 5691
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(5)",
+      "output": "5",
+      "ms": 939
+    }
+  },
+  "34": {
+    "id": 34,
+    "cat": "loops",
+    "name": "Max в цикле",
+    "expected": "9",
+    "ts": "2026-06-08T06:43:16.523287",
+    "lupus": {
+      "status": "error",
+      "code": "(define-mutable max 0)\n(define-mutable i 0)\n(while (< i 6)\n  (set! max (+ max (nth (list 3 7 2 9 1 5) i)))\n  (set! i (+ i 1))))\n(print (int->str max))",
+      "output": "Ошибка парсера на строке 5, колонке 20: Неожиданный токен: RPAREN",
+      "ms": 4528
+    },
+    "python": {
+      "status": "pass",
+      "code": "max_val = 0\nfor num in [3, 7, 2, 9, 1, 5]:\n    if num > max_val:\n        max_val = num\nprint(max_val)",
+      "output": "9",
+      "ms": 2263
+    }
+  },
+  "35": {
+    "id": 35,
+    "cat": "loops",
+    "name": "Цифровая сумма 12345",
+    "expected": "15",
+    "ts": "2026-06-08T06:43:23.320180",
+    "lupus": {
+      "status": "error",
+      "code": "(define-mutable sum 0)\n(define-mutable i 0)\n(while (< i 5))\n  (set! i (+ i 1))\n  (set! sum (+ sum (int->str i)))\n(print (int->str sum))",
+      "output": "Ошибка выполнения: (while ...) требует минимум 2 аргумента",
+      "ms": 4048
+    },
+    "python": {
+      "status": "pass",
+      "code": "sum = 0\nfor digit in [1, 2, 3, 4, 5]:\n    sum += digit\nprint(sum)",
+      "output": "15",
+      "ms": 1886
+    }
+  },
+  "36": {
+    "id": 36,
+    "cat": "recursion",
+    "name": "Факториал 5",
+    "expected": "120",
+    "ts": "2026-06-08T06:43:29.258439",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (factorial n)\n  (if (= n 0)\n    1\n    (* n (factorial (- n 1)))))\n\n(print (int->str (factorial 5)))",
+      "output": "120",
+      "ms": 3227
+    },
+    "python": {
+      "status": "pass",
+      "code": "def factorial(n):\n    if n == 0 or n == 1:\n        return 1\n    else:\n        return n * factorial(n - 1)\n\nprint(factorial(5))",
+      "output": "120",
+      "ms": 2108
+    }
+  },
+  "37": {
+    "id": 37,
+    "cat": "recursion",
+    "name": "Факториал 7",
+    "expected": "5040",
+    "ts": "2026-06-08T06:43:34.598965",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (factorial n)\n  (if (= n 0)\n    1\n    (* n (factorial (- n 1)))))\n\n(print (int->str (factorial 7)))",
+      "output": "5040",
+      "ms": 3187
+    },
+    "python": {
+      "status": "pass",
+      "code": "def factorial(n):\n    if n == 0 or n == 1:\n        return 1\n    else:\n        return n * factorial(n - 1)\n\nprint(factorial(7))",
+      "output": "5040",
+      "ms": 2077
+    }
+  },
+  "38": {
+    "id": 38,
+    "cat": "recursion",
+    "name": "Фибоначчи F(7)",
+    "expected": "13",
+    "ts": "2026-06-08T06:43:39.869942",
+    "lupus": {
+      "status": "error",
+      "code": "(define (f n)\n  (if (= n 0)\n    0\n    (+ f (- n 1) f (- n 2))))\n\n(print (int->str (f 7)))",
+      "output": "Ошибка выполнения: + требует целых чисел",
+      "ms": 3321
+    },
+    "python": {
+      "status": "error",
+      "code": "print(F(7))",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 1, in <module>\n    pr",
+      "ms": 1054
+    }
+  },
+  "39": {
+    "id": 39,
+    "cat": "recursion",
+    "name": "Фибоначчи F(9)",
+    "expected": "34",
+    "ts": "2026-06-08T06:43:44.251633",
+    "lupus": {
+      "status": "error",
+      "code": "(define (compute-f n)\n  (if (= n 0)\n    0\n    (+ (compute-f (- n 1))\n       (compute-f (- n 2)))))\n\n(print (int->str (compute-f 9)))",
+      "output": "",
+      "ms": 4290
+    },
+    "python": {
+      "status": "error",
+      "code": "print(F(9))",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 1, in <module>\n    pr",
+      "ms": 1023
+    }
+  },
+  "40": {
+    "id": 40,
+    "cat": "recursion",
+    "name": "Сумма 1..N рекурс.",
+    "expected": "55",
+    "ts": "2026-06-08T06:43:49.569866",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (sum-list lst i acc)\n  (if (= i (length lst))\n    acc\n    (sum-list lst (+ i 1) (+ acc (nth lst i)))))\n\n(print (int->str (sum-list (list 1 2 3 4 5 6 7 8 9 10) 0 0)))",
+      "output": "55",
+      "ms": 4410
+    },
+    "python": {
+      "status": "pass",
+      "code": "def sum_to_n(n):\n    if n == 1:\n        return 1\n    else:\n        return n + sum_to_n(n - 1)\n\nprint(sum_to_n(10))",
+      "output": "55",
+      "ms": 2186
+    }
+  },
+  "41": {
+    "id": 41,
+    "cat": "recursion",
+    "name": "Степень 2^8 рекурс.",
+    "expected": "256",
+    "ts": "2026-06-08T06:43:56.170934",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (power base exp)\n  (if (= exp 0)\n    1\n    (* base (power base (- exp 1)))))\n\n(print (int->str (power 2 8)))",
+      "output": "256",
+      "ms": 3625
+    },
+    "python": {
+      "status": "pass",
+      "code": "def power(base, exponent):\n    if exponent == 0:\n        return 1\n    else:\n        return base * power(base, exponent - 1)\n\nprint(power(2, 8))",
+      "output": "256",
+      "ms": 2118
+    }
+  },
+  "42": {
+    "id": 42,
+    "cat": "recursion",
+    "name": "GCD(48, 18)",
+    "expected": "6",
+    "ts": "2026-06-08T06:44:01.922390",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define (gcd a b)\n  (if (= b 0)\n    a\n    (gcd b (- a (/ a b)))))\n\n(print (int->str (gcd 48 18)))",
+      "output": "1",
+      "ms": 3649
+    },
+    "python": {
+      "status": "error",
+      "code": "print(math.gcd(48, 18))",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 1, in <module>\n    pr",
+      "ms": 1171
+    }
+  },
+  "43": {
+    "id": 43,
+    "cat": "recursion",
+    "name": "НОД(100, 75)",
+    "expected": "25",
+    "ts": "2026-06-08T06:44:06.750534",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define (gcd a b)\n  (if (= b 0)\n    a\n    (gcd b (- a (/ a b)))))\n\n(print (int->str (gcd 100 75)))",
+      "output": "1",
+      "ms": 3582
+    },
+    "python": {
+      "status": "error",
+      "code": "print(100 % 75)\nprint(75 % 25)\nprint(25 % 0)",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 3, in <module>\n    pr",
+      "ms": 1777
+    }
+  },
+  "44": {
+    "id": 44,
+    "cat": "recursion",
+    "name": "Цифр. сумма рекурс.",
+    "expected": "30",
+    "ts": "2026-06-08T06:44:12.117193",
+    "lupus": {
+      "status": "error",
+      "code": "(define (sum-digits n)\n  (if (= n 0)\n    0\n    (+ (int->str n) (sum-digits (- n 1)))))\n\n(print (int->str (sum-digits 9876)))",
+      "output": "Ошибка выполнения: + требует целых чисел",
+      "ms": 4041
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(sum(int(digit) for digit in str(9876)))",
+      "output": "30",
+      "ms": 1378
+    }
+  },
+  "45": {
+    "id": 45,
+    "cat": "recursion",
+    "name": "Обратный отсчёт",
+    "expected": "5\n4\n3\n2\n1",
+    "ts": "2026-06-08T06:44:17.542003",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define (print-down n)\n  (if (= n 0)\n    (print \"done\")\n    (print (int->str n))\n    (print-down (- n 1))))\n\n(print (int->str 5))",
+      "output": "5",
+      "ms": 5831
+    },
+    "python": {
+      "status": "wrong",
+      "code": "def printDown(n):\n    if n <= 0:\n        return\n    print(n, end=\" \")\n    printDown(n - 1)\n\nprintDown(5)",
+      "output": "5 4 3 2 1",
+      "ms": 1990
+    }
+  },
+  "46": {
+    "id": 46,
+    "cat": "recursion",
+    "name": "Счётчик рекурс.",
+    "expected": "1\n2\n3\n4",
+    "ts": "2026-06-08T06:44:25.370050",
+    "lupus": {
+      "status": "error",
+      "code": "(define (count n)\n  (if (= n 0)\n    (print \"0\")\n    (print (int->str n))\n    (count (- n 1))))\n\n(count 4)",
+      "output": "Ошибка выполнения: (if ...) требует ровно 3 аргумента",
+      "ms": 3507
+    },
+    "python": {
+      "status": "error",
+      "code": "print(1)\ncount(3)\nprint(2)\ncount(2)\nprint(3)\ncount(1)\nprint(4)\ncount(0)",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 2, in <module>\n    co",
+      "ms": 1985
+    }
+  },
+  "47": {
+    "id": 47,
+    "cat": "recursion",
+    "name": "Числа Трибоначчи",
+    "expected": "24",
+    "ts": "2026-06-08T06:44:30.870055",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print (int->str 5))",
+      "output": "5",
+      "ms": 2334
+    },
+    "python": {
+      "status": "error",
+      "code": "print(T(7))",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 1, in <module>\n    pr",
+      "ms": 1027
+    }
+  },
+  "48": {
+    "id": 48,
+    "cat": "recursion",
+    "name": "Мощность 4^4",
+    "expected": "256",
+    "ts": "2026-06-08T06:44:34.238395",
+    "lupus": {
+      "status": "pass",
+      "code": "(define (power base exp)\n  (if (= exp 0)\n    1\n    (* base (power base (- exp 1)))))\n\n(print (int->str (power 4 4)))",
+      "output": "256",
+      "ms": 3521
+    },
+    "python": {
+      "status": "pass",
+      "code": "def power(base, exp):\n    if exp == 0:\n        return 1\n    else:\n        return base * power(base, exp - 1)\n\nprint(power(4, 4))",
+      "output": "256",
+      "ms": 2069
+    }
+  },
+  "49": {
+    "id": 49,
+    "cat": "recursion",
+    "name": "Сумма чётных рекурс",
+    "expected": "30",
+    "ts": "2026-06-08T06:44:39.834650",
+    "lupus": {
+      "status": "error",
+      "code": "(define-mutable sum 0)\n(define-mutable i 2)\n(while (< i 12)\n  (if (= (mod i 2) 0)\n    (set! sum (+ sum i))\n    (set! i (+ i 2)))\n(print (int->str sum))",
+      "output": "Ошибка парсера: Неожиданный конец файла: ожидалась закрывающая скобка",
+      "ms": 4342
+    },
+    "python": {
+      "status": "pass",
+      "code": "def recursive_sum_even(start, end):\n    if start > end:\n        return 0\n    total = start + recursive_sum_even(start + 2, end)\n    return total\n\nprint(recursive_sum_even(2, 10))",
+      "output": "30",
+      "ms": 2628
+    }
+  },
+  "50": {
+    "id": 50,
+    "cat": "recursion",
+    "name": "Макс рекурс.",
+    "expected": "9",
+    "ts": "2026-06-08T06:44:46.813277",
+    "lupus": {
+      "status": "error",
+      "code": "(define (max-list lst)\n  (if (= (length lst) 0)\n    0\n    (let ((current (nth lst 0))\n          (rest (list->vector (subseq lst 1))))\n      (if (> current (max-list rest))\n        current\n        (max-list rest)))))\n\n(print (int->str (max-list (list 3 1 4 1 5 9 2 6))))",
+      "output": "Ошибка выполнения: Переменная не определена: let",
+      "ms": 5858
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(max([3,1,4,1,5,9,2,6]))",
+      "output": "9",
+      "ms": 1383
+    }
+  },
+  "51": {
+    "id": 51,
+    "cat": "lists",
+    "name": "Длина списка",
+    "expected": "5",
+    "ts": "2026-06-08T06:44:54.059195",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (length (list 1 2 3 4 5))))",
+      "output": "5",
+      "ms": 2600
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(len([1, 2, 3, 4, 5]))",
+      "output": "5",
+      "ms": 1208
+    }
+  },
+  "52": {
+    "id": 52,
+    "cat": "lists",
+    "name": "Первый элемент",
+    "expected": "10",
+    "ts": "2026-06-08T06:44:57.873637",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (nth (list 10 20 30) 0)))",
+      "output": "10",
+      "ms": 2621
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(list([10,20,30])[0])",
+      "output": "10",
+      "ms": 1239
+    }
+  },
+  "53": {
+    "id": 53,
+    "cat": "lists",
+    "name": "Последний элемент",
+    "expected": "30",
+    "ts": "2026-06-08T06:45:01.738702",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (nth (list 10 20 30) 2)))",
+      "output": "30",
+      "ms": 2530
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(list([10,20,30])[2])",
+      "output": "30",
+      "ms": 1152
+    }
+  },
+  "54": {
+    "id": 54,
+    "cat": "lists",
+    "name": "Третий элемент",
+    "expected": "15",
+    "ts": "2026-06-08T06:45:05.429037",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (nth (list 5 10 15 20 25) 2)))",
+      "output": "15",
+      "ms": 2800
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(list([5,10,15,20,25])[2])",
+      "output": "15",
+      "ms": 1315
+    }
+  },
+  "55": {
+    "id": 55,
+    "cat": "lists",
+    "name": "Сумма списка рекурс.",
+    "expected": "23",
+    "ts": "2026-06-08T06:45:09.553243",
+    "lupus": {
+      "status": "error",
+      "code": "(print (int->str (+ (sum-list (list 3 1 4 1 5 9) 0 0))))",
+      "output": "Ошибка выполнения: Переменная не определена: sum-list",
+      "ms": 3015
+    },
+    "python": {
+      "status": "pass",
+      "code": "def sum_recursive(numbers):\n    if not numbers:\n        return 0\n    first = numbers[0]\n    rest = numbers[1:]\n    return first + sum_recursive(rest)\n\nprint(sum_recursive([3,1,4,1,5,9]))",
+      "output": "23",
+      "ms": 2832
+    }
+  },
+  "56": {
+    "id": 56,
+    "cat": "lists",
+    "name": "Макс списка рекурс.",
+    "expected": "9",
+    "ts": "2026-06-08T06:45:15.409225",
+    "lupus": {
+      "status": "error",
+      "code": "(define (max-list lst)\n  (if (= (length lst) 0)\n    0\n    (let ((current (nth lst 0))\n          (rest (list->vector (remove-first lst))))\n      (if (> current (max-list rest))\n        current\n        (max-list rest)))))\n\n(print (int->str (max-list (list 3 1 4 1 5 9 2 6))))",
+      "output": "Ошибка выполнения: Переменная не определена: let",
+      "ms": 5704
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(max([3,1,4,1,5,9,2,6]))",
+      "output": "9",
+      "ms": 1426
+    }
+  },
+  "57": {
+    "id": 57,
+    "cat": "lists",
+    "name": "Мин списка рекурс.",
+    "expected": "1",
+    "ts": "2026-06-08T06:45:22.548074",
+    "lupus": {
+      "status": "error",
+      "code": "(define (min lst i acc)\n  (if (= i (length lst))\n    acc\n    (let ((m (nth lst i)))\n      (if (< m acc)\n        m\n        acc))))\n\n(print (int->str (min (list 3 1 4 1 5 9 2 6) 0 999)))",
+      "output": "Ошибка выполнения: Переменная не определена: let",
+      "ms": 5014
+    },
+    "python": {
+      "status": "pass",
+      "code": "def find_min(arr):\n    if len(arr) == 0:\n        return None\n    min_val = arr[0]\n    for num in arr[1:]:\n        if num < min_val:\n            min_val = num\n    return min_val\n\nprint(find_min([3,1,4,1,5,9,2,6]))",
+      "output": "1",
+      "ms": 3296
+    }
+  },
+  "58": {
+    "id": 58,
+    "cat": "lists",
+    "name": "Длина рекурс.",
+    "expected": "7",
+    "ts": "2026-06-08T06:45:30.867694",
+    "lupus": {
+      "status": "error",
+      "code": "(print (length (list 1 2 3 4 5 6 7)))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 2519
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(len([1, 2, 3, 4, 5, 6, 7]))",
+      "output": "7",
+      "ms": 1483
+    }
+  },
+  "59": {
+    "id": 59,
+    "cat": "lists",
+    "name": "Кол-во элементов > N",
+    "expected": "4",
+    "ts": "2026-06-08T06:45:34.875710",
+    "lupus": {
+      "status": "error",
+      "code": "(print (int->str (length (filter (lambda (x) (> x 4)) (list 3 7 2 9 1 5 8)))) )",
+      "output": "Ошибка выполнения: Переменная не определена: filter",
+      "ms": 3328
+    },
+    "python": {
+      "status": "pass",
+      "code": "count = sum(1 for x in [3,7,2,9,1,5,8] if x > 4)\nprint(count)",
+      "output": "4",
+      "ms": 1810
+    }
+  },
+  "60": {
+    "id": 60,
+    "cat": "lists",
+    "name": "Содержит ли 7",
+    "expected": "no",
+    "ts": "2026-06-08T06:45:40.025367",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (if (= 7 (nth (list 3 1 4 1 5 9) 0)) \"yes\" \"no\"))",
+      "output": "no",
+      "ms": 3046
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(\"no\")",
+      "output": "no",
+      "ms": 919
+    }
+  },
+  "61": {
+    "id": 61,
+    "cat": "lists",
+    "name": "Содержит ли 5",
+    "expected": "yes",
+    "ts": "2026-06-08T06:45:43.995618",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print (if (= 5 (nth (list 3 1 4 1 5 9) 0)) \"yes\" \"no\"))",
+      "output": "no",
+      "ms": 3143
+    },
+    "python": {
+      "status": "pass",
+      "code": "print('yes')",
+      "output": "yes",
+      "ms": 963
+    }
+  },
+  "62": {
+    "id": 62,
+    "cat": "lists",
+    "name": "Произведение списка",
+    "expected": "120",
+    "ts": "2026-06-08T06:45:48.111812",
+    "lupus": {
+      "status": "wrong",
+      "code": "(define (product lst i acc)\n  (if (= i (length lst))\n    acc\n    (* (nth lst i) (+ acc (product lst (+ i 1) (+ acc (nth lst i)))))))\n\n(print (int->str (product (list 1 2 3 4 5) 0 1)))",
+      "output": "3437",
+      "ms": 4647
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(1 * 2 * 3 * 4 * 5)",
+      "output": "120",
+      "ms": 1307
+    }
+  },
+  "63": {
+    "id": 63,
+    "cat": "lists",
+    "name": "Индекс элемента",
+    "expected": "3",
+    "ts": "2026-06-08T06:45:54.075616",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print (int->str (nth (list 3 7 2 9 1) 4)))",
+      "output": "1",
+      "ms": 2759
+    },
+    "python": {
+      "status": "pass",
+      "code": "print([3,7,2,9,1].index(9))",
+      "output": "3",
+      "ms": 1316
+    }
+  },
+  "64": {
+    "id": 64,
+    "cat": "lists",
+    "name": "Список квадратов",
+    "expected": "16",
+    "ts": "2026-06-08T06:45:58.161932",
+    "lupus": {
+      "status": "error",
+      "code": "(define lst (list 1 4 9 16 25))\n(print (nth lst 3))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 2660
+    },
+    "python": {
+      "status": "error",
+      "code": "print(list(range(1,6))**2[3])",
+      "output": "C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py:1: SyntaxWarning: 'int' object is not subscriptable; perhaps you missed",
+      "ms": 1415
+    }
+  },
+  "65": {
+    "id": 65,
+    "cat": "lists",
+    "name": "Сумма двух списков",
+    "expected": "21",
+    "ts": "2026-06-08T06:46:02.246976",
+    "lupus": {
+      "status": "error",
+      "code": "(print (int->str (+ (sum-list (list 1 2 3) 0 0) (sum-list (list 4 5 6) 0 0))))",
+      "output": "Ошибка выполнения: Переменная не определена: sum-list",
+      "ms": 3376
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(1+2+3 + 4+5+6)",
+      "output": "21",
+      "ms": 1225
+    }
+  },
+  "66": {
+    "id": 66,
+    "cat": "strings",
+    "name": "Конкатенация",
+    "expected": "Hello World",
+    "ts": "2026-06-08T06:46:06.854158",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print (string-append \"Hello\" \" \"))",
+      "output": "Hello",
+      "ms": 2058
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(\"Hello World\")",
+      "output": "Hello World",
+      "ms": 776
+    }
+  },
+  "67": {
+    "id": 67,
+    "cat": "strings",
+    "name": "Три части",
+    "expected": "one-two-three",
+    "ts": "2026-06-08T06:46:09.694838",
+    "lupus": {
+      "status": "error",
+      "code": "(print (string-append \"one\" \"-\" (int->str \"two\") \"-\" (int->str \"three\")))",
+      "output": "Ошибка выполнения: int->str требует целого числа",
+      "ms": 2703
+    },
+    "python": {
+      "status": "pass",
+      "code": "print('one-two-three')",
+      "output": "one-two-three",
+      "ms": 1008
+    }
+  },
+  "68": {
+    "id": 68,
+    "cat": "strings",
+    "name": "Число в строку",
+    "expected": "42",
+    "ts": "2026-06-08T06:46:13.416623",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str 42))",
+      "output": "42",
+      "ms": 1989
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(\"42\")",
+      "output": "42",
+      "ms": 919
+    }
+  },
+  "69": {
+    "id": 69,
+    "cat": "strings",
+    "name": "Строка + число",
+    "expected": "Result: 99",
+    "ts": "2026-06-08T06:46:16.336089",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (string-append \"Result: \" (int->str 99)))",
+      "output": "Result: 99",
+      "ms": 2338
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print(\"Result: \", 99)",
+      "output": "Result:  99",
+      "ms": 977
+    }
+  },
+  "70": {
+    "id": 70,
+    "cat": "strings",
+    "name": "Повтор строки",
+    "expected": "ha\nha\nha\nha",
+    "ts": "2026-06-08T06:46:19.658301",
+    "lupus": {
+      "status": "pass",
+      "code": "(print \"ha\")\n(print \"ha\")\n(print \"ha\")\n(print \"ha\")",
+      "output": "ha\nha\nha\nha",
+      "ms": 2387
+    },
+    "python": {
+      "status": "error",
+      "code": "print(ha)\nprint(ha)\nprint(ha)\nprint(ha)",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 1, in <module>\n    pr",
+      "ms": 1295
+    }
+  },
+  "71": {
+    "id": 71,
+    "cat": "strings",
+    "name": "Приветствие",
+    "expected": "Hello, Lupus!",
+    "ts": "2026-06-08T06:46:23.346863",
+    "lupus": {
+      "status": "error",
+      "code": "(print (string-append \"Hello, \" (int->str \"Lupus\") \"!\"))",
+      "output": "Ошибка выполнения: int->str требует целого числа",
+      "ms": 2697
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(\"Hello, \" + \"Lupus\" + \"!\")",
+      "output": "Hello, Lupus!",
+      "ms": 1337
+    }
+  },
+  "72": {
+    "id": 72,
+    "cat": "strings",
+    "name": "Сумма → строка",
+    "expected": "12",
+    "ts": "2026-06-08T06:46:27.386737",
+    "lupus": {
+      "status": "error",
+      "code": "(print (+ (+ 3 4) 5))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 2300
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(\"12\")",
+      "output": "12",
+      "ms": 1055
+    }
+  },
+  "73": {
+    "id": 73,
+    "cat": "strings",
+    "name": "Факториал → строка",
+    "expected": "Result: 720",
+    "ts": "2026-06-08T06:46:30.747189",
+    "lupus": {
+      "status": "error",
+      "code": "(define (factorial n)\n  (if (= n 0)\n    1\n    (* n (factorial (- n 1)))))\n\n(print \"Result: \" (int->str (factorial 6)))",
+      "output": "Ошибка выполнения: (print ...) требует ровно 1 аргумент",
+      "ms": 3418
+    },
+    "python": {
+      "status": "error",
+      "code": "print(\"Result:\", math.factorial(6))",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 1, in <module>\n    pr",
+      "ms": 1096
+    }
+  },
+  "74": {
+    "id": 74,
+    "cat": "strings",
+    "name": "Числа со строкой",
+    "expected": "Step 1\nStep 2\nStep 3",
+    "ts": "2026-06-08T06:46:35.268729",
+    "lupus": {
+      "status": "pass",
+      "code": "(print \"Step 1\")\n(print \"Step 2\")\n(print \"Step 3\")",
+      "output": "Step 1\nStep 2\nStep 3",
+      "ms": 2475
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(\"Step 1\")\nprint(\"Step 2\")\nprint(\"Step 3\")",
+      "output": "Step 1\nStep 2\nStep 3",
+      "ms": 1384
+    }
+  },
+  "75": {
+    "id": 75,
+    "cat": "strings",
+    "name": "FizzBuzz 1..10 упрощ.",
+    "expected": "1\n2\nFizz\n4\n5\nFizz\n7\n8\nFizz\n10",
+    "ts": "2026-06-08T06:46:39.139134",
+    "lupus": {
+      "status": "error",
+      "code": "(print (string-append \"Number: \") (int->str 1))\n(print (string-append \"Fizz\"))\n(print (string-append \"Number: \") (int->str 2))\n(print (string-append \"Number: \") (int->str 3))\n(print (string-append \"Fizz\"))\n(print (string-append \"Number: \") (int->str 4))\n(print (string-append \"Number: \") (int->str 5))\n(print (string-append \"Number: \") (int->str 6))\n(print (string-append \"Fizz\"))\n(print (string-append \"Number: \") (int->str 7))\n(print (string-append \"Number: \") (int->str 8))\n(print (string-append \"Number: \") (int->str 9))\n(print (string-append \"Fizz\"))\n(print (string-append \"Number: \") (int->str 10))",
+      "output": "Ошибка выполнения: (print ...) требует ровно 1 аргумент",
+      "ms": 8077
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print(1)\nprint(2)\nprint(3, \"Fizz\")\nprint(4)\nprint(5)\nprint(6, \"Fizz\")\nprint(7)\nprint(8)\nprint(9, \"Fizz\")\nprint(10)",
+      "output": "1\n2\n3 Fizz\n4\n5\n6 Fizz\n7\n8\n9 Fizz\n10",
+      "ms": 2853
+    }
+  },
+  "76": {
+    "id": 76,
+    "cat": "combined",
+    "name": "Простое число 7",
+    "expected": "prime",
+    "ts": "2026-06-08T06:46:50.080389",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (if (= 7 0) \"not prime\" \"prime\"))",
+      "output": "prime",
+      "ms": 2468
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print(7 % 2 == 0 and 7 > 1)",
+      "output": "False",
+      "ms": 1265
+    }
+  },
+  "77": {
+    "id": 77,
+    "cat": "combined",
+    "name": "Простое число 9",
+    "expected": "not prime",
+    "ts": "2026-06-08T06:46:53.825824",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (if (= 9 1) \"prime\" \"not prime\"))",
+      "output": "not prime",
+      "ms": 2535
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print(9 % 2 == 0) and (9 ** 0.5 > int(9**0.5))",
+      "output": "False",
+      "ms": 1754
+    }
+  },
+  "78": {
+    "id": 78,
+    "cat": "combined",
+    "name": "Акерман(2,3)",
+    "expected": "9",
+    "ts": "2026-06-08T06:46:58.125811",
+    "lupus": {
+      "status": "error",
+      "code": "(print (int->str (Ackermann 2 3)))",
+      "output": "Ошибка выполнения: Переменная не определена: Ackermann",
+      "ms": 2506
+    },
+    "python": {
+      "status": "error",
+      "code": "print(Ackermann(2, 3))",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 1, in <module>\n    pr",
+      "ms": 1100
+    }
+  },
+  "79": {
+    "id": 79,
+    "cat": "combined",
+    "name": "Коллатц шаги для 6",
+    "expected": "8",
+    "ts": "2026-06-08T06:47:01.741753",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print \"steps\")\n(define-mutable n 6)\n(while (> n 1)\n  (set! n (/ n 2))\n  (if (= n 3)\n    (set! n (* n 3))\n    (print (int->str n))))",
+      "output": "steps\n4\n2\n1",
+      "ms": 4341
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(8)",
+      "output": "8",
+      "ms": 947
+    }
+  },
+  "80": {
+    "id": 80,
+    "cat": "combined",
+    "name": "Замыкание счётчик",
+    "expected": "1\n2\n3",
+    "ts": "2026-06-08T06:47:07.036488",
+    "lupus": {
+      "status": "error",
+      "code": "(define (make-counter)\n  (define-mutable n 0)\n  (lambda ()\n    (set! n (+ n 1))\n    n))\n\n(define c (make-counter))\n\n(print (int->str (c)))\n(print (int->str (c)))\n(print (int->str (c)))",
+      "output": "Ошибка выполнения: Переменная не определена: lambda",
+      "ms": 4074
+    },
+    "python": {
+      "status": "pass",
+      "code": "def create_counter():\n    count = 0\n    def increment():\n        nonlocal count\n        count += 1\n        return count\n    return increment\n\ncounter = create_counter()\nprint(counter())\nprint(counter())\nprint(counter())",
+      "output": "1\n2\n3",
+      "ms": 2592
+    }
+  },
+  "81": {
+    "id": 81,
+    "cat": "combined",
+    "name": "Лямбда + вызов",
+    "expected": "42",
+    "ts": "2026-06-08T06:47:13.708746",
+    "lupus": {
+      "status": "error",
+      "code": "(lambda (x) (* x x)) 42",
+      "output": "Ошибка выполнения: Переменная не определена: lambda",
+      "ms": 2206
+    },
+    "python": {
+      "status": "error",
+      "code": "print(lambda x: x * 2)(21)",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 1, in <module>\n    pr",
+      "ms": 1206
+    }
+  },
+  "82": {
+    "id": 82,
+    "cat": "combined",
+    "name": "Высш. порядок: map",
+    "expected": "2\n4\n6\n8\n10",
+    "ts": "2026-06-08T06:47:17.127053",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (+ (* 1 2) 0)))\n(print (int->str (+ (* 2 2) 0)))\n(print (int->str (+ (* 3 2) 0)))\n(print (int->str (+ (* 4 2) 0)))\n(print (int->str (+ (* 5 2) 0)))",
+      "output": "2\n4\n6\n8\n10",
+      "ms": 4403
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(2)\nprint(4)\nprint(6)\nprint(8)\nprint(10)",
+      "output": "2\n4\n6\n8\n10",
+      "ms": 1559
+    }
+  },
+  "83": {
+    "id": 83,
+    "cat": "combined",
+    "name": "Высш. порядок: filter",
+    "expected": "3\n6\n9",
+    "ts": "2026-06-08T06:47:23.100760",
+    "lupus": {
+      "status": "wrong",
+      "code": "(print (int->str (nth (list 1 2 3 4 5 6 7 8 9 10) 0)))\n(print (int->str (nth (list 1 2 3 4 5 6 7 8 9 10) 3)))\n(print (int->str (nth (list 1 2 3 4 5 6 7 8 9 10) 6)))\n(print (int->str (nth (list 1 2 3 4 5 6 7 8 9 10) 9)))",
+      "output": "1\n4\n7\n10",
+      "ms": 6255
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(3)\nprint(6)\nprint(9)",
+      "output": "3\n6\n9",
+      "ms": 1263
+    }
+  },
+  "84": {
+    "id": 84,
+    "cat": "combined",
+    "name": "Накопление fold",
+    "expected": "15",
+    "ts": "2026-06-08T06:47:30.631593",
+    "lupus": {
+      "status": "pass",
+      "code": "(define-mutable sum 0)\n(define-mutable i 1)\n(while (< i 6)\n  (set! sum (+ sum i))\n  (set! i (+ i 1)))\n(print (int->str sum))",
+      "output": "15",
+      "ms": 3744
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(sum([1, 2, 3, 4, 5]))",
+      "output": "15",
+      "ms": 1295
+    }
+  },
+  "85": {
+    "id": 85,
+    "cat": "combined",
+    "name": "Взаимная рекурсия",
+    "expected": "even",
+    "ts": "2026-06-08T06:47:35.682359",
+    "lupus": {
+      "status": "error",
+      "code": "(define (is-even n)\n  (if (= n 0)\n    \"even\"\n    (define-mutable temp 1)\n    (while (< n 0)\n      (set! n (- n 2))\n      (print (int->str temp))))\n\n(define (is-odd n)\n  (if (= n 0)\n    \"odd\"\n    (define-mutable temp 1)\n    (while (< n 0)\n      (set! n (- n 2))\n      (print (int->str temp))))",
+      "output": "Ошибка парсера: Неожиданный конец файла: ожидалась закрывающая скобка",
+      "ms": 6101
+    },
+    "python": {
+      "status": "wrong",
+      "code": "def is_even(n):\n    if n == 0:\n        return True\n    else:\n        return is_odd(n - 1)\n\ndef is_odd(n):\n    if n == 0:\n        return False\n    else:\n        return is_even(n - 1)\n\nprint(is_even(4))",
+      "output": "True",
+      "ms": 2981
+    }
+  },
+  "86": {
+    "id": 86,
+    "cat": "combined",
+    "name": "Отсчёт + строка",
+    "expected": "T-3\nT-2\nT-1\nLaunch!",
+    "ts": "2026-06-08T06:47:44.773044",
+    "lupus": {
+      "status": "pass",
+      "code": "(print \"T-3\")\n(print \"T-2\")\n(print \"T-1\")\n(print \"Launch!\")",
+      "output": "T-3\nT-2\nT-1\nLaunch!",
+      "ms": 2749
+    },
+    "python": {
+      "status": "pass",
+      "code": "print('T-3')\nprint('T-2')\nprint('T-1')\nprint('Launch!')",
+      "output": "T-3\nT-2\nT-1\nLaunch!",
+      "ms": 1639
+    }
+  },
+  "87": {
+    "id": 87,
+    "cat": "combined",
+    "name": "Мемоизация",
+    "expected": "55",
+    "ts": "2026-06-08T06:47:49.173288",
+    "lupus": {
+      "status": "error",
+      "code": "(define-mutable fib 0)\n(define (fib n)\n  (if (= n 0)\n    1\n    (+ (fib (- n 1)) (fib (- n 2)))))\n(print (int->str (fib 10)))",
+      "output": "",
+      "ms": 4630
+    },
+    "python": {
+      "status": "error",
+      "code": "def fib(n):\n    cache = {}\n    def helper(k):\n        if k in cache:\n            return cache[k]\n        if k == 0 or k == 1:\n            cache[k] = k\n        else:\n            cache[k] = helper(k - 1) + helper(k - 2)\n        return cache[k]\n    print(helper(10))\n\nfib()",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 13, in <module>\n    f",
+      "ms": 4022
+    }
+  },
+  "88": {
+    "id": 88,
+    "cat": "combined",
+    "name": "Числа делятся на 5",
+    "expected": "5\n10\n15\n20\n25\n30\n35\n40\n45\n50",
+    "ts": "2026-06-08T06:47:57.834748",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str 5))\n(print (int->str 10))\n(print (int->str 15))\n(print (int->str 20))\n(print (int->str 25))\n(print (int->str 30))\n(print (int->str 35))\n(print (int->str 40))\n(print (int->str 45))\n(print (int->str 50))",
+      "output": "5\n10\n15\n20\n25\n30\n35\n40\n45\n50",
+      "ms": 5058
+    },
+    "python": {
+      "status": "pass",
+      "code": "for i in range(5, 51):\n    if i % 5 == 0:\n        print(i)",
+      "output": "5\n10\n15\n20\n25\n30\n35\n40\n45\n50",
+      "ms": 1685
+    }
+  },
+  "89": {
+    "id": 89,
+    "cat": "combined",
+    "name": "Сумма факториалов",
+    "expected": "33",
+    "ts": "2026-06-08T06:48:04.585280",
+    "lupus": {
+      "status": "error",
+      "code": "(define (factorial n)\n  (if (= n 0)\n    1\n    (* n (factorial (- n 1)))))\n\n(print (+ (factorial 1) (factorial 2) (factorial 3) (factorial 4)))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 3907
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(1 + 2 + 6 + 24)",
+      "output": "33",
+      "ms": 1154
+    }
+  },
+  "90": {
+    "id": 90,
+    "cat": "combined",
+    "name": "Числа Люка",
+    "expected": "29",
+    "ts": "2026-06-08T06:48:09.654285",
+    "lupus": {
+      "status": "error",
+      "code": "(define (compute-l n)\n  (if (= n 0)\n    2\n    (+ (compute-l (- n 1)) (compute-l (- n 2)))))\n\n(print (int->str (compute-l 7)))",
+      "output": "",
+      "ms": 4202
+    },
+    "python": {
+      "status": "wrong",
+      "code": "34",
+      "output": "",
+      "ms": 918
+    }
+  },
+  "91": {
+    "id": 91,
+    "cat": "combined",
+    "name": "Биномиальный коэф.",
+    "expected": "10",
+    "ts": "2026-06-08T06:48:14.781012",
+    "lupus": {
+      "status": "error",
+      "code": "(define (pascal n k)\n  (if (= k 0)\n    1\n    (+ (pascal (- n 1) k)\n       (pascal (- n 1) (- k 1)))))\n\n(print (int->str (pascal 5 2)))",
+      "output": "",
+      "ms": 4925
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print(\"C(5,2) =\", 10)",
+      "output": "C(5,2) = 10",
+      "ms": 1294
+    }
+  },
+  "92": {
+    "id": 92,
+    "cat": "combined",
+    "name": "Кол-во цифр",
+    "expected": "5",
+    "ts": "2026-06-08T06:48:21.011924",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str (+ 0 (length (list 1 2 3 4 5)))))",
+      "output": "5",
+      "ms": 2909
+    },
+    "python": {
+      "status": "pass",
+      "code": "count = 0\nfor digit in str(12345):\n    if digit != '0':\n        count += 1\nprint(count)",
+      "output": "5",
+      "ms": 2122
+    }
+  },
+  "93": {
+    "id": 93,
+    "cat": "combined",
+    "name": "Палиндром 121",
+    "expected": "yes",
+    "ts": "2026-06-08T06:48:26.055790",
+    "lupus": {
+      "status": "error",
+      "code": "(print (if (= (+ (- 121 (- 121)) 0) \"yes\") \"no\"))",
+      "output": "Ошибка выполнения: (if ...) требует ровно 3 аргумента",
+      "ms": 3060
+    },
+    "python": {
+      "status": "wrong",
+      "code": "print(\"yes\" if int(str(121)) == str(int(str(121))) else \"no\")",
+      "output": "no",
+      "ms": 1927
+    }
+  },
+  "94": {
+    "id": 94,
+    "cat": "combined",
+    "name": "Не палиндром 123",
+    "expected": "no",
+    "ts": "2026-06-08T06:48:31.055018",
+    "lupus": {
+      "status": "error",
+      "code": "(print (if (= (length (int->str 123)) (* 2 (length (int->str 1)))) \"yes\" \"no\"))",
+      "output": "Ошибка выполнения: length требует списка",
+      "ms": 3291
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(\"yes\" if int(str(123)[::-1]) == 123 else \"no\")",
+      "output": "no",
+      "ms": 1774
+    }
+  },
+  "95": {
+    "id": 95,
+    "cat": "combined",
+    "name": "Минимум 3 чисел",
+    "expected": "3",
+    "ts": "2026-06-08T06:48:36.133880",
+    "lupus": {
+      "status": "error",
+      "code": "(print (int->str (+ (- 17) (* 3 42)))))",
+      "output": "Ошибка парсера на строке 1, колонке 39: Неожиданный токен: RPAREN",
+      "ms": 2851
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(min(17, 3, 42))",
+      "output": "3",
+      "ms": 1203
+    }
+  },
+  "96": {
+    "id": 96,
+    "cat": "combined",
+    "name": "Среднее списка",
+    "expected": "25",
+    "ts": "2026-06-08T06:48:40.195056",
+    "lupus": {
+      "status": "error",
+      "code": "(print (/ (+ 10 20 30 40) 4))",
+      "output": "Ошибка выполнения: print требует строкового аргумента",
+      "ms": 2636
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(sum([10, 20, 30, 40]) // len([10, 20, 30, 40]))",
+      "output": "25",
+      "ms": 2071
+    }
+  },
+  "97": {
+    "id": 97,
+    "cat": "combined",
+    "name": "N-й треугольный",
+    "expected": "28",
+    "ts": "2026-06-08T06:48:44.908305",
+    "lupus": {
+      "status": "error",
+      "code": "(print (int->str (+ (+ (+ (+ (+ (+ (+ 1 2) 3) 4) 5) 6) 7)))",
+      "output": "Ошибка парсера: Неожиданный конец файла: ожидалась закрывающая скобка",
+      "ms": 3320
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(28)",
+      "output": "28",
+      "ms": 921
+    }
+  },
+  "98": {
+    "id": 98,
+    "cat": "combined",
+    "name": "Сумма простых до 20",
+    "expected": "77",
+    "ts": "2026-06-08T06:48:49.158472",
+    "lupus": {
+      "status": "error",
+      "code": "(print (+ (sum-list (list 2 3 5 7 11 13 17 19) 0 0)))",
+      "output": "Ошибка выполнения: Переменная не определена: sum-list",
+      "ms": 3112
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(77)",
+      "output": "77",
+      "ms": 1034
+    }
+  },
+  "99": {
+    "id": 99,
+    "cat": "combined",
+    "name": "Инверсия числа",
+    "expected": "54321",
+    "ts": "2026-06-08T06:48:53.318669",
+    "lupus": {
+      "status": "error",
+      "code": "(print (- 5 (* 10000 (/ 12345 10000) % 10))\n(print (- 4 (* 1000 (/ 12345 1000) % 10))\n(print (- 3 (* 100 (/ 12345 100) % 10))\n(print (- 2 (* 10 (/ 12345 10) % 10))\n(print (- 1 (* 1 (% 12345 10))))",
+      "output": "Ошибка парсера: Неожиданный конец файла: ожидалась закрывающая скобка",
+      "ms": 6250
+    },
+    "python": {
+      "status": "pass",
+      "code": "print(54321)",
+      "output": "54321",
+      "ms": 983
+    }
+  },
+  "100": {
+    "id": 100,
+    "cat": "combined",
+    "name": "Числа Падована",
+    "expected": "5",
+    "ts": "2026-06-08T06:49:00.559731",
+    "lupus": {
+      "status": "pass",
+      "code": "(print (int->str 5))",
+      "output": "5",
+      "ms": 2335
+    },
+    "python": {
+      "status": "error",
+      "code": "print(P(9))",
+      "output": "Traceback (most recent call last):\n  File \"C:\\Users\\foxya\\AppData\\Local\\Temp\\_python_exp.py\", line 1, in <module>\n    pr",
+      "ms": 1029
+    }
+  }
+}

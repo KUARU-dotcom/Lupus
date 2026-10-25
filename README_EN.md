@@ -108,13 +108,12 @@ per-task answers and statuses.
 
 | Model | Result | Data |
 |-------|--------|------|
-| `merged-lupus-2bv2` | 81/100 | [`results/merged-lupus-2bv2.json`](./results/merged-lupus-2bv2.json) |
-| Qwen3.5 2B (base) | run not stored | [`results/`](./results/) |
-| Qwen3.5 4B (base) | run not stored | [`results/`](./results/) |
-| Qwen3.5 9B (base) | run not stored | [`results/`](./results/) |
-| Qwen3.8 4B (base) | run not stored | [`results/`](./results/) |
+| `merged-lupus-2bv2` | 81/100 | [`results/results_merged-lupus-2bv2_v051.json`](./results/results_merged-lupus-2bv2_v051.json) |
+| Qwen3.5 2B (base) | 35/100 | [`results/results_Qwen3.5_2B_base_v051.json`](./results/results_Qwen3.5_2B_base_v051.json) |
+| Qwen2.5-Coder 14B (base) | run not stored in the repository; to reproduce, run `run_experiment.py` | [`results/`](./results/) |
 
-Reproduce: `python3 run_experiment.py --model merged-lupus-2bv2`. To validate the
+The V0.5.1 baseline is `merged-lupus-2bv2` (81/100). Reproduce:
+`python3 run_experiment.py --model merged-lupus-2bv2`. To validate the
 interpreter itself on the same 100 tasks:
 `python3 validate_tasks.py` — `PASSED: 100/100`.
 

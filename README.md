@@ -109,15 +109,14 @@ JSON-файл с ответами и статусами по задачам.
 
 | Модель | Результат | Данные |
 |--------|-----------|--------|
-| `merged-lupus-2bv2` | 81/100 | [`results/merged-lupus-2bv2.json`](./results/merged-lupus-2bv2.json) |
-| Qwen3.5 2B (базовая) | прогон не сохранён | [`results/`](./results/) |
-| Qwen3.5 4B (базовая) | прогон не сохранён | [`results/`](./results/) |
-| Qwen3.5 9B (базовая) | прогон не сохранён | [`results/`](./results/) |
-| Qwen3.8 4B (базовая) | прогон не сохранён | [`results/`](./results/) |
+| `merged-lupus-2bv2` | 81/100 | [`results/results_merged-lupus-2bv2_v051.json`](./results/results_merged-lupus-2bv2_v051.json) |
+| Qwen3.5 2B (базовая) | 35/100 | [`results/results_Qwen3.5_2B_base_v051.json`](./results/results_Qwen3.5_2B_base_v051.json) |
+| Qwen2.5-Coder 14B (базовая) | прогон не сохранён в репозитории; для воспроизведения запустите `run_experiment.py` | [`results/`](./results/) |
 
-Воспроизведение: `python3 run_experiment.py --model merged-lupus-2bv2`. Для
-проверки самого интерпретатора на тех же 100 задачах:
-`python3 validate_tasks.py` — `PASSED: 100/100`.
+Базовая линия V0.5.1 — `merged-lupus-2bv2` (81/100). Воспроизведение:
+`python3 run_experiment.py --model merged-lupus-2bv2`. Для проверки самого
+интерпретатора на тех же 100 задачах: `python3 validate_tasks.py` —
+`PASSED: 100/100`.
 
 ## Сборка
 
