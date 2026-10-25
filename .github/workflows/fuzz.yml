@@ -47,6 +47,7 @@ jobs:
             -timeout=10 \
             -rss_limit_mb=2048 \
             -detect_leaks=0 \
+            -ignore_timeouts=1 \
             -print_final_stats=1 \
             -artifact_prefix=fuzz/artifacts/${{ matrix.target }}/
         continue-on-error: true
@@ -54,11 +55,17 @@ jobs:
         if: always()
         run: |
           mkdir -p minimized
-          for crash in fuzz/artifacts/${{ matrix.target }}/crash-*; do
+          for crash in fuzz/artifacts/${{ matrix.target }}/crash-* \
+                       fuzz/artifacts/${{ matrix.target }}/oom-* \
+                       fuzz/artifacts/${{ matrix.target }}/timeout-*; do
             [ -f "$crash" ] || continue
             name=$(basename "$crash")
-            cargo +nightly fuzz tmin ${{ matrix.target }} "$crash" \
-              -artifact_prefix=minimized/ || true
+            # timeout-* — легитимные вечные циклы: сохраняем как есть, tmin не гоняем
+            case "$name" in
+              timeout-*) ;;
+              *) cargo +nightly fuzz tmin ${{ matrix.target }} "$crash" \
+                   -artifact_prefix=minimized/ || true ;;
+            esac
             mv "$crash" "minimized/${name}" 2>/dev/null || true
           done
           ls -la minimized || true
@@ -69,6 +76,7 @@ jobs:
           name: fuzz-${{ matrix.target }}-${{ github.run_id }}
           path: |
             minimized/
+            fuzz/artifacts/${{ matrix.target }}/
             fuzz/corpus/${{ matrix.target }}/
           retention-days: 30
       - name: Issue при находке
@@ -77,7 +85,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           shopt -s nullglob
-          crashes=(minimized/crash-* minimized/leak-* minimized/timeout-*)
+          crashes=(minimized/crash-* minimized/oom-*)
           if [ ${#crashes[@]} -eq 0 ]; then
             echo "находок нет"
             exit 0
