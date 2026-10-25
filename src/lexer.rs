@@ -402,6 +402,17 @@ impl<'a> Lexer<'a> {
             }
         }
 
+        // Буквенный хвост числа (`1a`, `2_`, `1.5e3x`) — не отдельный
+        // идентификатор, а лексическая ошибка с позицией (BUG-48).
+        if let Some(ch) = self.peek_char() {
+            if is_identifier_start(ch) {
+                return Err(self.error(
+                    "unknown-token",
+                    &format!("Неизвестный токен после числа: '{}'", ch),
+                ));
+            }
+        }
+
         if is_float {
             value
                 .parse::<f64>()

@@ -122,6 +122,7 @@
 "invalid-escape" = { positive = ["v05_utf8_escape"], negative = ["invalid_escape"] }
 "col-in-characters" = { positive = ["v05_cyrillic_strings"], negative = ["cyrillic_col"] }
 "combining-marks" = { positive = ["v052_combining_marks"], negative = ["v052_combining_mark_start"] }
+"number-token-boundary" = { positive = ["v052_numeric_tokens"], negative = ["v052_number_letter_tail", "v052_number_space_tail"] }
 
 # --- V0.5.1: CLI-коды (проверяются Rust-тестами tests/cli.rs) ---
 [cli_codes]

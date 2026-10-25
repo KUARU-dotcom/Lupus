@@ -171,6 +171,22 @@ fn lex_error_has_file_line_and_col() {
 }
 
 #[test]
+fn number_letter_tail_is_unknown_token_with_position() {
+    let path = temp_file("numtail", "(print 1a)");
+    let result = run_file(&path, &[]);
+    assert_eq!(result.code, 1);
+    assert!(result.stdout.is_empty(), "stdout: {}", result.stdout);
+    assert_eq!(field(&result.stderr, "phase").as_deref(), Some("lex"));
+    assert_eq!(
+        field(&result.stderr, "code").as_deref(),
+        Some("unknown-token")
+    );
+    assert!(result.stderr.contains("\"line\":1"), "{}", result.stderr);
+    // 'a' — 9-й символ: позиция сразу после числового токена `1`.
+    assert!(result.stderr.contains("\"col\":9"), "{}", result.stderr);
+}
+
+#[test]
 fn lex_error_col_counts_characters_not_bytes() {
     // Символ '@' — 18-я позиция в символах, но 24-й байт из-за кириллицы.
     let path = temp_file("col", "(print \"привет\") @");
