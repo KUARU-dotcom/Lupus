@@ -158,6 +158,39 @@ impl Environment {
         }))
     }
 
+    /// Родительское окружение (для снимка окружения в `amiya/spawn`).
+    pub(crate) fn parent(env: &Rc<RefCell<Environment>>) -> Option<Rc<RefCell<Environment>>> {
+        env.borrow().parent.clone()
+    }
+
+    /// Устанавливает родителя у ещё не зарегистрированного окружения.
+    ///
+    /// Используется только при демаршалинге: сначала создаётся placeholder,
+    /// затем восстанавливается цепочка родителей и связи.
+    pub(crate) fn set_parent_unregistered(
+        env: &Rc<RefCell<Environment>>,
+        parent: Option<Rc<RefCell<Environment>>>,
+    ) {
+        env.borrow_mut().parent = parent;
+    }
+
+    /// Возвращает связи текущего окружения для снимка в фоновую задачу.
+    pub(crate) fn snapshot_entries(
+        env: &Rc<RefCell<Environment>>,
+    ) -> Result<Vec<(String, Value, bool)>, Error> {
+        let this = env.borrow();
+        this.bindings
+            .iter()
+            .map(|(name, (stored, mutable))| Ok((name.clone(), stored.to_value()?, *mutable)))
+            .collect()
+    }
+
+    /// Локальные (не унаследованные) настройки `lappland`.
+    pub(crate) fn net_settings(env: &Rc<RefCell<Environment>>) -> (Option<f64>, Option<f64>) {
+        let this = env.borrow();
+        (this.net_malice, this.net_delay)
+    }
+
     /// Очищает окружение в sweep-фазе и возвращает (объекты, байты).
     ///
     /// Удаление `bindings` и `parent` разрывает сильные циклы, после чего

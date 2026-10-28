@@ -1,12 +1,14 @@
 //! Нативная стандартная библиотека V0.6: пакеты `senko`, `kaltsit`, `w`,
-//! `texas` (сеть) и `lappland` (инъекция сетевых отказов).
+//! `texas` (сеть), `lappland` (инъекция сетевых отказов) и `amiya`
+//! (асинхронность).
 //!
 //! Все функции реализованы средствами `std` (внешних зависимостей нет):
 //! `senko` — математика на `f64`, `kaltsit` — файловые операции через
 //! `std::fs`, `w` — утверждения тестовой системы, `texas` — TCP/UDP через
-//! `std::net`, `lappland` — управляемые отказы/задержки net-вызовов.
+//! `std::net`, `lappland` — управляемые отказы/задержки net-вызовов,
+//! `amiya` — потоки и каналы через `std::thread`/`std::sync::mpsc`.
 
-use crate::builtins::{lappland, texas};
+use crate::builtins::{amiya, lappland, texas};
 use crate::environment::Environment;
 use crate::error::Error;
 use crate::interpreter::Interpreter;
@@ -15,7 +17,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 /// Нативные пакеты, доступные в V0.6.
-pub const PACKAGES: &[&str] = &["senko", "kaltsit", "w", "texas", "lappland"];
+pub const PACKAGES: &[&str] = &["senko", "kaltsit", "w", "texas", "lappland", "amiya"];
 
 /// Проверяет, является ли имя нативным пакетом.
 pub fn is_native(package: &str) -> bool {
@@ -43,6 +45,7 @@ pub fn names(package: &str) -> &'static [&'static str] {
         "w" => &["assert-eq", "assert-true", "assert-false", "run", "run-all"],
         "texas" => texas::names(),
         "lappland" => lappland::names(),
+        "amiya" => amiya::names(),
         _ => &[],
     }
 }
@@ -87,6 +90,7 @@ fn function_arity(package: &str, name: &str) -> Arity {
         ("w", "assert-true" | "assert-false" | "run") => Arity::Exact(1),
         ("texas", name) => texas::arity(name).unwrap_or(Arity::Exact(1)),
         ("lappland", name) => lappland::arity(name).unwrap_or(Arity::Exact(1)),
+        ("amiya", name) => amiya::arity(name).unwrap_or(Arity::Exact(1)),
         _ => Arity::Exact(1),
     }
 }
@@ -135,6 +139,7 @@ pub fn call(
         "w" => call_w(interpreter, symbol, args),
         "texas" => texas::call(interpreter, env, symbol, args),
         "lappland" => lappland::call(interpreter, env, symbol, args),
+        "amiya" => amiya::call(interpreter, env, symbol, args),
         other => Err(Error::runtime(
             "unknown-module-symbol",
             format!("Неизвестный нативный пакет: {}", other),

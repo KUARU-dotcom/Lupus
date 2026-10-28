@@ -1,0 +1,4 @@
+(import (texas net) :as net)
+(import (amiya async) :as async)
+(define listener (match (net/tcp-listen 0) ((success value) value) ((failure message) (exit 1))))
+(async/send (async/channel) listener)

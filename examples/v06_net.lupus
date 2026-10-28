@@ -1,0 +1,45 @@
+;; V0.6 этап E: TCP echo.
+;; Сервер живёт в фоновой задаче, клиент — в главном потоке.
+;; Порт 47711 — значение по умолчанию; LUPUS_EXAMPLE_PORT используется
+;; интеграционным прогоном examples/v06_net.lupus.
+(import (texas net) :as net)
+(import (amiya async) :as async)
+
+(define ready (async/channel))
+
+(define server
+  (async/spawn
+    (lambda ()
+      (define listener
+        (match (net/tcp-listen 47711)
+          ((success value) value)
+          ((failure message) (print message) (exit 1))))
+      (async/send ready none)
+      (define peer
+        (match (net/accept listener)
+          ((success value) value)
+          ((failure message) (print message) (exit 1))))
+      (define request
+        (match (net/recv peer 1024)
+          ((success value) value)
+          ((failure message) (print message) (exit 1))))
+      (net/send peer request)
+      (net/close peer)
+      (net/close listener))))
+
+(async/recv ready)
+
+(define client
+  (match (net/tcp-connect "127.0.0.1" 47711)
+    ((success value) value)
+    ((failure message) (print message) (exit 1))))
+
+(print (match (net/send client "ping")
+  ((success sent) sent)
+  ((failure message) (print message) (exit 1))))
+(print (match (net/recv client 64)
+  ((success value) value)
+  ((failure message) (print message) (exit 1))))
+
+(net/close client)
+(async/wait server)

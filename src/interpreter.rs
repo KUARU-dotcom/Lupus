@@ -6,13 +6,15 @@
 
 use crate::ast::{Expr, ExprKind};
 use crate::builtins;
+use crate::builtins::amiya::TaskHandle;
 use crate::environment::Environment;
 use crate::error::Error;
 use crate::gc;
 use crate::lexer::{Token, TokenKind};
+use crate::marshal::{Marshaler, SendImport, SendValue, Unmarshaler};
 use crate::modules;
 use crate::native;
-use crate::value::{is_truthy, Arity, BuiltinImpl, Closure, NativeImpl, Value};
+use crate::value::{is_truthy, value_to_string, Arity, BuiltinImpl, Closure, NativeImpl, Value};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -202,6 +204,18 @@ enum ImportedModule {
     File(Rc<ModuleExports>),
 }
 
+/// Всё, что переносится в поток задачи `amiya/spawn`.
+///
+/// Снимок строится синхронно в момент `spawn`; после этого фоновый поток не
+/// видит последующих изменений исходного окружения.
+struct TaskSnapshot {
+    closure: SendValue,
+    imports: Vec<(String, SendImport)>,
+    structs: HashMap<String, StructDef>,
+    program_dir: Option<PathBuf>,
+    suppress_print: bool,
+}
+
 /// Интерпретатор с глобальным окружением.
 pub struct Interpreter {
     /// Глобальное окружение — точка отсчёта для поиска переменных.
@@ -290,6 +304,128 @@ impl Interpreter {
     /// Задаёт каталог текущей программы (для поиска модулей рядом с файлом).
     pub fn set_program_dir(&mut self, dir: PathBuf) {
         *self.program_dir.borrow_mut() = Some(dir);
+    }
+
+    /// Запускает замыкание в фоновом потоке и возвращает opaque `Task`.
+    ///
+    /// Снимок захваченного окружения, импортов и структур строится здесь,
+    /// до возврата из `spawn`. `Task`, `Socket` и `Listener` в снимок не
+    /// попадают; их явная передача в канал или возврат из задачи даёт
+    /// `type-mismatch` в [`crate::marshal`].
+    pub(crate) fn spawn_task(&self, closure: &Closure) -> Result<Value, Error> {
+        if !closure.params.is_empty() {
+            return Err(Error::type_mismatch(
+                "amiya/spawn: задача должна быть функцией без параметров",
+            ));
+        }
+
+        let mut marshaler = Marshaler::new();
+        let closure = marshaler.to_send(&Value::Closure(closure.clone()))?;
+        let imports = self.snapshot_imports(&mut marshaler)?;
+        let structs = self.structs.borrow().clone();
+        let program_dir = self.program_dir.borrow().clone();
+        let suppress_print = self.suppress_print.get();
+
+        let snapshot = TaskSnapshot {
+            closure,
+            imports,
+            structs,
+            program_dir,
+            suppress_print,
+        };
+
+        let join = std::thread::Builder::new()
+            .name("lupus-amiya".to_string())
+            .spawn(move || Interpreter::run_task_snapshot(snapshot))
+            .map_err(|error| {
+                Error::runtime(
+                    "async-spawn-failed",
+                    format!("amiya/spawn: не удалось создать поток: {}", error),
+                )
+            })?;
+
+        Ok(Value::Task(Rc::new(TaskHandle::new(join))))
+    }
+
+    /// Снимок таблицы импортов для фоновой задачи.
+    fn snapshot_imports(
+        &self,
+        marshaler: &mut Marshaler,
+    ) -> Result<Vec<(String, SendImport)>, Error> {
+        let imports = self.imports.borrow();
+        let mut result = Vec::with_capacity(imports.len());
+        for (prefix, module) in imports.iter() {
+            let send_module = match module {
+                ImportedModule::Native { package } => SendImport::Native {
+                    package: package.clone(),
+                },
+                ImportedModule::File(exports) => {
+                    let mut entries = Vec::with_capacity(exports.len());
+                    for (name, value) in exports.iter() {
+                        if !crate::marshal::is_marshalable(value) {
+                            continue;
+                        }
+                        entries.push((name.clone(), marshaler.to_send(value)?));
+                    }
+                    SendImport::File(entries)
+                }
+            };
+            result.push((prefix.clone(), send_module));
+        }
+        Ok(result)
+    }
+
+    /// Точка входа фонового потока.
+    fn run_task_snapshot(snapshot: TaskSnapshot) -> Result<(), Error> {
+        let TaskSnapshot {
+            closure: closure_send,
+            imports: imports_send,
+            structs,
+            program_dir,
+            suppress_print,
+        } = snapshot;
+
+        let mut unmarshaler = Unmarshaler::new();
+        let closure = unmarshaler.to_value(&closure_send)?;
+        let Value::Closure(closure) = closure else {
+            return Err(Error::type_mismatch(
+                "amiya/spawn: снимок не содержит функцию",
+            ));
+        };
+
+        let mut imports = HashMap::with_capacity(imports_send.len());
+        for (prefix, module) in imports_send {
+            let module = match module {
+                SendImport::Native { package } => ImportedModule::Native { package },
+                SendImport::File(entries) => {
+                    let mut exports = HashMap::with_capacity(entries.len());
+                    for (name, value) in entries {
+                        exports.insert(name, unmarshaler.to_value(&value)?);
+                    }
+                    ImportedModule::File(Rc::new(exports))
+                }
+            };
+            imports.insert(prefix, module);
+        }
+
+        let mut interpreter = Interpreter::new();
+        interpreter.global = closure.env.clone();
+        *interpreter.imports.borrow_mut() = imports;
+        *interpreter.structs.borrow_mut() = structs;
+        *interpreter.program_dir.borrow_mut() = program_dir;
+        interpreter.set_suppress_print(suppress_print);
+
+        // Снимок больше не нужен; рвём Arc-циклы замыканий.
+        unmarshaler.break_cycles();
+
+        let result = interpreter.call_closure_with_values(&closure, Vec::new())?;
+        if !matches!(result, Value::None) {
+            return Err(Error::type_mismatch(format!(
+                "amiya/spawn: задача должна возвращать unit, получено {}",
+                value_to_string(&result)
+            )));
+        }
+        Ok(())
     }
 
     /// Возвращает копию shared-ссылки на глобальное окружение.

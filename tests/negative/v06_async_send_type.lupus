@@ -1,0 +1,2 @@
+(import (amiya async) :as async)
+(async/send 1 2)

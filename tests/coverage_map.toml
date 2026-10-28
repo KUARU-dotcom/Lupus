@@ -145,6 +145,17 @@
 "lappland/malice" = { positive = ["v06_net"], negative = ["v06_malice_range"] }
 "lappland/delay" = { positive = ["v06_net"], negative = ["v06_delay_range"] }
 
+# --- V0.6 этап E: amiya (async), маршалинг и каналы ---
+"amiya/spawn" = { positive = ["v06_async"], negative = ["v06_async_spawn_type", "v06_async_task_return"] }
+"amiya/sleep" = { positive = ["v06_async"], negative = ["v06_async_sleep_type"] }
+"amiya/channel" = { positive = ["v06_async"], negative = ["v06_async_send_type"] }
+"amiya/send" = { positive = ["v06_async"], negative = ["v06_async_send_type", "v06_async_marshal"] }
+"amiya/recv" = { positive = ["v06_async"], negative = ["v06_async_send_type"] }
+"amiya/recv-timeout" = { positive = ["v06_async"], negative = ["v06_async_recv_timeout_type"] }
+"amiya/wait" = { positive = ["v06_async"], negative = ["v06_async_wait_type"] }
+"amiya/wait-all" = { positive = ["v06_async"], negative = ["v06_async_wait_type"] }
+"amiya/marshal" = { positive = ["v06_async"], negative = ["v06_async_marshal"] }
+
 # --- V0.5.1: CLI-коды (проверяются Rust-тестами tests/cli.rs) ---
 [cli_codes]
 "no-tests-found" = { positive = ["cli_test_file_without_tests_reports_no_tests"], negative = ["cli_test_empty_directory_reports_no_tests"] }

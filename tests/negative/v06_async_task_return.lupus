@@ -1,0 +1,3 @@
+(import (amiya async) :as async)
+(define worker (async/spawn (lambda () 42)))
+(async/wait worker)

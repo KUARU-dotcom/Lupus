@@ -1,0 +1,16 @@
+;; V0.6 этап E: spawn + channel без сети.
+(import (amiya async) :as async)
+
+(define messages (async/channel))
+
+(define producer
+  (async/spawn
+    (lambda ()
+      (async/send messages 1)
+      (async/send messages "two")
+      (async/send messages (list 3 4)))))
+
+(print (async/recv messages))
+(print (async/recv messages))
+(print (async/recv messages))
+(async/wait producer)

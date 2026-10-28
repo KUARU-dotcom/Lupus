@@ -13,6 +13,7 @@ pub mod interpreter;
 pub mod json;
 pub mod lexer;
 pub mod lint;
+pub mod marshal;
 pub mod modules;
 pub mod native;
 pub mod parser;

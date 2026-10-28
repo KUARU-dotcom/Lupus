@@ -5,6 +5,7 @@
 //! `Result<Value, Error>`. Арность проверяется централизованно по таблице
 //! [`BUILTINS`].
 
+pub mod amiya;
 pub mod arithmetic;
 pub mod comparison;
 pub mod higher_order;

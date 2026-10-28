@@ -4,6 +4,7 @@
 //! булевы значения, строки, списки, литерал `none` и замыкания.
 
 use crate::ast::Expr;
+use crate::builtins::amiya::{ReceiverHandle, SenderHandle, TaskHandle};
 use crate::builtins::texas::{Listener, Socket};
 use crate::environment::Environment;
 use crate::error::Error;
@@ -159,6 +160,12 @@ pub enum Value {
     Socket(Rc<Socket>),
     /// Opaque TCP-слушатель (`texas`). Не сериализуется в `SendValue`.
     Listener(Rc<Listener>),
+    /// Opaque дескриптор фоновой задачи (`amiya`). Не маршалится.
+    Task(Rc<TaskHandle>),
+    /// Отправитель канала (`amiya`). Маршалится как разделяемый handle.
+    Sender(Rc<SenderHandle>),
+    /// Получатель канала (`amiya`). Маршалится как разделяемый handle.
+    Receiver(Rc<ReceiverHandle>),
     /// Литерал `none` (отсутствие значения / пустой Option).
     None,
     /// Значение Option: (some v).
@@ -223,6 +230,9 @@ impl Traversable for Value {
             | Value::None
             | Value::Socket(_)
             | Value::Listener(_)
+            | Value::Task(_)
+            | Value::Sender(_)
+            | Value::Receiver(_)
             | Value::Closure(_)
             | Value::Native { .. } => {}
         }
@@ -279,6 +289,9 @@ impl Value {
             }
             Value::Socket(_) => base + size_of::<Socket>(),
             Value::Listener(_) => base + size_of::<Listener>(),
+            Value::Task(_) => base + size_of::<TaskHandle>(),
+            Value::Sender(_) => base + size_of::<SenderHandle>(),
+            Value::Receiver(_) => base + size_of::<ReceiverHandle>(),
             Value::Some(value) | Value::Success(value) | Value::Failure(value) => {
                 base + value.estimated_size()
             }
@@ -328,6 +341,9 @@ impl PartialEq for Value {
             ) => an == bn && af == bf,
             (Value::Socket(a), Value::Socket(b)) => Rc::ptr_eq(a, b),
             (Value::Listener(a), Value::Listener(b)) => Rc::ptr_eq(a, b),
+            (Value::Task(a), Value::Task(b)) => Rc::ptr_eq(a, b),
+            (Value::Sender(a), Value::Sender(b)) => Rc::ptr_eq(a, b),
+            (Value::Receiver(a), Value::Receiver(b)) => Rc::ptr_eq(a, b),
             (Value::None, Value::None) => true,
             (Value::Some(a), Value::Some(b)) => *a == *b,
             (Value::Success(a), Value::Success(b)) => *a == *b,
@@ -418,6 +434,9 @@ fn value_to_string_inner(value: &Value, in_container: bool) -> String {
         }
         Value::Socket(_) => "socket".to_string(),
         Value::Listener(_) => "listener".to_string(),
+        Value::Task(_) => "task".to_string(),
+        Value::Sender(_) => "sender".to_string(),
+        Value::Receiver(_) => "receiver".to_string(),
         Value::Some(v) => format!("(some {})", value_to_string_inner(v, true)),
         Value::Success(v) => format!("(success {})", value_to_string_inner(v, true)),
         Value::Failure(v) => format!("(failure {})", value_to_string_inner(v, true)),

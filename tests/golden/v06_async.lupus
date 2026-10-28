@@ -1,0 +1,20 @@
+(import (amiya async) :as async)
+
+(define ch (async/channel))
+(print (async/recv-timeout ch 1))
+
+(define worker
+  (async/spawn
+    (lambda ()
+      (async/sleep 0)
+      (async/send ch 1)
+      (async/send ch "two")
+      (async/send ch (list 3 4)))))
+
+(print (async/recv ch))
+(print (async/recv ch))
+(print (async/recv ch))
+(async/wait worker)
+
+(define other (async/spawn (lambda () (async/sleep 0))))
+(async/wait-all (list other))

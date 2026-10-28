@@ -1,0 +1,2 @@
+(import (amiya async) :as async)
+(async/spawn 1)
