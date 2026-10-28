@@ -23,10 +23,34 @@ use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::rc::{Rc, Weak};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::OnceLock;
 use std::time::Instant;
 
-/// Порог аллокаций, после которого автоматически запускается сборка.
+/// Порог аллокаций по умолчанию, после которого запускается сборка.
 pub const GC_THRESHOLD: usize = 1000;
+
+/// Порог, прочитанный из `LUPUS_GC_THRESHOLD` один раз за процесс.
+static CONFIGURED_THRESHOLD: OnceLock<usize> = OnceLock::new();
+
+/// Разбирает значение `LUPUS_GC_THRESHOLD`.
+///
+/// Допустимо только целое `N > 0`; всё остальное означает порог по умолчанию.
+fn parse_threshold(raw: Option<&str>) -> usize {
+    raw.and_then(|value| value.trim().parse::<usize>().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(GC_THRESHOLD)
+}
+
+/// Возвращает действующий порог автоматической сборки.
+///
+/// Переменная окружения читается один раз за процесс; это сохраняет
+/// предсказуемость и не добавляет обращений к окружению на каждой аллокации.
+pub fn threshold() -> usize {
+    *CONFIGURED_THRESHOLD.get_or_init(|| {
+        let raw = std::env::var("LUPUS_GC_THRESHOLD").ok();
+        parse_threshold(raw.as_deref())
+    })
+}
 
 thread_local! {
     static GC_STATE: GcState = GcState::new();
@@ -92,7 +116,7 @@ pub fn record_allocations(count: usize) {
             .allocations
             .fetch_add(count, Ordering::Relaxed)
             .saturating_add(count);
-        state.enabled.get() && total >= GC_THRESHOLD && !state.collecting.get()
+        state.enabled.get() && total >= threshold() && !state.collecting.get()
     });
     if should_collect {
         let _ = collect_impl(false);
@@ -311,4 +335,20 @@ pub fn reset_for_tests() {
         state.collecting.set(false);
         state.enabled.set(true);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_threshold, GC_THRESHOLD};
+
+    #[test]
+    fn threshold_env_parsing() {
+        assert_eq!(parse_threshold(None), GC_THRESHOLD);
+        assert_eq!(parse_threshold(Some("")), GC_THRESHOLD);
+        assert_eq!(parse_threshold(Some("0")), GC_THRESHOLD);
+        assert_eq!(parse_threshold(Some("-5")), GC_THRESHOLD);
+        assert_eq!(parse_threshold(Some("abc")), GC_THRESHOLD);
+        assert_eq!(parse_threshold(Some("250")), 250);
+        assert_eq!(parse_threshold(Some(" 42 ")), 42);
+    }
 }

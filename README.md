@@ -1,7 +1,20 @@
-# Lupus V0.5.3
+# Lupus V0.6.0
 
 Репозиторий прототипа интерпретатора [Lupus](https://github.com/KUARU-dotcom/Lupus)
-(фаза V0.5). Дистрибутивы и релизные артефакты публикуются в [Releases](https://github.com/KUARU-dotcom/Lupus/releases).
+(фаза V0.6). Дистрибутивы и релизные артефакты публикуются в [Releases](https://github.com/KUARU-dotcom/Lupus/releases).
+
+## Что нового в V0.6.0
+
+- **Семантика:** `and`/`or` возвращают значения, действует единая политика
+  типов, конструкторы `defstruct` проверяют типы полей (ERRATA §13).
+- **GC:** консервативный mark-and-sweep, `(gc-collect)` и порог
+  `LUPUS_GC_THRESHOLD` (ERRATA §14).
+- **Сеть и асинхронность:** пакеты `texas`, `lappland` и `amiya`
+  (ERRATA §15–16).
+- **Встраивание:** `kennel`, профили `pure`/`core`/`full`, fuel-лимиты и
+  `lupus eval --import` (ERRATA §17).
+
+Полный список изменений и BREAKING — в [CHANGELOG](./CHANGELOG.md).
 
 ## Что нового в V0.5.3
 
@@ -69,6 +82,59 @@ plain-text usage в stderr). Диагностика
 всегда пишется в stderr; stdout остаётся чистым выводом программы. `--pretty`
 включает человекочитаемый рендер, `--json` (по умолчанию) — строгий JSON.
 
+## Сеть (texas)
+
+```lisp
+(import (texas net) :as net)
+
+(define socket
+  (match (net/tcp-connect "127.0.0.1" 8080)
+    ((success value) value)
+    ((failure message) (print message) (exit 1))))
+(print (net/send socket "ping"))
+(net/close socket)
+```
+
+`texas` возвращает `(success ...)`/`(failure "net: ...")` вместо исключений.
+Канонический импорт — `(import (texas net) :as net)`; короткие алиасы
+`net/tcp-send`, `net/udp-recv` и другие работают так же. Полная семантика —
+в [ERRATA §15](./docs/ERRATA.md).
+
+## Инъекция ошибок (lappland)
+
+```lisp
+(import lappland)
+(import (texas net) :as net)
+
+(lappland/malice 1.0)  ; каждый следующий net-вызов → failure
+(lappland/delay 1.5)   ; дополнительно 5 мс на каждый вызов
+(print (net/tcp-connect "127.0.0.1" 9)) ; (failure "net: injected malice")
+```
+
+`malice` принимает `float` в диапазоне `0.0..=1.0`, `delay` — `float >= 1.0`.
+`LUPUS_MALICE_SEED` делает последовательность отказов воспроизводимой
+([ERRATA §15](./docs/ERRATA.md)).
+
+## Асинхронность (amiya)
+
+```lisp
+(import (amiya async) :as async)
+
+(define ch (async/channel))
+(define worker
+  (async/spawn
+    (lambda ()
+      (async/send ch "ready")
+      (async/send ch 42))))
+(print (async/recv ch))
+(print (async/recv ch))
+(async/wait worker)
+```
+
+`spawn` принимает только замыкание без параметров; задача обязана вернуть
+`unit`. Значения и каналы переносятся через `SendValue`, а окружение
+копируется в момент запуска ([ERRATA §16](./docs/ERRATA.md)).
+
 ## Встраивание (kennel)
 
 Публичный host-API `lupus::kennel` запускает код Lupus внутри Rust-процесса,
@@ -96,9 +162,15 @@ fn main() -> Result<(), kennel::JsonError> {
 }
 ```
 
-- `Profile::Pure` — только core-биндинги; импорты запрещены.
-- `Profile::Core` — core + `kaltsit` и файловые модули.
-- `Profile::Full` — все нативные пакеты и `host/<имя>`; профиль CLI.
+| Профиль | Core-биндинги | `kaltsit` | `senko`/`w` | `texas`/`amiya`/`lappland` | host |
+|---------|---------------|-----------|-------------|----------------------------|------|
+| `pure`  | да            | нет       | нет         | нет                        | нет  |
+| `core`  | да            | да        | нет         | нет                        | нет  |
+| `full`  | да            | да        | да          | да                         | да   |
+
+`Profile::Pure` запрещает любые импорты; `Profile::Core` разрешает `kaltsit` и
+файловые модули; `Profile::Full` — все нативные пакеты и `host/<имя>` (профиль
+CLI). Нарушение даёт `profile-denied` с именем пакета.
 
 `Config` также задаёт `max_steps`/`fuel`, `max_memory_values` и `max_depth`.
 Исчерпание лимита возвращает `JsonError` с кодом `exhausted`; `Host`-функция
@@ -191,7 +263,8 @@ cargo build --release
   JSON-ошибки и JSON AST.
 - `stdlib/util.lupus` — пример файлового модуля (`double`, `greet`).
 - `tests/` — LiF, интеграционные тесты и фикстуры.
-- `examples/v05_*.lupus` — демонстрации V0.5; `examples/v03_demo.lupus`,
+- `examples/v05_*.lupus` — демонстрации V0.5; `examples/v06_net.lupus`,
+  `examples/v06_async.lupus` — сеть и асинхронность V0.6; `examples/v03_demo.lupus`,
   `examples/v04_demo.lupus` — демонстрации прошлых фаз.
 - `scripts/fetch-oracle.sh` — загрузка эталонного бинарника v0.4.0.
 - `results/` — JSON-результаты бенчмарка по моделям.

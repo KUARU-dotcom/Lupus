@@ -1,7 +1,20 @@
-# Lupus V0.5.3
+# Lupus V0.6.0
 
 Prototype interpreter repository for [Lupus](https://github.com/KUARU-dotcom/Lupus)
-(V0.5 phase). Release artifacts are published on the [Releases](https://github.com/KUARU-dotcom/Lupus/releases) page.
+(V0.6 phase). Release artifacts are published on the [Releases](https://github.com/KUARU-dotcom/Lupus/releases) page.
+
+## What's new in V0.6.0
+
+- **Semantics:** `and`/`or` return values, one type policy for builtins, and
+  `defstruct` constructors check field types (ERRATA §13).
+- **GC:** conservative mark-and-sweep, `(gc-collect)`, and the
+  `LUPUS_GC_THRESHOLD` threshold (ERRATA §14).
+- **Networking and async:** `texas`, `lappland`, and `amiya`
+  (ERRATA §15–16).
+- **Embedding:** `kennel`, `pure`/`core`/`full` profiles, fuel limits, and
+  `lupus eval --import` (ERRATA §17).
+
+See the [CHANGELOG](./CHANGELOG.md) for the full list and the breaking changes.
 
 ## What's new in V0.5.3
 
@@ -69,6 +82,59 @@ usage on stderr). Diagnostics always go to
 stderr; stdout stays clean program output. `--pretty` enables a human-readable
 rendering, `--json` (the default) emits strict JSON.
 
+## Networking (texas)
+
+```lisp
+(import (texas net) :as net)
+
+(define socket
+  (match (net/tcp-connect "127.0.0.1" 8080)
+    ((success value) value)
+    ((failure message) (print message) (exit 1))))
+(print (net/send socket "ping"))
+(net/close socket)
+```
+
+`texas` returns `(success ...)`/`(failure "net: ...")` instead of exceptions.
+The canonical import is `(import (texas net) :as net)`; short aliases such as
+`net/tcp-send` and `net/udp-recv` behave the same. Full semantics are in
+[ERRATA §15](./docs/ERRATA.md).
+
+## Fault injection (lappland)
+
+```lisp
+(import lappland)
+(import (texas net) :as net)
+
+(lappland/malice 1.0)  ; every following net call → failure
+(lappland/delay 1.5)   ; extra 5 ms per call
+(print (net/tcp-connect "127.0.0.1" 9)) ; (failure "net: injected malice")
+```
+
+`malice` takes a `float` in `0.0..=1.0`; `delay` takes a `float >= 1.0`.
+`LUPUS_MALICE_SEED` makes the failure sequence reproducible
+([ERRATA §15](./docs/ERRATA.md)).
+
+## Asynchronous execution (amiya)
+
+```lisp
+(import (amiya async) :as async)
+
+(define ch (async/channel))
+(define worker
+  (async/spawn
+    (lambda ()
+      (async/send ch "ready")
+      (async/send ch 42))))
+(print (async/recv ch))
+(print (async/recv ch))
+(async/wait worker)
+```
+
+`spawn` accepts only a zero-argument closure; a task must return `unit`.
+Values and channels are marshalled through `SendValue`, and the environment is
+snapshotted when the task starts ([ERRATA §16](./docs/ERRATA.md)).
+
 ## Embedding (kennel)
 
 The public `lupus::kennel` host API runs Lupus code inside a Rust process,
@@ -96,9 +162,15 @@ fn main() -> Result<(), kennel::JsonError> {
 }
 ```
 
-- `Profile::Pure` — core bindings only; imports are denied.
-- `Profile::Core` — core + `kaltsit` and file modules.
-- `Profile::Full` — all native packages plus `host/<name>`; the CLI profile.
+| Profile | Core bindings | `kaltsit` | `senko`/`w` | `texas`/`amiya`/`lappland` | host |
+|---------|---------------|-----------|-------------|----------------------------|------|
+| `pure`  | yes           | no        | no          | no                         | no   |
+| `core`  | yes           | yes       | no          | no                         | no   |
+| `full`  | yes           | yes       | yes         | yes                        | yes  |
+
+`Profile::Pure` denies all imports; `Profile::Core` allows `kaltsit` and file
+modules; `Profile::Full` enables every native package and `host/<name>` (the CLI
+profile). A violation returns `profile-denied` with the package name.
 
 `Config` also sets `max_steps`/`fuel`, `max_memory_values`, and `max_depth`.
 Exhaustion returns a `JsonError` with code `exhausted`; host functions are called
@@ -189,7 +261,8 @@ cargo build --release
   JSON errors, and JSON AST.
 - `stdlib/util.lupus` — sample file module (`double`, `greet`).
 - `tests/` — LiF, integration tests, and fixtures.
-- `examples/v05_*.lupus` — V0.5 demos; `examples/v03_demo.lupus`,
+- `examples/v05_*.lupus` — V0.5 demos; `examples/v06_net.lupus`,
+  `examples/v06_async.lupus` — V0.6 networking and async; `examples/v03_demo.lupus`,
   `examples/v04_demo.lupus` — demos from earlier phases.
 - `scripts/fetch-oracle.sh` — v0.4.0 oracle download.
 - `results/` — benchmark JSON results per model.

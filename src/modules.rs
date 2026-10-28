@@ -2,7 +2,7 @@
 //!
 //! Порядок поиска (ERRATA §1): нативный реестр → `stdlib/<имя>.lupus` →
 //! каталоги из `LUPUS_PATH`. Нативные пакеты V0.6: `senko`, `kaltsit`, `w`,
-//! `texas`, `lappland`.
+//! `texas`, `lappland`, `amiya`.
 
 use crate::ast::{Expr, ExprKind};
 use crate::error::Error;
