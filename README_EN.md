@@ -1,7 +1,18 @@
-# Lupus V0.5
+# Lupus V0.5.3
 
 Prototype interpreter repository for [Lupus](https://github.com/KUARU-dotcom/Lupus)
 (V0.5 phase). Release artifacts are published on the [Releases](https://github.com/KUARU-dotcom/Lupus/releases) page.
+
+## What's new in V0.5.3
+
+- **Module cache memory leak fixed (#45):** the `Rc` cycle
+  `environment → closure → environment` is broken; 20,000 definitions in one
+  process: +21 MB before, +0.2 MB after.
+- **Builtins are first-class values:** `(list-map (list 1 -2) abs)` → `(1 2)`;
+  `list-filter` and `list-fold` added.
+- **Runtime errors carry a position:** `location` is now filled for
+  `runtime`/`lint`/`type`, not only `lex`/`parse` (ERRATA §6).
+- **Fuzzing:** `cargo-fuzz` targets `parse_eval`/`lexer`, scheduled workflow.
 
 ## What's new in V0.5
 

@@ -1,7 +1,18 @@
-# Lupus V0.5
+# Lupus V0.5.3
 
 Репозиторий прототипа интерпретатора [Lupus](https://github.com/KUARU-dotcom/Lupus)
 (фаза V0.5). Дистрибутивы и релизные артефакты публикуются в [Releases](https://github.com/KUARU-dotcom/Lupus/releases).
+
+## Что нового в V0.5.3
+
+- **Утечка памяти в кэше модулей закрыта (#45):** `Rc`-цикл
+  `окружение → замыкание → окружение` разорван, 20 000 определений в одном
+  процессе: было +21 МБ, стало +0.2 МБ.
+- **Встроенные функции стали значениями:** `(list-map (list 1 -2) abs)` → `(1 2)`,
+  работает передача builtin как аргумента; добавлены `list-filter`, `list-fold`.
+- **Runtime-ошибки с позицией:** `location` теперь заполняется и для
+  `runtime`/`lint`/`type`, а не только `lex`/`parse` (ERRATA §6).
+- **Фаззинг:** `cargo-fuzz` таргеты `parse_eval`/`lexer`, workflow каждые 6 часов.
 
 ## Что нового в V0.5
 
@@ -117,7 +128,7 @@ JSON-файл с ответами и статусами по задачам.
 | Qwen3.5 2B (базовая) | 35/100 | [`results/results_Qwen3.5_2B_base_v051.json`](./results/results_Qwen3.5_2B_base_v051.json) |
 | Qwen2.5-Coder 14B (базовая) | прогон не сохранён в репозитории; для воспроизведения запустите `run_experiment.py` | [`results/`](./results/) |
 
-Базовая линия V0.5.1 — `merged-lupus-2bv2` (81/100). Воспроизведение:
+Базовая линия V0.5.1 (новых замеров в V0.5.3 не делалось) — `merged-lupus-2bv2` (81/100). Воспроизведение:
 `python3 run_experiment.py --model merged-lupus-2bv2`. Для проверки самого
 интерпретатора на тех же 100 задачах: `python3 validate_tasks.py` —
 `PASSED: 100/100`.
