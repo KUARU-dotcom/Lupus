@@ -9,6 +9,9 @@ static COUNTER: AtomicUsize = AtomicUsize::new(0);
 fn temp_dir(tag: &str) -> PathBuf {
     let n = COUNTER.fetch_add(1, Ordering::SeqCst);
     let dir = std::env::temp_dir().join(format!("lupus_cli_{}_{}_{}", std::process::id(), tag, n));
+    // Каталог может остаться от прошлого прогона (общий TMPDIR, pid переиспользуется),
+    // поэтому чистим перед созданием: иначе symlink-тест падает на AlreadyExists.
+    let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("temp dir");
     dir
 }
@@ -118,7 +121,12 @@ fn cli_ast_stdout_is_json_only() {
 fn cli_version_and_lenient_parens() {
     let version = run(&["--version"]);
     assert_eq!(version.code, 0);
-    assert_eq!(version.stdout.trim(), "Lupus 0.5.2");
+    // Версия берётся из Cargo.toml: не хардкодим номер, иначе каждый бамп
+    // релиза ломает тест.
+    assert_eq!(
+        version.stdout.trim(),
+        format!("Lupus {}", env!("CARGO_PKG_VERSION"))
+    );
 
     let path = temp_file("(print 1))");
     let path = path.to_str().unwrap();
