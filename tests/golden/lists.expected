@@ -1,7 +1,6 @@
 (1 2 3)
 (1 2 3)
 (some 1)
-none
 (some (2 3))
 none
 true

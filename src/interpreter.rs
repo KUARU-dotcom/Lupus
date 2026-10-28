@@ -18,6 +18,109 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Instant;
 
+/// Тип поля структуры, используемый конструктором для проверки аргументов.
+#[derive(Debug, Clone, PartialEq)]
+enum FieldType {
+    /// Типовой параметр дженерика: принимает значение любого типа.
+    Param,
+    /// Именованный тип (`int`, `float`, `bool`, `str`, `unit`, `none`).
+    Named(String),
+    /// Параметризованный тип (`(List a)`, `(Option a)`, `(Map k v)`).
+    Applied(String, Vec<FieldType>),
+}
+
+impl FieldType {
+    /// Разбирает аннотацию поля; имена типовых параметров становятся `Param`.
+    fn from_expr(expr: &Expr, type_params: &[String]) -> Self {
+        match &expr.kind {
+            ExprKind::None => Self::Named("none".to_string()),
+            ExprKind::Symbol(name) if type_params.iter().any(|param| param == name) => Self::Param,
+            ExprKind::Symbol(name) => Self::Named(name.clone()),
+            ExprKind::List(items) => match items.first() {
+                Some(Expr {
+                    kind: ExprKind::Symbol(name),
+                    ..
+                }) => Self::Applied(
+                    name.clone(),
+                    items[1..]
+                        .iter()
+                        .map(|item| Self::from_expr(item, type_params))
+                        .collect(),
+                ),
+                _ => Self::Param,
+            },
+            _ => Self::Param,
+        }
+    }
+
+    /// Проверяет значение по объявленному типу.
+    ///
+    /// Неизвестные именованные типы не проверяются: в V0.5 нет HM-тайпчекера,
+    /// и конструктор не должен отвергать пользовательские типы.
+    fn accepts(&self, value: &Value) -> bool {
+        match self {
+            Self::Param => true,
+            Self::Named(name) => match name.as_str() {
+                "int" => matches!(value, Value::Int(_)),
+                "float" => matches!(value, Value::Float(_)),
+                "bool" => matches!(value, Value::Bool(_)),
+                "str" => matches!(value, Value::Str(_)),
+                "none" | "unit" => matches!(value, Value::None),
+                _ => true,
+            },
+            Self::Applied(name, args) => match (name.as_str(), args.as_slice()) {
+                ("List", [element]) => match value {
+                    Value::List(items) => items.iter().all(|item| element.accepts(item)),
+                    _ => false,
+                },
+                ("Option", [inner]) => match value {
+                    Value::None => true,
+                    Value::Some(item) => inner.accepts(item),
+                    _ => false,
+                },
+                ("Result", [ok, err]) => match value {
+                    Value::Success(item) => ok.accepts(item),
+                    Value::Failure(item) => err.accepts(item),
+                    _ => false,
+                },
+                ("Tuple", elements) => match value {
+                    Value::Tuple(items) => {
+                        items.len() == elements.len()
+                            && items
+                                .iter()
+                                .zip(elements)
+                                .all(|(item, element)| element.accepts(item))
+                    }
+                    _ => false,
+                },
+                ("Map", [key, val]) => match value {
+                    Value::Map(pairs) => {
+                        pairs.iter().all(|(k, v)| key.accepts(k) && val.accepts(v))
+                    }
+                    _ => false,
+                },
+                _ => true,
+            },
+        }
+    }
+
+    /// Представление типа для сообщения `type-mismatch`.
+    fn display(&self) -> String {
+        match self {
+            Self::Param => "any".to_string(),
+            Self::Named(name) => name.clone(),
+            Self::Applied(name, args) => {
+                let args = args
+                    .iter()
+                    .map(Self::display)
+                    .collect::<Vec<String>>()
+                    .join(" ");
+                format!("({} {})", name, args)
+            }
+        }
+    }
+}
+
 /// Описание структуры, объявленной через `defstruct`.
 #[derive(Debug, Clone)]
 pub struct StructDef {
@@ -27,6 +130,8 @@ pub struct StructDef {
     pub type_params: Vec<String>,
     /// Имена полей в порядке объявления.
     pub fields: Vec<String>,
+    /// Типы полей в порядке объявления.
+    field_types: Vec<FieldType>,
 }
 
 /// Разобранный и загруженный тест.
@@ -214,7 +319,8 @@ impl Interpreter {
     /// Обработка списков (вызовов форм).
     fn eval_list(&self, elems: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if elems.is_empty() {
-            return Ok(Value::None);
+            // `()` — литерал пустого списка (как и `(list)`).
+            return Ok(Value::List(Vec::new()));
         }
 
         let first = &elems[0];
@@ -546,8 +652,10 @@ impl Interpreter {
     /// (defstruct имя (поле тип)...) или (defstruct (Имя a b) (поле тип)...)
     ///
     /// Регистрирует тип структуры и автогенерирует конвенцию: конструктор
-    /// `(имя значение...)` и аксессоры `(имя-поле структура)`. Аннотации типов
-    /// полей и параметры-дженерики парсятся, но не проверяются (тайпчекера нет).
+    /// `(имя значение...)` и аксессоры `(имя-поле структура)`. Конструктор
+    /// проверяет конкретные типы полей (`int`, `float`, `bool`, `str`,
+    /// `none`/`unit` и составные `List`/`Option`/`Result`/`Tuple`/`Map`);
+    /// типовые параметры дженериков принимают значение любого типа.
     /// Дубликат имени поля — ошибка `duplicate-struct-field`.
     fn do_defstruct(&self, rest: &[Expr], _env: &Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() < 2 {
@@ -593,6 +701,7 @@ impl Interpreter {
         };
 
         let mut field_names: Vec<String> = Vec::with_capacity(rest.len() - 1);
+        let mut field_types: Vec<FieldType> = Vec::with_capacity(rest.len() - 1);
         for field in &rest[1..] {
             let Some(items) = field.as_list() else {
                 return Err(Error::type_error(
@@ -625,6 +734,7 @@ impl Interpreter {
                 ));
             }
             field_names.push(field_name);
+            field_types.push(FieldType::from_expr(&items[1], &type_params));
         }
 
         self.structs.borrow_mut().insert(
@@ -633,6 +743,7 @@ impl Interpreter {
                 name: type_name,
                 type_params,
                 fields: field_names,
+                field_types,
             },
         );
         Ok(Value::None)
@@ -662,6 +773,15 @@ impl Interpreter {
                     definition.fields.len(),
                     args.len()
                 )));
+            }
+            for (index, value) in args.iter().enumerate() {
+                if !definition.field_types[index].accepts(value) {
+                    return Err(Error::type_mismatch(format!(
+                        "поле {}: ожидался {}",
+                        definition.fields[index],
+                        definition.field_types[index].display()
+                    )));
+                }
             }
             return Ok(Some(Value::Struct {
                 name: name.to_string(),
@@ -1094,26 +1214,34 @@ impl Interpreter {
         Ok(result)
     }
 
-    /// (and форма...) — короткое замыкание, возвращает bool.
+    /// (and форма...) — короткое замыкание; возвращает значение.
+    ///
+    /// Возвращает последнее вычисленное значение, если все истинны, иначе —
+    /// первое ложное. `(and)` → `true`.
     fn do_and(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
+        let mut result = Value::Bool(true);
         for form in rest {
-            let result = self.eval(form, env.clone())?;
+            result = self.eval(form, env.clone())?;
             if !is_truthy(&result) {
-                return Ok(Value::Bool(false));
+                return Ok(result);
             }
         }
-        Ok(Value::Bool(true))
+        Ok(result)
     }
 
-    /// (or форма...) — короткое замыкание, возвращает первое истинное значение.
+    /// (or форма...) — короткое замыкание; возвращает значение.
+    ///
+    /// Возвращает первое истинное значение, иначе — последнее ложное.
+    /// `(or)` → `false`.
     fn do_or(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
+        let mut result = Value::Bool(false);
         for form in rest {
-            let result = self.eval(form, env.clone())?;
+            result = self.eval(form, env.clone())?;
             if is_truthy(&result) {
                 return Ok(result);
             }
         }
-        Ok(Value::Bool(false))
+        Ok(result)
     }
 
     /// (print строка).

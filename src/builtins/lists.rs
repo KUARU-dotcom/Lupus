@@ -25,21 +25,33 @@ pub fn cons(args: &[Value]) -> Result<Value, Error> {
     Ok(Value::List(result))
 }
 
-/// Возвращает голову списка `(head список)` как `(some x)` или `none`.
+/// Возвращает голову списка `(head список)` как `(some x)`.
+///
+/// Пустой список — `index-out-of-bounds`, не-список — `type-mismatch`.
 pub fn head(args: &[Value]) -> Result<Value, Error> {
     match &args[0] {
-        Value::List(items) if !items.is_empty() => Ok(Value::Some(Box::new(items[0].clone()))),
-        _ => Ok(Value::None),
+        Value::List(items) if items.is_empty() => {
+            Err(Error::runtime("index-out-of-bounds", "head: список пуст"))
+        }
+        Value::List(items) => Ok(Value::Some(Box::new(items[0].clone()))),
+        _ => Err(Error::type_mismatch("head требует список")),
     }
 }
 
-/// Возвращает хвост списка `(tail список)` как `(some список)` или `none`.
+/// Возвращает хвост списка `(tail список)` как `(some список)` или `none`
+/// для списка из одного элемента.
+///
+/// Пустой список — `index-out-of-bounds`, не-список — `type-mismatch`.
 pub fn tail(args: &[Value]) -> Result<Value, Error> {
     match &args[0] {
+        Value::List(items) if items.is_empty() => {
+            Err(Error::runtime("index-out-of-bounds", "tail: список пуст"))
+        }
         Value::List(items) if items.len() > 1 => {
             Ok(Value::Some(Box::new(Value::List(items[1..].to_vec()))))
         }
-        _ => Ok(Value::None),
+        Value::List(_) => Ok(Value::None),
+        _ => Err(Error::type_mismatch("tail требует список")),
     }
 }
 

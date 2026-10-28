@@ -297,6 +297,9 @@ fn skip_reason(source: &str) -> Option<&'static str> {
     if source.contains("\\u") || source.contains("\\x") {
         return Some("escape-последовательности V0.5");
     }
+    if source.contains("V0.6: and/or") {
+        return Some("and/or возвращают значение (V0.6)");
+    }
     None
 }
 

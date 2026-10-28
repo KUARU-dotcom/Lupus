@@ -1,0 +1,4 @@
+(defstruct (Box a) (value a))
+(print (Box 42))
+(print (Box "hi"))
+(print (Box (list 1 2)))

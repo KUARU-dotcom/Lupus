@@ -1,0 +1,6 @@
+(defstruct point (x int) (y int))
+(print (point 1 2))
+(print (point-x (point 1 2)))
+(print (point-y (point 3 4)))
+(defstruct person (name str) (age int) (active bool))
+(print (person "Ann" 30 true))

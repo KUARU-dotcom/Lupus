@@ -1,0 +1,2 @@
+(defstruct point (x int) (y int))
+(point "a" 1)

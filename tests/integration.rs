@@ -77,9 +77,15 @@ fn condition_if() {
 }
 
 #[test]
-fn condition_if_number_zero_is_falsy() {
-    assert_eq!(run("(if 0 1 2)"), int(2));
+fn condition_if_number_zero_is_truthy() {
+    assert_eq!(run("(if 0 1 2)"), int(1));
     assert_eq!(run("(if 5 1 2)"), int(1));
+}
+
+#[test]
+fn condition_if_empty_string_and_list_are_truthy() {
+    assert_eq!(run("(if \"\" 1 2)"), int(1));
+    assert_eq!(run("(if (list) 1 2)"), int(1));
 }
 
 // ─── Логика ─────────────────────────────────────────────────────────────────
@@ -396,9 +402,10 @@ fn v03_equality_some() {
 }
 
 #[test]
-fn v03_truthy_none_failure_false() {
+fn v03_truthy_none_and_false_only() {
     assert_eq!(run("(if none 1 2)"), int(2));
-    assert_eq!(run("(if (failure \"x\") 1 2)"), int(2));
+    assert_eq!(run("(if false 1 2)"), int(2));
+    assert_eq!(run("(if (failure \"x\") 1 2)"), int(1));
     assert_eq!(run("(if (some 0) 1 2)"), int(1)); // Some — истинно
 }
 
@@ -408,7 +415,6 @@ fn v03_truthy_none_failure_false() {
 fn v03_lists_cons_head_tail_empty() {
     assert_eq!(run("(cons 1 (list 2 3))"), run("(list 1 2 3)"));
     assert_eq!(run("(head (list 1 2))"), Value::Some(Box::new(int(1))));
-    assert_eq!(run("(head (list))"), Value::None);
     assert_eq!(
         run("(tail (list 1 2 3))"),
         Value::Some(Box::new(run("(list 2 3)")))
@@ -416,6 +422,17 @@ fn v03_lists_cons_head_tail_empty() {
     assert_eq!(run("(tail (list 1))"), Value::None);
     assert_eq!(run("(empty? (list))"), Value::Bool(true));
     assert_eq!(run("(empty? (list 1))"), Value::Bool(false));
+}
+
+#[test]
+fn v06_head_tail_empty_or_non_list_are_errors() {
+    assert!(run_err("(head ())").contains("список пуст"));
+    assert!(run_err("(tail ())").contains("список пуст"));
+    assert!(run_err("(head (list))").contains("список пуст"));
+    assert!(run_err("(tail (list))").contains("список пуст"));
+    assert!(run_err("(head 5)").contains("требует список"));
+    assert!(run_err("(tail 5)").contains("требует список"));
+    assert!(run_err("(nth \"str\" 0)").contains("должен быть списком"));
 }
 
 #[test]
@@ -898,8 +915,8 @@ fn v04_defstruct_match_binds_positionally() {
 }
 
 #[test]
-fn v04_defstruct_arbitrary_field_types() {
-    // Аннотации типов не проверяются, поля могут быть любых типов.
+fn v04_defstruct_scalar_field_types() {
+    // Конкретные типы полей проверяются конструктором (V0.6).
     let src = "
         (defstruct person (name str) (age int))
         (person \"Ann\" 30)";

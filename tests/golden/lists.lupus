@@ -1,7 +1,6 @@
 (print (list 1 2 3))
 (print (cons 1 (list 2 3)))
 (print (head (list 1 2)))
-(print (head (list)))
 (print (tail (list 1 2 3)))
 (print (tail (list 1)))
 (print (empty? (list)))

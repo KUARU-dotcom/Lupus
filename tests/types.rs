@@ -145,6 +145,40 @@ fn map_nested_in_struct_and_match() {
 }
 
 #[test]
+fn typed_struct_constructor_checks_concrete_fields() {
+    let out = run_ok(
+        "(defstruct point (x int) (y int))\n\
+         (print (point 1 2))\n\
+         (print (point-x (point 1 2)))",
+    );
+    assert_eq!(out, "(point 1 2)\n1\n");
+
+    let (_, stderr, code) = run_source("(defstruct point (x int) (y int))\n(point \"a\" 1)");
+    assert_ne!(code, 0);
+    assert_eq!(error_code(&stderr).as_deref(), Some("type-mismatch"));
+    assert!(stderr.contains("поле x: ожидался int"), "{}", stderr);
+
+    let (_, stderr, code) = run_source("(defstruct p (x none))\n(p 5)");
+    assert_ne!(code, 0);
+    assert_eq!(error_code(&stderr).as_deref(), Some("type-mismatch"));
+    assert!(stderr.contains("поле x: ожидался none"), "{}", stderr);
+
+    let out = run_ok("(defstruct p (x none))\n(print (p none))");
+    assert_eq!(out, "(p none)\n");
+}
+
+#[test]
+fn generic_struct_fields_accept_any_value_type() {
+    let out = run_ok(
+        "(defstruct (Box a) (value a))\n\
+         (print (Box 42))\n\
+         (print (Box \"hi\"))\n\
+         (print (Box (list 1 2)))",
+    );
+    assert_eq!(out, "(Box 42)\n(Box \"hi\")\n(Box (1 2))\n");
+}
+
+#[test]
 fn negative_constructor_arity() {
     let (_, stderr, code) = run_source(
         "(defstruct (Node a) (value a) (left (Option (Node a))) (right (Option (Node a))))\n\

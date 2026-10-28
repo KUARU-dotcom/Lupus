@@ -212,27 +212,14 @@ impl PartialEq for Value {
     }
 }
 
-/// Проверка «истинности» значения, совместимая с семантикой Python
-/// (используется интерпретатором в `if`, `while`, `and`, `or`, `not`).
+/// Проверка «истинности» значения (V0.6).
 ///
-/// `0`, пустая строка, пустой список, `none` и `Failure` считаются ложными.
+/// Ложны только `false` и `none`. Все остальные значения истинны, включая
+/// `0`, `0.0`, пустую строку, пустые списки/кортежи/Map и `failure`.
+/// Используется интерпретатором в `if`, `while`, `cond`, `assert`, `and`,
+/// `or`, `not` и `list-filter`.
 pub fn is_truthy(value: &Value) -> bool {
-    match value {
-        Value::None => false,
-        Value::Failure(_) => false,
-        Value::Bool(b) => *b,
-        Value::Int(i) => *i != 0,
-        Value::Float(f) => *f != 0.0,
-        Value::Str(s) => !s.is_empty(),
-        Value::List(items) => !items.is_empty(),
-        Value::Tuple(items) => !items.is_empty(),
-        Value::Map(pairs) => !pairs.is_empty(),
-        Value::Struct { .. } => true,
-        Value::Some(_) => true,
-        Value::Success(_) => true,
-        Value::Closure(_) => true,
-        Value::Native { .. } => true,
-    }
+    !matches!(value, Value::None | Value::Bool(false))
 }
 
 /// Преобразование значения Lupus в строку для печати.

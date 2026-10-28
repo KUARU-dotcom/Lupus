@@ -81,6 +81,6 @@ fn variadic_builtins_keep_old_behavior() {
 fn higher_order_builtins_accept_builtins() {
     assert_eq!(
         ok("(list (list-filter (list 0 -1 2) abs) (list-fold (list 1 2 3) 0 +))"),
-        list(vec![list(vec![int(-1), int(2)]), int(6)])
+        list(vec![list(vec![int(0), int(-1), int(2)]), int(6)])
     );
 }

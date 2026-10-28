@@ -10,8 +10,8 @@
 "loop" = { positive = ["loop"], negative = ["loop_body_error"] }
 "exit" = { positive = ["loop", "v05_exit_boundary_ok"], negative = ["exit_non_integer", "v05_exit_negative", "v05_exit_1000"] }
 "begin" = { positive = ["functions"], negative = ["begin_contained_error"] }
-"and" = { positive = ["functions"], negative = ["and_contained_error"] }
-"or" = { positive = ["functions"], negative = ["or_contained_error"] }
+"and" = { positive = ["functions", "v06_logic"], negative = ["and_contained_error"] }
+"or" = { positive = ["functions", "v06_logic"], negative = ["or_contained_error"] }
 "cond" = { positive = ["cond"], negative = ["cond_bad_clause"] }
 "for" = { positive = ["for_range"], negative = ["for_not_list"] }
 "range" = { positive = ["for_range"], negative = ["range_arity"] }
@@ -20,7 +20,7 @@
 "if-let" = { positive = ["if_let"], negative = ["if_let_non_option"] }
 "assert" = { positive = ["assert"], negative = ["assert_fail"] }
 "print" = { positive = ["print_values"], negative = ["print_arity"] }
-"defstruct" = { positive = ["defstruct"], negative = ["defstruct_duplicate_field"] }
+"defstruct" = { positive = ["defstruct", "v06_defstruct_typed"], negative = ["defstruct_duplicate_field", "v06_defstruct_field_type"] }
 "tuple" = { positive = ["tuple"], negative = ["tuple_pattern_arity"] }
 "not" = { positive = ["functions"], negative = ["not_arity"] }
 "+" = { positive = ["arithmetic", "functions"], negative = ["add_mix_int_float"] }
@@ -54,14 +54,14 @@
 "success" = { positive = ["print_values", "match"], negative = ["success_arity"] }
 "failure" = { positive = ["print_values", "match"], negative = ["failure_arity"] }
 "cons" = { positive = ["lists"], negative = ["cons_not_list"] }
-"head" = { positive = ["lists"], negative = ["head_arity"] }
-"tail" = { positive = ["lists"], negative = ["tail_arity"] }
+"head" = { positive = ["lists"], negative = ["head_arity", "v06_head_empty", "v06_head_type"] }
+"tail" = { positive = ["lists"], negative = ["tail_arity", "v06_tail_empty", "v06_tail_type"] }
 "empty?" = { positive = ["lists"], negative = ["empty_type"] }
 "append" = { positive = ["lists"], negative = ["append_not_list"] }
 "list-map" = { positive = ["hof"], negative = ["list_map_not_list"] }
 "list-filter" = { positive = ["hof"], negative = ["list_filter_not_list"] }
 "list-fold" = { positive = ["hof"], negative = ["list_fold_not_list"] }
-"nth" = { positive = ["lists"], negative = ["nth_index_out_of_bounds"] }
+"nth" = { positive = ["lists"], negative = ["nth_index_out_of_bounds", "v06_nth_type"] }
 "length" = { positive = ["lists"], negative = ["length_type"] }
 "len" = { positive = ["lists"], negative = ["len_type"] }
 "contains?" = { positive = ["lists"], negative = ["contains_type"] }
@@ -96,7 +96,7 @@
 "map-values" = { positive = ["v05_map"], negative = ["map_nan_key"] }
 "map-has?" = { positive = ["v05_map"], negative = ["map_nan_key"] }
 "map-set" = { positive = ["v05_map"], negative = ["map_nan_key"] }
-"generic-defstruct" = { positive = ["v05_generics"], negative = ["defstruct_duplicate_field"] }
+"generic-defstruct" = { positive = ["v05_generics", "v06_defstruct_generic"], negative = ["defstruct_duplicate_field"] }
 "Node" = { positive = ["v05_generics"], negative = ["constructor_arity"] }
 "Node-value" = { positive = ["v05_generics"], negative = ["accessor_foreign_struct"] }
 "node-value" = { positive = ["v05_generics"], negative = ["accessor_foreign_struct"] }
