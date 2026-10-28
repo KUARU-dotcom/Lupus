@@ -72,8 +72,9 @@ pub struct Span {
 
 /// Позиция ошибки в исходном коде.
 ///
-/// Для runtime/lint-ошибок location равен `None` (span'ы в AST появятся
-/// в V0.6 — см. `docs/ERRATA.md`).
+/// Заполняется для lex/parse-ошибок и для runtime/lint/type-ошибок,
+/// возникших при вычислении узла AST со span. Для ошибок без привязки
+/// к исходнику location равен `None`.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Location {
     /// Путь к файлу, если известен.
@@ -106,7 +107,7 @@ pub struct Error {
     pub code: String,
     /// Человекочитаемое сообщение (на русском языке).
     pub message: String,
-    /// Позиция в исходном коде (только lex/parse).
+    /// Позиция в исходном коде (lex/parse или узел AST со span).
     pub location: Option<Box<Location>>,
     /// Подсказка по исправлению.
     pub hint: Option<String>,
@@ -115,18 +116,6 @@ pub struct Error {
 }
 
 impl Error {
-    /// Создаёт runtime-ошибку, подбирая код по тексту сообщения.
-    ///
-    /// Старые места вызова (V0.4) не передавали код; для обратной
-    /// совместимости классификатор ниже сопоставляет типовые сообщения
-    /// каталогу §6.2. Новый код должен использовать явные хелперы
-    /// [`Error::runtime`], [`Error::arity`] и т.п.
-    pub fn new(message: impl Into<String>) -> Self {
-        let message = message.into();
-        let code = infer_code(&message);
-        Error::runtime(code, message)
-    }
-
     /// Создаёт диагностику с произвольными полями.
     pub fn diagnostic(
         severity: Severity,
@@ -269,10 +258,22 @@ impl Error {
         self
     }
 
-    /// Прикрепляет путь к файлу, не создавая location для runtime-ошибок.
+    /// Прикрепляет позицию узла AST, если location ещё не задана.
     ///
-    /// Используется CLI: runtime/lint-ошибки по ERRATA имеют `location = null`,
-    /// даже если известно имя файла.
+    /// Не перезаписывает location лексических/синтаксических ошибок.
+    pub fn with_span_location(mut self, line: usize, col: usize, span: Span) -> Self {
+        if self.location.is_none() {
+            self.location = Some(Box::new(Location {
+                file: None,
+                line,
+                col,
+                span: Some(span),
+            }));
+        }
+        self
+    }
+
+    /// Прикрепляет путь к файлу, если location уже есть.
     pub fn with_file_if_located(mut self, file: impl Into<String>) -> Self {
         if let Some(location) = &mut self.location {
             if location.file.is_none() {
@@ -388,39 +389,18 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-/// Классифицирует сообщение старого образца по каталогу кодов §6.2.
-fn infer_code(message: &str) -> &'static str {
-    if message.contains("Индекс вне диапазона") {
-        return "index-out-of-bounds";
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn code_is_independent_of_message() {
+        let original = Error::unknown_identifier("Переменная не определена: x");
+        let mut reformulated = original.clone();
+        reformulated.message = "совершенно другая формулировка".to_string();
+
+        assert_eq!(reformulated.code, "unknown-identifier");
+        assert_eq!(reformulated.phase, Phase::Runtime);
+        assert_eq!(reformulated.code, original.code);
     }
-    if message.contains("Деление на ноль") {
-        return "divide-by-zero";
-    }
-    if message.contains("не изменяемая") {
-        return "immutable-assignment";
-    }
-    if message.contains("Assert не выполнен") {
-        return "assert-failed";
-    }
-    if message.contains("ни одна ветка") {
-        return "match-non-exhaustive";
-    }
-    if message.contains("не определена") || message.contains("не определён")
-    {
-        return "unknown-identifier";
-    }
-    if message.contains("duplicate-struct-field") {
-        return "duplicate-struct-field";
-    }
-    let arity_words =
-        message.contains("аргумент") || message.contains("элементов") || message.contains("полей");
-    if arity_words
-        && (message.contains("получено")
-            || message.contains("ровно")
-            || message.contains("минимум")
-            || message.contains("ожидает"))
-    {
-        return "arity-mismatch";
-    }
-    "type-mismatch"
 }

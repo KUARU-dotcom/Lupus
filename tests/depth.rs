@@ -53,7 +53,12 @@ fn v05_depth_deep_recursion() {
     let output = run_source("(define (f n) (f (+ n 1)))\n(f 0)\n");
     assert_error_code(&output, "stack-depth-exceeded");
     assert!(output.stderr.contains("\"phase\":\"runtime\""));
-    assert!(output.stderr.contains("\"location\":null"));
+    assert!(
+        output.stderr.contains("\"location\":{"),
+        "{}",
+        output.stderr
+    );
+    assert!(output.stderr.contains("\"span\":{"));
 }
 
 #[test]

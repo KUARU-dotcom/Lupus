@@ -4,14 +4,14 @@
 //! (`define`, `define-mutable`, `set!`, `if`, `while`, `begin`, `and`, `or`,
 //! `lambda`) и вызов встроенных / пользовательских функций.
 
-use crate::ast::Expr;
+use crate::ast::{Expr, ExprKind};
 use crate::builtins;
 use crate::environment::Environment;
 use crate::error::Error;
 use crate::lexer::{Token, TokenKind};
 use crate::modules;
 use crate::native;
-use crate::value::{is_truthy, Closure, Value};
+use crate::value::{is_truthy, Arity, BuiltinImpl, Closure, NativeImpl, Value};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -193,16 +193,20 @@ impl Interpreter {
     }
 
     /// Оценка одного выражения в контексте окружения.
+    ///
+    /// Ошибка без готовой location получает span и позицию текущего узла.
+    /// Это не перезаписывает location лексических/синтаксических ошибок.
     pub fn eval(&self, expr: &Expr, env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
-        match expr {
-            Expr::Number(n) => Ok(Value::Int(*n)),
-            Expr::Float(f) => Ok(Value::Float(*f)),
-            Expr::Str(s) => Ok(Value::Str(s.clone())),
-            Expr::Bool(b) => Ok(Value::Bool(*b)),
-            Expr::None => Ok(Value::None),
-            Expr::Symbol(name) => self.eval_symbol(&env, name),
-            Expr::List(elems) => self.eval_list(elems, env),
-        }
+        let result = match &expr.kind {
+            ExprKind::Number(n) => Ok(Value::Int(*n)),
+            ExprKind::Float(f) => Ok(Value::Float(*f)),
+            ExprKind::Str(s) => Ok(Value::Str(s.clone())),
+            ExprKind::Bool(b) => Ok(Value::Bool(*b)),
+            ExprKind::None => Ok(Value::None),
+            ExprKind::Symbol(name) => self.eval_symbol(&env, name),
+            ExprKind::List(elems) => self.eval_list(elems, env),
+        };
+        result.map_err(|error| attach_node_location(expr, error))
     }
 }
 
@@ -217,7 +221,7 @@ impl Interpreter {
         let rest = &elems[1..];
 
         // Специальные формы, опознаваемые по имени-символу.
-        if let Expr::Symbol(name) = first {
+        if let ExprKind::Symbol(name) = &first.kind {
             match name.as_str() {
                 "define" => return self.do_define(rest, &env),
                 "define-public" => return self.do_define_public(rest, &env),
@@ -242,354 +246,15 @@ impl Interpreter {
                 "match" => return self.do_match(rest, env),
                 "if-let" => return self.do_if_let(rest, env),
                 "assert" => return self.do_assert(rest, env),
-                "not" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::not(&args);
-                }
-                "print" => return self.do_print(rest, env),
-                "int->str" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::int_to_str(&args);
-                }
-                "float->str" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::float_to_str(&args);
-                }
-                "int->float" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::int_to_float(&args);
-                }
-                "float->int" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::float_to_int(&args);
-                }
-                "str->float" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::str_to_float(&args);
-                }
-                "string-append" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::string_append(&args);
-                }
-                "string-length" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::string_length(&args);
-                }
-                "string-split" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::string_split(&args);
-                }
-                "string-reverse" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::string_reverse(&args);
-                }
-                "str->int" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::str_to_int(&args);
-                }
-                "list" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return Ok(builtins::make_list(&args));
-                }
-                // Конструктор кортежа: (tuple элем...) — арность 0+ любая.
-                "tuple" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return Ok(Value::Tuple(args));
-                }
-                // ─── Map (V0.5) ────────────────────────────────────────────────
-                "map" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::make_map(&args);
-                }
-                "map-get" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::map_get(&args);
-                }
-                "map-set" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::map_set(&args);
-                }
-                "map-keys" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::map_keys(&args);
-                }
-                "map-values" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::map_values(&args);
-                }
-                "map-has?" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::map::map_has(&args);
-                }
-                // Конструкторы Option/Result: (some e), (success e), (failure e).
-                "some" => {
-                    if rest.len() != 1 {
-                        return Err(Error::new(format!(
-                            "(some ...) требует ровно 1 аргумент, получено {}",
-                            rest.len()
-                        )));
-                    }
-                    let v = self.eval(&rest[0], env)?;
-                    return Ok(Value::Some(Box::new(v)));
-                }
-                "success" => {
-                    if rest.len() != 1 {
-                        return Err(Error::new(format!(
-                            "(success ...) требует ровно 1 аргумент, получено {}",
-                            rest.len()
-                        )));
-                    }
-                    let v = self.eval(&rest[0], env)?;
-                    return Ok(Value::Success(Box::new(v)));
-                }
-                "failure" => {
-                    if rest.len() != 1 {
-                        return Err(Error::new(format!(
-                            "(failure ...) требует ровно 1 аргумент, получено {}",
-                            rest.len()
-                        )));
-                    }
-                    let v = self.eval(&rest[0], env)?;
-                    return Ok(Value::Failure(Box::new(v)));
-                }
-                // ─── Функции списков (ЭТАП 2) ───────────────────────────────────
-                "cons" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 2 {
-                        return Err(Error::new(
-                            "(cons ...) требует ровно 2 аргумента".to_string(),
-                        ));
-                    }
-                    let list = match &args[1] {
-                        Value::List(items) => items.clone(),
-                        _ => return Err(Error::new("Второй аргумент cons должен быть списком")),
-                    };
-                    let mut result = vec![args[0].clone()];
-                    result.extend(list);
-                    return Ok(Value::List(result));
-                }
-                "head" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 1 {
-                        return Err(Error::new(
-                            "(head ...) требует ровно 1 аргумент".to_string(),
-                        ));
-                    }
-                    match &args[0] {
-                        Value::List(items) if !items.is_empty() => {
-                            return Ok(Value::Some(Box::new(items[0].clone())));
-                        }
-                        _ => return Ok(Value::None),
-                    }
-                }
-                "tail" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 1 {
-                        return Err(Error::new(
-                            "(tail ...) требует ровно 1 аргумент".to_string(),
-                        ));
-                    }
-                    match &args[0] {
-                        Value::List(items) if items.len() > 1 => {
-                            return Ok(Value::Some(Box::new(Value::List(items[1..].to_vec()))));
-                        }
-                        _ => return Ok(Value::None),
-                    }
-                }
-                "empty?" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 1 {
-                        return Err(Error::new(
-                            "(empty? ...) требует ровно 1 аргумент".to_string(),
-                        ));
-                    }
-                    match &args[0] {
-                        Value::List(items) => return Ok(Value::Bool(items.is_empty())),
-                        _ => return Err(Error::new("empty? требует список")),
-                    }
-                }
-                "append" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 2 {
-                        return Err(Error::new(
-                            "(append ...) требует ровно 2 аргумента".to_string(),
-                        ));
-                    }
-                    match (&args[0], &args[1]) {
-                        (Value::List(a), Value::List(b)) => {
-                            let mut result = a.clone();
-                            result.extend(b.clone());
-                            return Ok(Value::List(result));
-                        }
-                        _ => return Err(Error::new("append требует два списка")),
-                    }
-                }
-                "list-map" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 2 {
-                        return Err(Error::new(
-                            "(list-map ...) требует ровно 2 аргумента".to_string(),
-                        ));
-                    }
-                    let list = match &args[0] {
-                        Value::List(items) => items.clone(),
-                        _ => {
-                            return Err(Error::new("Первый аргумент list-map должен быть списком"))
-                        }
-                    };
-                    let f = match &args[1] {
-                        Value::Closure(c) => c,
-                        _ => {
-                            return Err(Error::new("Второй аргумент list-map должен быть функцией"))
-                        }
-                    };
-                    let mut result = Vec::with_capacity(list.len());
-                    for item in list {
-                        let mapped = self.call_closure_with_values(f, vec![item.clone()], &env)?;
-                        result.push(mapped);
-                    }
-                    return Ok(Value::List(result));
-                }
-                "list-filter" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 2 {
-                        return Err(Error::new(
-                            "(list-filter ...) требует ровно 2 аргумента".to_string(),
-                        ));
-                    }
-                    let list = match &args[0] {
-                        Value::List(items) => items.clone(),
-                        _ => {
-                            return Err(Error::new(
-                                "Первый аргумент list-filter должен быть списком",
-                            ))
-                        }
-                    };
-                    let f = match &args[1] {
-                        Value::Closure(c) => c,
-                        _ => {
-                            return Err(Error::new(
-                                "Второй аргумент list-filter должен быть функцией",
-                            ))
-                        }
-                    };
-                    let mut result = Vec::new();
-                    for item in list {
-                        let keep = self.call_closure_with_values(f, vec![item.clone()], &env)?;
-                        if is_truthy(&keep) {
-                            result.push(item);
-                        }
-                    }
-                    return Ok(Value::List(result));
-                }
-                "list-fold" => {
-                    let args = self.eval_all(rest, &env)?;
-                    if args.len() != 3 {
-                        return Err(Error::new(
-                            "(list-fold ...) требует ровно 3 аргумента".to_string(),
-                        ));
-                    }
-                    let list = match &args[0] {
-                        Value::List(items) => items.clone(),
-                        _ => {
-                            return Err(Error::new("Первый аргумент list-fold должен быть списком"))
-                        }
-                    };
-                    let f = match &args[2] {
-                        Value::Closure(c) => c,
-                        _ => {
-                            return Err(Error::new(
-                                "Третий аргумент list-fold должен быть функцией",
-                            ))
-                        }
-                    };
-                    let mut acc = args[1].clone();
-                    for item in list {
-                        acc = self.call_closure_with_values(f, vec![acc, item], &env)?;
-                    }
-                    return Ok(acc);
-                }
-                "nth" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::nth(&args);
-                }
-                // `length` и алиас `len` — одно и то же.
-                "length" | "len" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::length(&args);
-                }
-                // Встроенная проверка наличия значения в списке (см. задачу #60).
-                "contains?" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::contains(&args);
-                }
-                "+" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::add(&args);
-                }
-                "-" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::sub(&args);
-                }
-                "*" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::mul(&args);
-                }
-                "/" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::div(&args);
-                }
-                "%" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::rem(&args);
-                }
-                // Алиас `mod` для `%` (по прецеденту с алиасом `len` для `length`).
-                "mod" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::rem(&args);
-                }
-                "pow" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::pow(&args);
-                }
-                "min" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::min(&args);
-                }
-                "max" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::max(&args);
-                }
-                "abs" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::abs(&args);
-                }
-                "=" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::eq(&args);
-                }
-                "!=" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::neq(&args);
-                }
-                "<" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::lt(&args);
-                }
-                ">" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::gt(&args);
-                }
-                "<=" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::le(&args);
-                }
-                ">=" => {
-                    let args = self.eval_all(rest, &env)?;
-                    return builtins::ge(&args);
-                }
                 "test" => return Ok(Value::None),
                 _ => {}
+            }
+
+            // Остальные встроенные функции — из статической таблицы.
+            if let Some(builtin) = builtins::lookup(name) {
+                builtin.arity.check(builtin.name, rest.len())?;
+                let args = self.eval_all(rest, &env)?;
+                return self.invoke_native(&NativeImpl::Builtin(builtin.func), &args);
             }
 
             // Конструкторы и аксессоры структур (ЭТАП 3 V0.4).
@@ -620,10 +285,48 @@ impl Interpreter {
 
         match func_val {
             Value::Closure(closure) => self.call_closure(&closure, actual_args, &env),
-            Value::Native(function) => {
+            Value::Native { name, arity, func } => {
+                arity.check(&name, actual_args.len())?;
                 let args = self.eval_all(actual_args, &env)?;
-                native::call(self, &function, &args)
+                self.invoke_native(&func, &args)
             }
+            _ => Err(Error::type_mismatch("Не могу вызвать не-функцию")),
+        }
+    }
+
+    /// Проверяет арность и вызывает нативную функцию с готовыми аргументами.
+    fn call_native(
+        &self,
+        name: &str,
+        arity: Arity,
+        func: &NativeImpl,
+        args: &[Value],
+    ) -> Result<Value, Error> {
+        arity.check(name, args.len())?;
+        self.invoke_native(func, args)
+    }
+
+    /// Вызывает нативную функцию; арность уже проверена вызывающим кодом.
+    fn invoke_native(&self, func: &NativeImpl, args: &[Value]) -> Result<Value, Error> {
+        match func {
+            NativeImpl::Builtin(BuiltinImpl::Pure(function)) => function(args),
+            NativeImpl::Builtin(BuiltinImpl::Context(function)) => function(self, args),
+            NativeImpl::Module { package, symbol } => native::call(self, package, symbol, args),
+        }
+    }
+
+    /// Вызывает значение-функцию с уже вычисленными аргументами.
+    ///
+    /// Используется функциями высшего порядка (`list-map`, `list-filter`,
+    /// `list-fold`): функция-аргумент может быть замыканием или builtin.
+    pub(crate) fn call_value_with_values(
+        &self,
+        callable: &Value,
+        args: Vec<Value>,
+    ) -> Result<Value, Error> {
+        match callable {
+            Value::Closure(closure) => self.call_closure_with_values(closure, args),
+            Value::Native { name, arity, func } => self.call_native(name, *arity, func, &args),
             _ => Err(Error::type_mismatch("Не могу вызвать не-функцию")),
         }
     }
@@ -650,7 +353,7 @@ impl Interpreter {
     ) -> Result<Value, Error> {
         let _depth = self.enter_call()?;
         if actual_args.len() != closure.params.len() {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "Функция ожидает {} аргументов, получено {}",
                 closure.params.len(),
                 actual_args.len()
@@ -678,11 +381,10 @@ impl Interpreter {
         &self,
         closure: &Closure,
         arg_vals: Vec<Value>,
-        _caller_env: &Rc<RefCell<Environment>>,
     ) -> Result<Value, Error> {
         let _depth = self.enter_call()?;
         if arg_vals.len() != closure.params.len() {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "Функция ожидает {} аргументов, получено {}",
                 closure.params.len(),
                 arg_vals.len()
@@ -737,18 +439,19 @@ impl Interpreter {
             )));
         }
 
-        let (name, value) = match &rest[0] {
+        let (name, value) = match &rest[0].kind {
             // (define имя значение)
-            Expr::Symbol(name) => {
+            ExprKind::Symbol(name) => {
                 let value = self.eval(&rest[1], env.clone())?;
                 (name.clone(), value)
             }
             // (define (имя параметры...) [-> тип] тело...)
-            Expr::List(header) => {
+            ExprKind::List(header) => {
                 let (fn_name, param_names) = self.parse_function_header(header)?;
 
                 // Необязательная аннотация возвращаемого типа `-> type`.
-                let body_start = if matches!(rest.get(1), Some(Expr::Symbol(s)) if s == "->") {
+                let body_start = if matches!(rest.get(1), Some(Expr { kind: ExprKind::Symbol(s), .. }) if s == "->")
+                {
                     if rest.len() < 3 {
                         return Err(Error::type_error(
                             "missing-return-type",
@@ -806,8 +509,8 @@ impl Interpreter {
                 "Пустой список в определении функции",
             ));
         }
-        let name = match &header[0] {
-            Expr::Symbol(name) => name.clone(),
+        let name = match &header[0].kind {
+            ExprKind::Symbol(name) => name.clone(),
             _ => {
                 return Err(Error::type_error(
                     "unexpected-token",
@@ -818,10 +521,10 @@ impl Interpreter {
 
         let mut params = Vec::with_capacity(header.len().saturating_sub(1));
         for param in &header[1..] {
-            match param {
-                Expr::Symbol(name) => params.push(name.clone()),
-                Expr::List(items) if !items.is_empty() => match &items[0] {
-                    Expr::Symbol(name) => params.push(name.clone()),
+            match &param.kind {
+                ExprKind::Symbol(name) => params.push(name.clone()),
+                ExprKind::List(items) if !items.is_empty() => match &items[0].kind {
+                    ExprKind::Symbol(name) => params.push(name.clone()),
                     _ => {
                         return Err(Error::type_error(
                             "unexpected-token",
@@ -853,14 +556,17 @@ impl Interpreter {
                 rest.len()
             )));
         }
-        let (type_name, type_params) = match &rest[0] {
-            Expr::Symbol(name) => (name.clone(), Vec::new()),
-            Expr::List(header) => match header.first() {
-                Some(Expr::Symbol(name)) => {
+        let (type_name, type_params) = match &rest[0].kind {
+            ExprKind::Symbol(name) => (name.clone(), Vec::new()),
+            ExprKind::List(header) => match header.first() {
+                Some(Expr {
+                    kind: ExprKind::Symbol(name),
+                    ..
+                }) => {
                     let mut params = Vec::new();
                     for param in &header[1..] {
-                        match param {
-                            Expr::Symbol(param) => params.push(param.clone()),
+                        match &param.kind {
+                            ExprKind::Symbol(param) => params.push(param.clone()),
                             _ => {
                                 return Err(Error::type_error(
                                     "unexpected-token",
@@ -888,7 +594,7 @@ impl Interpreter {
 
         let mut field_names: Vec<String> = Vec::with_capacity(rest.len() - 1);
         for field in &rest[1..] {
-            let Expr::List(items) = field else {
+            let Some(items) = field.as_list() else {
                 return Err(Error::type_error(
                     "unexpected-token",
                     "Каждое поле defstruct должно быть списком (имя тип)",
@@ -900,8 +606,8 @@ impl Interpreter {
                     "Поле defstruct должно быть списком из 2 элементов (имя тип)",
                 ));
             }
-            let field_name = match &items[0] {
-                Expr::Symbol(n) => n.clone(),
+            let field_name = match &items[0].kind {
+                ExprKind::Symbol(n) => n.clone(),
                 _ => {
                     return Err(Error::type_error(
                         "unexpected-token",
@@ -1161,7 +867,10 @@ impl Interpreter {
     /// FFI-python объявлен заменённым нативными модулями (ERRATA §2).
     fn do_directive(&self, rest: &[Expr]) -> Result<Value, Error> {
         let name = match rest.first() {
-            Some(Expr::Symbol(name)) => name.as_str(),
+            Some(Expr {
+                kind: ExprKind::Symbol(name),
+                ..
+            }) => name.as_str(),
             _ => "",
         };
         match name {
@@ -1191,15 +900,15 @@ impl Interpreter {
         env: &Rc<RefCell<Environment>>,
     ) -> Result<Value, Error> {
         if rest.len() != 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(define-mutable ...) требует ровно 2 аргумента, получено {}",
                 rest.len()
             )));
         }
-        let name = match &rest[0] {
-            Expr::Symbol(n) => n,
+        let name = match &rest[0].kind {
+            ExprKind::Symbol(n) => n,
             _ => {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "Первый аргумент define-mutable должен быть символом",
                 ))
             }
@@ -1212,21 +921,26 @@ impl Interpreter {
     /// (set! имя значение).
     fn do_set(&self, rest: &[Expr], env: &Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(set! ...) требует ровно 2 аргумента, получено {}",
                 rest.len()
             )));
         }
-        let name = match &rest[0] {
-            Expr::Symbol(n) => n,
-            _ => return Err(Error::new("Первый аргумент set! должен быть символом")),
+        let name = match &rest[0].kind {
+            ExprKind::Symbol(n) => n,
+            _ => {
+                return Err(Error::type_mismatch(
+                    "Первый аргумент set! должен быть символом",
+                ))
+            }
         };
         let new_value = self.eval(&rest[1], env.clone())?;
         match Environment::set(env, name, new_value) {
             Ok(()) => Ok(Value::None),
-            Err(e) if e.message.starts_with("Переменная не определена") => {
+            Err(e) if e.code == "unknown-identifier" => {
                 // Улучшенное сообщение с подсказками по похожим именам.
-                Err(self.undefined_variable_error(env, name))
+                let error = self.undefined_variable_error(env, name);
+                Err(attach_node_location(&rest[0], error))
             }
             Err(e) => Err(e),
         }
@@ -1235,15 +949,15 @@ impl Interpreter {
     /// (lambda (параметры...) тело...).
     fn do_lambda(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() < 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(lambda ...) требует минимум 2 аргумента, получено {}",
                 rest.len()
             )));
         }
-        let param_list = match &rest[0] {
-            Expr::List(items) => items,
+        let param_list = match &rest[0].kind {
+            ExprKind::List(items) => items,
             _ => {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "Первый аргумент lambda должен быть списком параметров",
                 ))
             }
@@ -1251,10 +965,10 @@ impl Interpreter {
 
         let mut param_names = Vec::new();
         for p in param_list {
-            match p {
-                Expr::Symbol(s) => param_names.push(s.clone()),
-                Expr::List(items) if !items.is_empty() => match &items[0] {
-                    Expr::Symbol(name) => param_names.push(name.clone()),
+            match &p.kind {
+                ExprKind::Symbol(s) => param_names.push(s.clone()),
+                ExprKind::List(items) if !items.is_empty() => match &items[0].kind {
+                    ExprKind::Symbol(name) => param_names.push(name.clone()),
                     _ => {
                         return Err(Error::type_error(
                             "unexpected-token",
@@ -1271,7 +985,8 @@ impl Interpreter {
             }
         }
 
-        let body_start = if matches!(rest.get(1), Some(Expr::Symbol(s)) if s == "->") {
+        let body_start = if matches!(rest.get(1), Some(Expr { kind: ExprKind::Symbol(s), .. }) if s == "->")
+        {
             3
         } else {
             1
@@ -1293,7 +1008,7 @@ impl Interpreter {
     /// (if условие then else).
     fn do_if(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 3 && rest.len() != 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(if ...) требует ровно 2 или 3 аргумента, получено {}",
                 rest.len()
             )));
@@ -1313,7 +1028,7 @@ impl Interpreter {
     /// (while условие тело...).
     fn do_while(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() < 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(while ...) требует минимум 2 аргумента, получено {}",
                 rest.len()
             )));
@@ -1349,14 +1064,14 @@ impl Interpreter {
     /// (exit n) — немедленно завершает процесс с кодом n.
     fn do_exit(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 1 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(exit ...) требует ровно 1 аргумент, получено {}",
                 rest.len()
             )));
         }
         let code = match self.eval(&rest[0], env)? {
             Value::Int(c) => c,
-            _ => return Err(Error::new("exit требует целого числа")),
+            _ => return Err(Error::type_mismatch("exit требует целого числа")),
         };
         if !(0..=255).contains(&code) {
             return Err(Error::runtime(
@@ -1402,18 +1117,12 @@ impl Interpreter {
     }
 
     /// (print строка).
-    fn do_print(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
-        if rest.len() != 1 {
-            return Err(Error::new(format!(
-                "(print ...) требует ровно 1 аргумент, получено {}",
-                rest.len()
-            )));
-        }
-        let value = self.eval(&rest[0], env)?;
+    /// Печатает значение с учётом подавления вывода в тестах.
+    pub(crate) fn print_value(&self, value: &Value) -> Result<(), Error> {
         if !self.suppress_print.get() {
-            builtins::print_arg(&value)?;
+            builtins::print_arg(value)?;
         }
-        Ok(Value::None)
+        Ok(())
     }
 
     /// (cond (условие тело...) ... (else тело...))
@@ -1423,17 +1132,19 @@ impl Interpreter {
     /// возвращается `None`.
     fn do_cond(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         for clause in rest {
-            let Expr::List(items) = clause else {
-                return Err(Error::new("Каждая ветка cond должна быть списком"));
+            let Some(items) = clause.as_list() else {
+                return Err(Error::type_mismatch(
+                    "Каждая ветка cond должна быть списком",
+                ));
             };
             if items.is_empty() {
-                return Err(Error::new("Пустая ветка cond"));
+                return Err(Error::type_mismatch("Пустая ветка cond"));
             }
             let header = &items[0];
             let body = &items[1..];
 
             // Ветка (else тело...) — безусловная.
-            if let Expr::Symbol(name) = header {
+            if let Some(name) = header.as_symbol() {
                 if name == "else" {
                     if body.is_empty() {
                         return Ok(Value::None);
@@ -1468,16 +1179,20 @@ impl Interpreter {
     fn do_for(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         // Ожидаем: [var, "in", iter, тело...]
         if rest.len() < 3 {
-            return Err(Error::new(
+            return Err(Error::type_mismatch(
                 "(for ...) требует форму: (for var in iter тело...)".to_string(),
             ));
         }
-        let var = match &rest[0] {
-            Expr::Symbol(s) => s.clone(),
-            _ => return Err(Error::new("Переменная цикла for должна быть символом")),
+        let var = match &rest[0].kind {
+            ExprKind::Symbol(s) => s.clone(),
+            _ => {
+                return Err(Error::type_mismatch(
+                    "Переменная цикла for должна быть символом",
+                ))
+            }
         };
-        if !matches!(&rest[1], Expr::Symbol(s) if s == "in") {
-            return Err(Error::new("for: ожидалось ключевое слово 'in'"));
+        if !matches!(&rest[1].kind, ExprKind::Symbol(s) if s == "in") {
+            return Err(Error::type_mismatch("for: ожидалось ключевое слово 'in'"));
         }
         let iter_expr = &rest[2];
         let body_forms = &rest[3..];
@@ -1486,7 +1201,7 @@ impl Interpreter {
         let items = match iter_val {
             Value::List(items) => items,
             _ => {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "for: выражение после 'in' должно вычисляться в список",
                 ))
             }
@@ -1507,18 +1222,26 @@ impl Interpreter {
     /// Если `start >= end` — пустой список.
     fn do_range(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 2 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(range ...) требует ровно 2 аргумента, получено {}",
                 rest.len()
             )));
         }
         let start = match self.eval(&rest[0], env.clone())? {
             Value::Int(v) => v,
-            _ => return Err(Error::new("Первый аргумент range должен быть целым числом")),
+            _ => {
+                return Err(Error::type_mismatch(
+                    "Первый аргумент range должен быть целым числом",
+                ))
+            }
         };
         let end = match self.eval(&rest[1], env.clone())? {
             Value::Int(v) => v,
-            _ => return Err(Error::new("Второй аргумент range должен быть целым числом")),
+            _ => {
+                return Err(Error::type_mismatch(
+                    "Второй аргумент range должен быть целым числом",
+                ))
+            }
         };
 
         let mut items = Vec::new();
@@ -1538,10 +1261,10 @@ impl Interpreter {
         if rest.is_empty() {
             return Err(Error::arity("(let ...) требует список связей и тело"));
         }
-        let bindings = match &rest[0] {
-            Expr::List(items) => items,
+        let bindings = match &rest[0].kind {
+            ExprKind::List(items) => items,
             _ => {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "Первым аргументом let должен быть список связей",
                 ))
             }
@@ -1550,17 +1273,19 @@ impl Interpreter {
         // 1) Вычисляем все значения в ВНЕШНЕМ окружении (параллельно).
         let mut pairs: Vec<(String, Value)> = Vec::with_capacity(bindings.len());
         for b in bindings {
-            let Expr::List(inner) = b else {
-                return Err(Error::new(
+            let Some(inner) = b.as_list() else {
+                return Err(Error::type_mismatch(
                     "Каждая связь let должна быть списком (имя значение)",
                 ));
             };
             if inner.len() != 2 {
-                return Err(Error::new("Связь let должна быть списком из 2 элементов"));
+                return Err(Error::type_mismatch(
+                    "Связь let должна быть списком из 2 элементов",
+                ));
             }
-            let name = match &inner[0] {
-                Expr::Symbol(s) => s.clone(),
-                _ => return Err(Error::new("Имя в связи let должно быть символом")),
+            let name = match &inner[0].kind {
+                ExprKind::Symbol(s) => s.clone(),
+                _ => return Err(Error::type_mismatch("Имя в связи let должно быть символом")),
             };
             let value = self.eval(&inner[1], env.clone())?;
             pairs.push((name, value));
@@ -1589,7 +1314,7 @@ impl Interpreter {
     /// runtime-ошибка.
     fn do_match(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() < 2 {
-            return Err(Error::new(
+            return Err(Error::type_mismatch(
                 "(match ...) требует выражение и минимум одну ветку".to_string(),
             ));
         }
@@ -1597,11 +1322,13 @@ impl Interpreter {
         let clauses = &rest[1..];
 
         for clause in clauses {
-            let Expr::List(items) = clause else {
-                return Err(Error::new("Каждая ветка match должна быть списком"));
+            let Some(items) = clause.as_list() else {
+                return Err(Error::type_mismatch(
+                    "Каждая ветка match должна быть списком",
+                ));
             };
             if items.is_empty() {
-                return Err(Error::new("Пустая ветка match"));
+                return Err(Error::type_mismatch("Пустая ветка match"));
             }
             let pattern = &items[0];
             let body = &items[1..];
@@ -1619,7 +1346,10 @@ impl Interpreter {
             }
         }
 
-        Err(Error::new("match: ни одна ветка не совпала"))
+        Err(Error::runtime(
+            "match-non-exhaustive",
+            "match: ни одна ветка не совпала",
+        ))
     }
 
     /// Сопоставляет паттерн со значением, возвращая новые связывания
@@ -1633,40 +1363,40 @@ impl Interpreter {
         pattern: &Expr,
         value: &Value,
     ) -> Result<Option<Vec<(String, Value)>>, Error> {
-        match pattern {
+        match &pattern.kind {
             // `_` — совпадает с чем угодно, без связываний.
-            Expr::Symbol(name) if name == "_" => Ok(Some(Vec::new())),
+            ExprKind::Symbol(name) if name == "_" => Ok(Some(Vec::new())),
             // Переменная — совпадает с чем угодно, связывает имя со значением.
-            Expr::Symbol(name) => Ok(Some(vec![(name.clone(), value.clone())])),
-            Expr::Number(n) => {
+            ExprKind::Symbol(name) => Ok(Some(vec![(name.clone(), value.clone())])),
+            ExprKind::Number(n) => {
                 if *value == Value::Int(*n) {
                     Ok(Some(Vec::new()))
                 } else {
                     Ok(None)
                 }
             }
-            Expr::Float(f) => {
+            ExprKind::Float(f) => {
                 if *value == Value::Float(*f) {
                     Ok(Some(Vec::new()))
                 } else {
                     Ok(None)
                 }
             }
-            Expr::Str(s) => {
+            ExprKind::Str(s) => {
                 if *value == Value::Str(s.clone()) {
                     Ok(Some(Vec::new()))
                 } else {
                     Ok(None)
                 }
             }
-            Expr::Bool(b) => {
+            ExprKind::Bool(b) => {
                 if *value == Value::Bool(*b) {
                     Ok(Some(Vec::new()))
                 } else {
                     Ok(None)
                 }
             }
-            Expr::None => {
+            ExprKind::None => {
                 if *value == Value::None {
                     Ok(Some(Vec::new()))
                 } else {
@@ -1675,15 +1405,15 @@ impl Interpreter {
             }
             // Составные паттерны: (tuple ...), (none), (some p), (success p),
             // (failure p).
-            Expr::List(items) => {
-                if let Some(Expr::Symbol(name)) = items.first() {
+            ExprKind::List(items) => {
+                if let Some(name) = items.first().and_then(Expr::as_symbol) {
                     // (tuple подпаттерны...) — позиционное связывание.
                     if name == "tuple" {
                         let Value::Tuple(elems) = value else {
                             return Ok(None);
                         };
                         if items.len() - 1 != elems.len() {
-                            return Err(Error::new(format!(
+                            return Err(Error::arity(format!(
                                 "tuple-паттерн ожидает {} элементов, получено {}",
                                 items.len() - 1,
                                 elems.len()
@@ -1711,7 +1441,7 @@ impl Interpreter {
                             return Ok(None);
                         }
                         if items.len() - 1 != fields.len() {
-                            return Err(Error::new(format!(
+                            return Err(Error::arity(format!(
                                 "Паттерн структуры '{}' ожидает {} полей, получено {}",
                                 name,
                                 items.len() - 1,
@@ -1729,8 +1459,8 @@ impl Interpreter {
                     }
                 }
                 if items.len() == 2 {
-                    if let Expr::Symbol(name) = &items[0] {
-                        let inner = match name.as_str() {
+                    if let Some(name) = items[0].as_symbol() {
+                        let inner = match name {
                             "some" => match value {
                                 Value::Some(v) => Some(v),
                                 _ => None,
@@ -1761,22 +1491,22 @@ impl Interpreter {
     /// иначе — выполнить `else`. Работает только с Option (по спеке V1.0).
     fn do_if_let(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 3 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(if-let ...) требует ровно 3 аргумента, получено {}",
                 rest.len()
             )));
         }
-        let binding = match &rest[0] {
-            Expr::List(items) if items.len() == 2 => items,
+        let binding = match &rest[0].kind {
+            ExprKind::List(items) if items.len() == 2 => items,
             _ => {
-                return Err(Error::new(
+                return Err(Error::type_mismatch(
                     "Первый аргумент if-let должен быть списком (имя выражение)",
                 ))
             }
         };
-        let name = match &binding[0] {
-            Expr::Symbol(s) => s.clone(),
-            _ => return Err(Error::new("Имя в if-let должно быть символом")),
+        let name = match &binding[0].kind {
+            ExprKind::Symbol(s) => s.clone(),
+            _ => return Err(Error::type_mismatch("Имя в if-let должно быть символом")),
         };
         let val = self.eval(&binding[1], env.clone())?;
         let then_form = &rest[1];
@@ -1789,7 +1519,7 @@ impl Interpreter {
                 self.eval(then_form, branch_env)
             }
             Value::None => self.eval(else_form, env.clone()),
-            _ => Err(Error::new(
+            _ => Err(Error::type_mismatch(
                 "if-let: выражение должно вычисляться в (some v) или none",
             )),
         }
@@ -1801,7 +1531,7 @@ impl Interpreter {
     /// с указанием формы для отладки.
     fn do_assert(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         if rest.len() != 1 {
-            return Err(Error::new(format!(
+            return Err(Error::arity(format!(
                 "(assert ...) требует ровно 1 аргумент, получено {}",
                 rest.len()
             )));
@@ -1811,7 +1541,10 @@ impl Interpreter {
             Ok(Value::None)
         } else {
             let form_text = crate::ast::expr_to_source(&rest[0]);
-            Err(Error::new(format!("Assert не выполнен: <{}>", form_text)))
+            Err(Error::runtime(
+                "assert-failed",
+                format!("Assert не выполнен: <{}>", form_text),
+            ))
         }
     }
 }
@@ -1821,10 +1554,11 @@ impl Interpreter {
     pub fn collect_tests(forms: &[Expr]) -> Result<Vec<TestDef>, Error> {
         let mut tests = Vec::new();
         for form in forms {
-            let Expr::List(items) = form else {
+            let Some(items) = form.as_list() else {
                 continue;
             };
-            if !matches!(items.first(), Some(Expr::Symbol(name)) if name == "test") {
+            if !matches!(items.first(), Some(Expr { kind: ExprKind::Symbol(name), .. }) if name == "test")
+            {
                 continue;
             }
             if items.len() < 2 {
@@ -1832,8 +1566,8 @@ impl Interpreter {
                     "(test ...) требует строковое имя и тело теста",
                 ));
             }
-            let name = match &items[1] {
-                Expr::Str(name) => name.clone(),
+            let name = match &items[1].kind {
+                ExprKind::Str(name) => name.clone(),
                 _ => {
                     return Err(Error::type_mismatch(
                         "Имя теста в форме (test ...) должно быть строкой",
@@ -1950,8 +1684,12 @@ impl Interpreter {
 
         match Environment::get(env, name) {
             Ok(value) => Ok(value),
-            Err(e) if e.message.starts_with("Переменная не определена") => {
-                Err(self.undefined_variable_error(env, name))
+            Err(e) if e.code == "unknown-identifier" => {
+                if let Some(builtin) = builtins::lookup(name) {
+                    Ok(builtin.value())
+                } else {
+                    Err(self.undefined_variable_error(env, name))
+                }
             }
             Err(e) => Err(e),
         }
@@ -2074,17 +1812,28 @@ fn body_from_forms(forms: &[Expr]) -> Expr {
     if forms.len() == 1 {
         forms[0].clone()
     } else {
-        Expr::List(
-            std::iter::once(Expr::Symbol("begin".to_string()))
+        Expr::unspanned(ExprKind::List(
+            std::iter::once(Expr::unspanned(ExprKind::Symbol("begin".to_string())))
                 .chain(forms.iter().cloned())
                 .collect(),
-        )
+        ))
+    }
+}
+
+/// Прикрепляет к ошибке span и позицию узла, если error ещё не локализована.
+fn attach_node_location(expr: &Expr, error: Error) -> Error {
+    if error.location.is_some() {
+        return error;
+    }
+    match expr.source_location() {
+        Some((span, line, col)) => error.with_span_location(line, col, span),
+        None => error,
     }
 }
 
 /// Проверяет, является ли форма объявлением теста.
 fn is_test_form(form: &Expr) -> bool {
-    matches!(form, Expr::List(items) if matches!(items.first(), Some(Expr::Symbol(name)) if name == "test"))
+    matches!(&form.kind, ExprKind::List(items) if matches!(items.first(), Some(Expr { kind: ExprKind::Symbol(name), .. }) if name == "test"))
 }
 
 /// Расстояние Левенштейна (для подсказок по неопределённым переменным).

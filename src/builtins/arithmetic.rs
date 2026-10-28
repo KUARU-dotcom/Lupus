@@ -15,7 +15,7 @@ enum Num {
 fn as_int(value: &Value, op: &str) -> Result<i64, Error> {
     match value {
         Value::Int(i) => Ok(*i),
-        _ => Err(Error::new(format!("{} требует целых чисел", op))),
+        _ => Err(Error::type_mismatch(format!("{} требует целых чисел", op))),
     }
 }
 
@@ -24,7 +24,7 @@ fn as_num(value: &Value, op: &str) -> Result<Num, Error> {
     match value {
         Value::Int(i) => Ok(Num::Int(*i)),
         Value::Float(f) => Ok(Num::Float(*f)),
-        _ => Err(Error::new(format!("{} требует чисел", op))),
+        _ => Err(Error::type_mismatch(format!("{} требует чисел", op))),
     }
 }
 
@@ -34,7 +34,10 @@ fn check_no_mix(nums: &[Num], op: &str) -> Result<(), Error> {
     let has_int = nums.iter().any(|n| matches!(n, Num::Int(_)));
     let has_float = nums.iter().any(|n| matches!(n, Num::Float(_)));
     if has_int && has_float {
-        return Err(Error::new(format!("{}: нельзя смешивать int и float", op)));
+        return Err(Error::type_mismatch(format!(
+            "{}: нельзя смешивать int и float",
+            op
+        )));
     }
     Ok(())
 }
@@ -43,12 +46,6 @@ fn check_no_mix(nums: &[Num], op: &str) -> Result<(), Error> {
 ///
 /// int+int → int; float+float → float; смешивание — ошибка.
 pub fn add(args: &[Value]) -> Result<Value, Error> {
-    if args.len() < 2 {
-        return Err(Error::new(format!(
-            "(+ ...) требует минимум 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
     let nums: Vec<Num> = args
         .iter()
         .map(|a| as_num(a, "+"))
@@ -78,17 +75,13 @@ pub fn add(args: &[Value]) -> Result<Value, Error> {
 
 /// Вычитание: унарный минус (1 аргумент) или разность (2+ аргументов).
 pub fn sub(args: &[Value]) -> Result<Value, Error> {
-    if args.is_empty() {
-        return Err(Error::new("(-) требует минимум 1 аргумент, получено 0"));
-    }
-
     if args.len() == 1 {
         return match &args[0] {
             Value::Int(v) => v.checked_neg().map(Value::Int).ok_or_else(|| {
                 Error::runtime("integer-overflow", "Переполнение при унарном минусе")
             }),
             Value::Float(v) => Ok(Value::Float(-v)),
-            _ => Err(Error::new("- требует чисел")),
+            _ => Err(Error::type_mismatch("- требует чисел")),
         };
     }
 
@@ -127,12 +120,6 @@ pub fn sub(args: &[Value]) -> Result<Value, Error> {
 
 /// Умножение двух и более чисел.
 pub fn mul(args: &[Value]) -> Result<Value, Error> {
-    if args.len() < 2 {
-        return Err(Error::new(format!(
-            "(* ...) требует минимум 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
     let nums: Vec<Num> = args
         .iter()
         .map(|a| as_num(a, "*"))
@@ -166,12 +153,6 @@ pub fn mul(args: &[Value]) -> Result<Value, Error> {
 /// float / float — IEEE-деление: `/ 0.0 → inf`, на `-0.0 → -inf` (НЕ ошибка).
 /// Смешивание int и float — ошибка.
 pub fn div(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 2 {
-        return Err(Error::new(format!(
-            "(/ ...) требует ровно 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
     let a = as_num(&args[0], "/")?;
     let b = as_num(&args[1], "/")?;
     check_no_mix(&[a, b], "/")?;
@@ -195,14 +176,8 @@ pub fn div(args: &[Value]) -> Result<Value, Error> {
 /// Остаток от деления (ровно два аргумента). Работает только для int;
 /// float `%` — ошибка.
 pub fn rem(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 2 {
-        return Err(Error::new(format!(
-            "(% ...) требует ровно 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
     if matches!(args[0], Value::Float(_)) || matches!(args[1], Value::Float(_)) {
-        return Err(Error::new("% не поддерживается для float"));
+        return Err(Error::type_mismatch("% не поддерживается для float"));
     }
     let dividend = as_int(&args[0], "%")?;
     let divisor = as_int(&args[1], "%")?;
@@ -225,16 +200,10 @@ pub fn rem(args: &[Value]) -> Result<Value, Error> {
 /// — отрицательный показатель;
 /// — переполнение результата.
 pub fn pow(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 2 {
-        return Err(Error::new(format!(
-            "(pow ...) требует ровно 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
     let base = as_int(&args[0], "pow")?;
     let exp = as_int(&args[1], "pow")?;
     if exp < 0 {
-        return Err(Error::new(
+        return Err(Error::type_mismatch(
             "pow: показатель степени не может быть отрицательным",
         ));
     }
@@ -250,12 +219,6 @@ pub fn pow(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно два аргумента;
 /// — аргумент не является целым числом.
 pub fn min(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 2 {
-        return Err(Error::new(format!(
-            "(min ...) требует ровно 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
     let a = as_int(&args[0], "min")?;
     let b = as_int(&args[1], "min")?;
     Ok(Value::Int(a.min(b)))
@@ -267,12 +230,6 @@ pub fn min(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно два аргумента;
 /// — аргумент не является целым числом.
 pub fn max(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 2 {
-        return Err(Error::new(format!(
-            "(max ...) требует ровно 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
     let a = as_int(&args[0], "max")?;
     let b = as_int(&args[1], "max")?;
     Ok(Value::Int(a.max(b)))
@@ -284,12 +241,6 @@ pub fn max(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно один аргумент;
 /// — аргумент не является целым числом.
 pub fn abs(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(abs ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     let a = as_int(&args[0], "abs")?;
     a.checked_abs()
         .map(Value::Int)
@@ -302,15 +253,9 @@ pub fn abs(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно один аргумент;
 /// — аргумент не является целым числом.
 pub fn int_to_float(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(int->float ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     match &args[0] {
         Value::Int(i) => Ok(Value::Float(*i as f64)),
-        _ => Err(Error::new("int->float требует целого числа")),
+        _ => Err(Error::type_mismatch("int->float требует целого числа")),
     }
 }
 
@@ -321,14 +266,8 @@ pub fn int_to_float(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно один аргумент;
 /// — аргумент не является float.
 pub fn float_to_int(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(float->int ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     match &args[0] {
         Value::Float(f) => Ok(Value::Int(*f as i64)),
-        _ => Err(Error::new("float->int требует float")),
+        _ => Err(Error::type_mismatch("float->int требует float")),
     }
 }

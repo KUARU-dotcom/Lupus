@@ -19,15 +19,9 @@ pub fn print_arg(value: &Value) -> Result<(), Error> {
 /// — не ровно один аргумент;
 /// — аргумент не является целым числом.
 pub fn int_to_str(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(int->str ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     match &args[0] {
         Value::Int(i) => Ok(Value::Str(i.to_string())),
-        _ => Err(Error::new("int->str требует целого числа")),
+        _ => Err(Error::type_mismatch("int->str требует целого числа")),
     }
 }
 
@@ -40,7 +34,11 @@ pub fn string_append(args: &[Value]) -> Result<Value, Error> {
     for arg in args {
         match arg {
             Value::Str(s) => result.push_str(s),
-            _ => return Err(Error::new("string-append требует строковых аргументов")),
+            _ => {
+                return Err(Error::type_mismatch(
+                    "string-append требует строковых аргументов",
+                ))
+            }
         }
     }
     Ok(Value::Str(result))
@@ -52,15 +50,9 @@ pub fn string_append(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно один аргумент;
 /// — аргумент не является строкой.
 pub fn string_length(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(string-length ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     match &args[0] {
         Value::Str(s) => Ok(Value::Int(s.chars().count() as i64)),
-        _ => Err(Error::new("string-length требует строку")),
+        _ => Err(Error::type_mismatch("string-length требует строку")),
     }
 }
 
@@ -73,16 +65,10 @@ pub fn string_length(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно два аргумента;
 /// — любой аргумент не является строкой.
 pub fn string_split(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 2 {
-        return Err(Error::new(format!(
-            "(string-split ...) требует ровно 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
     let s = match &args[0] {
         Value::Str(s) => s.clone(),
         _ => {
-            return Err(Error::new(
+            return Err(Error::type_mismatch(
                 "Первый аргумент string-split должен быть строкой",
             ))
         }
@@ -90,7 +76,7 @@ pub fn string_split(args: &[Value]) -> Result<Value, Error> {
     let sep = match &args[1] {
         Value::Str(sep) => sep.clone(),
         _ => {
-            return Err(Error::new(
+            return Err(Error::type_mismatch(
                 "Второй аргумент string-split должен быть строкой",
             ))
         }
@@ -109,15 +95,9 @@ pub fn string_split(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно один аргумент;
 /// — аргумент не является строкой.
 pub fn string_reverse(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(string-reverse ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     match &args[0] {
         Value::Str(s) => Ok(Value::Str(s.chars().rev().collect())),
-        _ => Err(Error::new("string-reverse требует строку")),
+        _ => Err(Error::type_mismatch("string-reverse требует строку")),
     }
 }
 
@@ -129,18 +109,12 @@ pub fn string_reverse(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно один аргумент;
 /// — аргумент не является строкой.
 pub fn str_to_int(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(str->int ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     match &args[0] {
         Value::Str(s) => match s.trim().parse::<i64>() {
             Ok(n) => Ok(Value::Some(Box::new(Value::Int(n)))),
             Err(_) => Ok(Value::None),
         },
-        _ => Err(Error::new("str->int требует строку")),
+        _ => Err(Error::type_mismatch("str->int требует строку")),
     }
 }
 
@@ -152,18 +126,12 @@ pub fn str_to_int(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно один аргумент;
 /// — аргумент не является строкой.
 pub fn str_to_float(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(str->float ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     match &args[0] {
         Value::Str(s) => match s.trim().parse::<f64>() {
             Ok(n) => Ok(Value::Some(Box::new(Value::Float(n)))),
             Err(_) => Ok(Value::None),
         },
-        _ => Err(Error::new("str->float требует строку")),
+        _ => Err(Error::type_mismatch("str->float требует строку")),
     }
 }
 
@@ -174,14 +142,8 @@ pub fn str_to_float(args: &[Value]) -> Result<Value, Error> {
 /// — не ровно один аргумент;
 /// — аргумент не является float.
 pub fn float_to_str(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(float->str ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     match &args[0] {
         Value::Float(f) => Ok(Value::Str(float_to_string(*f))),
-        _ => Err(Error::new("float->str требует float")),
+        _ => Err(Error::type_mismatch("float->str требует float")),
     }
 }

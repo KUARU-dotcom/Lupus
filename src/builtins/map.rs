@@ -57,12 +57,6 @@ pub fn make_map(args: &[Value]) -> Result<Value, Error> {
 
 /// (map-get map ключ) → (some значение) | none
 pub fn map_get(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 2 {
-        return Err(Error::arity(format!(
-            "(map-get ...) требует ровно 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
     let pairs = as_map(&args[0], "map-get")?;
     validate_key(&args[1], "map-get")?;
     match pairs.iter().find(|(key, _)| *key == args[1]) {
@@ -73,12 +67,6 @@ pub fn map_get(args: &[Value]) -> Result<Value, Error> {
 
 /// (map-set map ключ значение) → новый Map (неизменяемость)
 pub fn map_set(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 3 {
-        return Err(Error::arity(format!(
-            "(map-set ...) требует ровно 3 аргумента, получено {}",
-            args.len()
-        )));
-    }
     let pairs = as_map(&args[0], "map-set")?;
     validate_key(&args[1], "map-set")?;
 
@@ -93,12 +81,6 @@ pub fn map_set(args: &[Value]) -> Result<Value, Error> {
 
 /// (map-keys map) → (List ключей) в порядке вставки
 pub fn map_keys(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::arity(format!(
-            "(map-keys ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     let pairs = as_map(&args[0], "map-keys")?;
     Ok(Value::List(
         pairs.iter().map(|(key, _)| key.clone()).collect(),
@@ -107,12 +89,6 @@ pub fn map_keys(args: &[Value]) -> Result<Value, Error> {
 
 /// (map-values map) → (List значений) в порядке вставки
 pub fn map_values(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::arity(format!(
-            "(map-values ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     let pairs = as_map(&args[0], "map-values")?;
     Ok(Value::List(
         pairs.iter().map(|(_, value)| value.clone()).collect(),
@@ -121,12 +97,6 @@ pub fn map_values(args: &[Value]) -> Result<Value, Error> {
 
 /// (map-has? map ключ) → bool
 pub fn map_has(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 2 {
-        return Err(Error::arity(format!(
-            "(map-has? ...) требует ровно 2 аргумента, получено {}",
-            args.len()
-        )));
-    }
     let pairs = as_map(&args[0], "map-has?")?;
     validate_key(&args[1], "map-has?")?;
     Ok(Value::Bool(pairs.iter().any(|(key, _)| *key == args[1])))

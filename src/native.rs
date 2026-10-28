@@ -6,7 +6,7 @@
 
 use crate::error::Error;
 use crate::interpreter::Interpreter;
-use crate::value::{value_to_string, NativeFn, Value};
+use crate::value::{value_to_string, Arity, NativeImpl, Value};
 
 /// Нативные пакеты, доступные в V0.5.
 pub const PACKAGES: &[&str] = &["senko", "kaltsit", "w"];
@@ -58,28 +58,32 @@ pub fn function(package: &str, name: &str) -> Option<Value> {
     if constant(package, name).is_some() || !has_symbol(package, name) {
         return None;
     }
-    Some(Value::Native(NativeFn {
-        module: package.to_string(),
-        name: name.to_string(),
-    }))
+    Some(Value::Native {
+        name: format!("{}/{}", package, name),
+        arity: function_arity(package, name),
+        func: NativeImpl::Module {
+            package: package.to_string(),
+            symbol: name.to_string(),
+        },
+    })
+}
+
+/// Арность функции нативного пакета. Проверяется централизованно в
+/// `Interpreter::call_native`.
+fn function_arity(package: &str, name: &str) -> Arity {
+    match (package, name) {
+        ("senko", "pow" | "min" | "max") => Arity::Exact(2),
+        ("kaltsit", "write-file" | "append-file") => Arity::Exact(2),
+        ("w", "assert-eq") => Arity::Exact(2),
+        ("w", "run-all") => Arity::Exact(0),
+        ("w", "assert-true" | "assert-false" | "run") => Arity::Exact(1),
+        _ => Arity::Exact(1),
+    }
 }
 
 /// Вычисляет значение символа пакета (константа или функция).
 pub fn symbol_value(package: &str, name: &str) -> Option<Value> {
     constant(package, name).or_else(|| function(package, name))
-}
-
-fn require_arity(package: &str, name: &str, args: &[Value], expected: usize) -> Result<(), Error> {
-    if args.len() != expected {
-        return Err(Error::arity(format!(
-            "{}/{} ожидает {} аргумент(ов), получено {}",
-            package,
-            name,
-            expected,
-            args.len()
-        )));
-    }
-    Ok(())
 }
 
 fn float_arg(package: &str, name: &str, args: &[Value], index: usize) -> Result<f64, Error> {
@@ -107,16 +111,17 @@ fn domain_error(name: &str, message: &str) -> Error {
     )
 }
 
-/// Вызывает нативную функцию.
+/// Вызывает нативную функцию пакета.
 pub fn call(
     interpreter: &Interpreter,
-    function: &NativeFn,
+    package: &str,
+    symbol: &str,
     args: &[Value],
 ) -> Result<Value, Error> {
-    match function.module.as_str() {
-        "senko" => call_senko(&function.name, args),
-        "kaltsit" => call_kaltsit(&function.name, args),
-        "w" => call_w(interpreter, &function.name, args),
+    match package {
+        "senko" => call_senko(symbol, args),
+        "kaltsit" => call_kaltsit(symbol, args),
+        "w" => call_w(interpreter, symbol, args),
         other => Err(Error::runtime(
             "unknown-module-symbol",
             format!("Неизвестный нативный пакет: {}", other),
@@ -127,7 +132,6 @@ pub fn call(
 /// Математические функции `senko`.
 fn call_senko(name: &str, args: &[Value]) -> Result<Value, Error> {
     let unary = |op: fn(f64) -> f64| -> Result<Value, Error> {
-        require_arity("senko", name, args, 1)?;
         let value = float_arg("senko", name, args, 0)?;
         if value.is_nan() && !matches!(name, "abs") {
             return Err(domain_error(name, "аргумент NaN"));
@@ -137,7 +141,6 @@ fn call_senko(name: &str, args: &[Value]) -> Result<Value, Error> {
 
     match name {
         "sqrt" => {
-            require_arity("senko", name, args, 1)?;
             let value = float_arg("senko", name, args, 0)?;
             if value < 0.0 || value.is_nan() {
                 return Err(domain_error(
@@ -151,7 +154,6 @@ fn call_senko(name: &str, args: &[Value]) -> Result<Value, Error> {
         "cos" => unary(f64::cos),
         "tan" => unary(f64::tan),
         "log" => {
-            require_arity("senko", name, args, 1)?;
             let value = float_arg("senko", name, args, 0)?;
             if value < 0.0 || value.is_nan() {
                 return Err(domain_error(name, "логарифм отрицательного числа"));
@@ -159,7 +161,6 @@ fn call_senko(name: &str, args: &[Value]) -> Result<Value, Error> {
             Ok(Value::Float(value.ln()))
         }
         "log10" => {
-            require_arity("senko", name, args, 1)?;
             let value = float_arg("senko", name, args, 0)?;
             if value < 0.0 || value.is_nan() {
                 return Err(domain_error(
@@ -174,7 +175,6 @@ fn call_senko(name: &str, args: &[Value]) -> Result<Value, Error> {
         "ceil" => unary(f64::ceil),
         "round" => unary(f64::round),
         "pow" => {
-            require_arity("senko", name, args, 2)?;
             let base = float_arg("senko", name, args, 0)?;
             let exponent = float_arg("senko", name, args, 1)?;
             let result = base.powf(exponent);
@@ -187,13 +187,11 @@ fn call_senko(name: &str, args: &[Value]) -> Result<Value, Error> {
             Ok(Value::Float(result))
         }
         "min" => {
-            require_arity("senko", name, args, 2)?;
             let a = float_arg("senko", name, args, 0)?;
             let b = float_arg("senko", name, args, 1)?;
             Ok(Value::Float(a.min(b)))
         }
         "max" => {
-            require_arity("senko", name, args, 2)?;
             let a = float_arg("senko", name, args, 0)?;
             let b = float_arg("senko", name, args, 1)?;
             Ok(Value::Float(a.max(b)))
@@ -234,7 +232,6 @@ fn unit_success() -> Value {
 fn call_kaltsit(name: &str, args: &[Value]) -> Result<Value, Error> {
     match name {
         "read-file" => {
-            require_arity("kaltsit", name, args, 1)?;
             let path = string_arg("kaltsit", name, args, 0)?;
             Ok(match std::fs::read_to_string(path) {
                 Ok(content) => Value::Success(Box::new(Value::Str(content))),
@@ -242,7 +239,6 @@ fn call_kaltsit(name: &str, args: &[Value]) -> Result<Value, Error> {
             })
         }
         "write-file" | "append-file" => {
-            require_arity("kaltsit", name, args, 2)?;
             let path = string_arg("kaltsit", name, args, 0)?;
             let content = string_arg("kaltsit", name, args, 1)?;
             let result = if name == "write-file" {
@@ -261,17 +257,14 @@ fn call_kaltsit(name: &str, args: &[Value]) -> Result<Value, Error> {
             })
         }
         "exists?" => {
-            require_arity("kaltsit", name, args, 1)?;
             let path = string_arg("kaltsit", name, args, 0)?;
             Ok(Value::Bool(std::path::Path::new(&path).exists()))
         }
         "is-dir?" => {
-            require_arity("kaltsit", name, args, 1)?;
             let path = string_arg("kaltsit", name, args, 0)?;
             Ok(Value::Bool(std::path::Path::new(&path).is_dir()))
         }
         "list-dir" => {
-            require_arity("kaltsit", name, args, 1)?;
             let path = string_arg("kaltsit", name, args, 0)?;
             match std::fs::read_dir(path) {
                 Ok(entries) => {
@@ -291,7 +284,6 @@ fn call_kaltsit(name: &str, args: &[Value]) -> Result<Value, Error> {
             }
         }
         "mkdir" => {
-            require_arity("kaltsit", name, args, 1)?;
             let path = string_arg("kaltsit", name, args, 0)?;
             Ok(match std::fs::create_dir_all(path) {
                 Ok(()) => unit_success(),
@@ -299,7 +291,6 @@ fn call_kaltsit(name: &str, args: &[Value]) -> Result<Value, Error> {
             })
         }
         "delete" => {
-            require_arity("kaltsit", name, args, 1)?;
             let path = string_arg("kaltsit", name, args, 0)?;
             Ok(match std::fs::remove_file(path) {
                 Ok(()) => unit_success(),
@@ -307,7 +298,6 @@ fn call_kaltsit(name: &str, args: &[Value]) -> Result<Value, Error> {
             })
         }
         "size" => {
-            require_arity("kaltsit", name, args, 1)?;
             let path = string_arg("kaltsit", name, args, 0)?;
             Ok(match std::fs::metadata(path) {
                 Ok(metadata) => Value::Success(Box::new(Value::Int(metadata.len() as i64))),
@@ -325,7 +315,6 @@ fn call_kaltsit(name: &str, args: &[Value]) -> Result<Value, Error> {
 fn call_w(interpreter: &Interpreter, name: &str, args: &[Value]) -> Result<Value, Error> {
     match name {
         "assert-eq" => {
-            require_arity("w", name, args, 2)?;
             if args[0] == args[1] {
                 Ok(Value::None)
             } else {
@@ -341,7 +330,6 @@ fn call_w(interpreter: &Interpreter, name: &str, args: &[Value]) -> Result<Value
             }
         }
         "assert-true" => {
-            require_arity("w", name, args, 1)?;
             if args[0] == Value::Bool(true) {
                 Ok(Value::None)
             } else {
@@ -352,7 +340,6 @@ fn call_w(interpreter: &Interpreter, name: &str, args: &[Value]) -> Result<Value
             }
         }
         "assert-false" => {
-            require_arity("w", name, args, 1)?;
             if args[0] == Value::Bool(false) {
                 Ok(Value::None)
             } else {
@@ -363,7 +350,6 @@ fn call_w(interpreter: &Interpreter, name: &str, args: &[Value]) -> Result<Value
             }
         }
         "run" => {
-            require_arity("w", name, args, 1)?;
             let Value::List(items) = &args[0] else {
                 return Err(Error::type_mismatch(
                     "w/run ожидает список имён тестов (List str)",
@@ -382,10 +368,7 @@ fn call_w(interpreter: &Interpreter, name: &str, args: &[Value]) -> Result<Value
             }
             Ok(Value::Int(interpreter.run_tests_named(&names)))
         }
-        "run-all" => {
-            require_arity("w", name, args, 0)?;
-            Ok(Value::Int(interpreter.run_tests_named(&[])))
-        }
+        "run-all" => Ok(Value::Int(interpreter.run_tests_named(&[]))),
         other => Err(Error::runtime(
             "unknown-module-symbol",
             format!("w/{}: неизвестный символ модуля", other),

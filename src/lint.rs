@@ -6,7 +6,7 @@
 //! (`missing-return-type`, `missing-param-type`), `const-non-literal`,
 //! а также статическое разрешение импортов (`unknown-module`, `import-cycle`).
 
-use crate::ast::Expr;
+use crate::ast::{Expr, ExprKind};
 use crate::builtins::is_core_name;
 use crate::error::Error;
 use crate::modules;
@@ -41,13 +41,18 @@ pub fn check(forms: &[Expr], file: Option<&Path>) -> Result<(), Error> {
 fn check_test_names(forms: &[Expr], errors: &mut Vec<Error>) {
     let mut seen: HashSet<String> = HashSet::new();
     for form in forms {
-        let Expr::List(items) = form else {
+        let Some(items) = form.as_list() else {
             continue;
         };
-        if !matches!(items.first(), Some(Expr::Symbol(name)) if name == "test") {
+        if !matches!(items.first(), Some(Expr { kind: ExprKind::Symbol(name), .. }) if name == "test")
+        {
             continue;
         }
-        if let Some(Expr::Str(name)) = items.get(1) {
+        if let Some(Expr {
+            kind: ExprKind::Str(name),
+            ..
+        }) = items.get(1)
+        {
             if !seen.insert(name.clone()) {
                 errors.push(Error::lint(
                     "test-name-duplicate",
@@ -66,11 +71,14 @@ fn check_function_bodies(forms: &[Expr], inside_function: bool, errors: &mut Vec
 }
 
 fn check_function_body(expr: &Expr, inside_function: bool, errors: &mut Vec<Error>) {
-    let Expr::List(items) = expr else {
+    let Some(items) = expr.as_list() else {
         return;
     };
     let head = match items.first() {
-        Some(Expr::Symbol(name)) => name.as_str(),
+        Some(Expr {
+            kind: ExprKind::Symbol(name),
+            ..
+        }) => name.as_str(),
         _ => "",
     };
 
@@ -95,19 +103,29 @@ fn check_function_body(expr: &Expr, inside_function: bool, errors: &mut Vec<Erro
 }
 
 fn is_function_definition(items: &[Expr]) -> bool {
-    matches!(items.get(1), Some(Expr::List(_)))
+    matches!(
+        items.get(1),
+        Some(Expr {
+            kind: ExprKind::List(_),
+            ..
+        })
+    )
 }
 
 /// Возвращает тело функции/лямбды, если форма является определением функции.
 fn function_body(items: &[Expr]) -> Option<&[Expr]> {
     let head = match items.first() {
-        Some(Expr::Symbol(name)) => name.as_str(),
+        Some(Expr {
+            kind: ExprKind::Symbol(name),
+            ..
+        }) => name.as_str(),
         _ => return None,
     };
     match head {
         "define" | "define-public" if is_function_definition(items) => {
             let rest = items.get(2..).unwrap_or(&[]);
-            if matches!(rest.first(), Some(Expr::Symbol(arrow)) if arrow == "->") {
+            if matches!(rest.first(), Some(Expr { kind: ExprKind::Symbol(arrow), .. }) if arrow == "->")
+            {
                 Some(rest.get(2..).unwrap_or(&[]))
             } else {
                 Some(rest)
@@ -115,7 +133,8 @@ fn function_body(items: &[Expr]) -> Option<&[Expr]> {
         }
         "lambda" => {
             let rest = items.get(2..).unwrap_or(&[]);
-            if matches!(rest.first(), Some(Expr::Symbol(arrow)) if arrow == "->") {
+            if matches!(rest.first(), Some(Expr { kind: ExprKind::Symbol(arrow), .. }) if arrow == "->")
+            {
                 Some(rest.get(2..).unwrap_or(&[]))
             } else {
                 Some(rest)
@@ -130,11 +149,14 @@ fn check_definitions(forms: &[Expr], errors: &mut Vec<Error>) {
     let mut defined: HashSet<String> = HashSet::new();
 
     for form in forms {
-        let Expr::List(items) = form else {
+        let Some(items) = form.as_list() else {
             continue;
         };
         let head = match items.first() {
-            Some(Expr::Symbol(name)) => name.as_str(),
+            Some(Expr {
+                kind: ExprKind::Symbol(name),
+                ..
+            }) => name.as_str(),
             _ => continue,
         };
         if !matches!(
@@ -202,9 +224,18 @@ fn check_definitions(forms: &[Expr], errors: &mut Vec<Error>) {
 
 fn definition_name(rest: &[Expr]) -> Option<String> {
     match rest.first() {
-        Some(Expr::Symbol(name)) => Some(name.clone()),
-        Some(Expr::List(header)) => match header.first() {
-            Some(Expr::Symbol(name)) => Some(name.clone()),
+        Some(Expr {
+            kind: ExprKind::Symbol(name),
+            ..
+        }) => Some(name.clone()),
+        Some(Expr {
+            kind: ExprKind::List(header),
+            ..
+        }) => match header.first() {
+            Some(Expr {
+                kind: ExprKind::Symbol(name),
+                ..
+            }) => Some(name.clone()),
             _ => None,
         },
         _ => None,
@@ -213,22 +244,30 @@ fn definition_name(rest: &[Expr]) -> Option<String> {
 
 fn is_literal(expr: &Expr) -> bool {
     matches!(
-        expr,
-        Expr::Number(_) | Expr::Float(_) | Expr::Str(_) | Expr::Bool(_) | Expr::None
+        &expr.kind,
+        ExprKind::Number(_)
+            | ExprKind::Float(_)
+            | ExprKind::Str(_)
+            | ExprKind::Bool(_)
+            | ExprKind::None
     )
 }
 
 fn count_symbol(expr: &Expr, name: &str) -> usize {
-    match expr {
-        Expr::Symbol(symbol) => usize::from(symbol == name),
-        Expr::List(items) => items.iter().map(|item| count_symbol(item, name)).sum(),
+    match &expr.kind {
+        ExprKind::Symbol(symbol) => usize::from(symbol == name),
+        ExprKind::List(items) => items.iter().map(|item| count_symbol(item, name)).sum(),
         _ => 0,
     }
 }
 
 /// Синтаксические требования к `define-public`.
 fn check_public_definition(rest: &[Expr], name: &str, errors: &mut Vec<Error>) {
-    let Some(Expr::List(header)) = rest.first() else {
+    let Some(Expr {
+        kind: ExprKind::List(header),
+        ..
+    }) = rest.first()
+    else {
         errors.push(Error::type_error(
             "missing-return-type",
             format!(
@@ -240,7 +279,7 @@ fn check_public_definition(rest: &[Expr], name: &str, errors: &mut Vec<Error>) {
     };
 
     for param in header.iter().skip(1) {
-        let annotated = matches!(param, Expr::List(items) if items.len() >= 2);
+        let annotated = matches!(&param.kind, ExprKind::List(items) if items.len() >= 2);
         if !annotated {
             errors.push(Error::type_error(
                 "missing-param-type",
@@ -250,8 +289,8 @@ fn check_public_definition(rest: &[Expr], name: &str, errors: &mut Vec<Error>) {
         }
     }
 
-    let has_return_type =
-        matches!(rest.get(1), Some(Expr::Symbol(arrow)) if arrow == "->") && rest.get(2).is_some();
+    let has_return_type = matches!(rest.get(1), Some(Expr { kind: ExprKind::Symbol(arrow), .. }) if arrow == "->")
+        && rest.get(2).is_some();
     if !has_return_type {
         errors.push(Error::type_error(
             "missing-return-type",
@@ -268,11 +307,15 @@ fn check_directives(forms: &[Expr], errors: &mut Vec<Error>) {
 }
 
 fn check_directive(expr: &Expr, errors: &mut Vec<Error>) {
-    if let Expr::List(items) = expr {
+    if let ExprKind::List(items) = &expr.kind {
         {
-            if matches!(items.first(), Some(Expr::Symbol(name)) if name == "#lupus") {
+            if matches!(items.first(), Some(Expr { kind: ExprKind::Symbol(name), .. }) if name == "#lupus")
+            {
                 let directive = match items.get(1) {
-                    Some(Expr::Symbol(name)) => name.as_str(),
+                    Some(Expr {
+                        kind: ExprKind::Symbol(name),
+                        ..
+                    }) => name.as_str(),
                     _ => "",
                 };
                 match directive {
@@ -322,11 +365,11 @@ fn check_imports_in(
 ) {
     let local_names: HashSet<String> = forms
         .iter()
-        .filter_map(|form| match form {
-            Expr::List(items)
+        .filter_map(|form| match &form.kind {
+            ExprKind::List(items)
                 if matches!(
                     items.first(),
-                    Some(Expr::Symbol(head))
+                    Some(Expr { kind: ExprKind::Symbol(head), .. })
                         if matches!(
                             head.as_str(),
                             "define" | "define-mutable" | "define-const" | "define-public"
@@ -345,7 +388,7 @@ fn check_imports_in(
         if !modules::is_import_form(form) {
             continue;
         }
-        let Expr::List(items) = form else {
+        let Some(items) = form.as_list() else {
             continue;
         };
         let spec = match modules::parse_import(&items[1..]) {
@@ -407,11 +450,11 @@ fn check_imports_in(
                             Ok(module_forms) => {
                                 exported = module_forms
                                     .iter()
-                                    .filter_map(|form| match form {
-                                        Expr::List(items)
+                                    .filter_map(|form| match &form.kind {
+                                        ExprKind::List(items)
                                             if matches!(
                                                 items.first(),
-                                                Some(Expr::Symbol(head)) if head == "define-public"
+                                                Some(Expr { kind: ExprKind::Symbol(head), .. }) if head == "define-public"
                                             ) =>
                                         {
                                             definition_name(&items[1..])

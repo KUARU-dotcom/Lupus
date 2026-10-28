@@ -4,7 +4,7 @@
 //! символы и списки (формы). Обрабатывает несбалансированные скобки с ошибкой
 //! `missing-rparen` и лишние `)` — ошибкой `unexpected-token`.
 
-use crate::ast::Expr;
+use crate::ast::{Expr, ExprKind};
 use crate::error::{Error, Span};
 use crate::lexer::{Token, TokenKind};
 
@@ -59,6 +59,19 @@ impl Parser {
         Error::parse(code, message, line, col)
     }
 
+    /// Создаёт узел с байтовым span и позицией из токена.
+    fn token_expr(kind: ExprKind, token: &Token) -> Expr {
+        Expr::new(
+            kind,
+            Span {
+                start: token.start,
+                end: token.end,
+            },
+            token.line,
+            token.col,
+        )
+    }
+
     /// Разбирает одну форму и возвращает соответствующее выражение.
     fn parse_form(&mut self) -> Result<Expr, Error> {
         let token = match self.peek() {
@@ -71,30 +84,30 @@ impl Parser {
             }
         };
 
-        match token.kind {
+        match token.kind.clone() {
             TokenKind::Number(n) => {
                 self.next();
-                Ok(Expr::Number(n))
+                Ok(Self::token_expr(ExprKind::Number(n), &token))
             }
             TokenKind::Float(f) => {
                 self.next();
-                Ok(Expr::Float(f))
+                Ok(Self::token_expr(ExprKind::Float(f), &token))
             }
             TokenKind::Str(s) => {
                 self.next();
-                Ok(Expr::Str(s))
+                Ok(Self::token_expr(ExprKind::Str(s), &token))
             }
             TokenKind::Bool(b) => {
                 self.next();
-                Ok(Expr::Bool(b))
+                Ok(Self::token_expr(ExprKind::Bool(b), &token))
             }
             TokenKind::None => {
                 self.next();
-                Ok(Expr::None)
+                Ok(Self::token_expr(ExprKind::None, &token))
             }
             TokenKind::Symbol(name) => {
                 self.next();
-                Ok(Expr::Symbol(name))
+                Ok(Self::token_expr(ExprKind::Symbol(name), &token))
             }
             TokenKind::LParen => {
                 self.next();
@@ -112,6 +125,7 @@ impl Parser {
                     ));
                 }
                 let mut elements = Vec::new();
+                let end;
 
                 loop {
                     match self.peek() {
@@ -120,7 +134,8 @@ impl Parser {
                                 self.error("missing-rparen", "Пропущена закрывающая скобка ')'")
                             );
                         }
-                        Some(token) if token.kind == TokenKind::RParen => {
+                        Some(close) if close.kind == TokenKind::RParen => {
+                            end = close.end;
                             self.next();
                             break;
                         }
@@ -132,7 +147,15 @@ impl Parser {
                 }
 
                 self.nesting -= 1;
-                Ok(Expr::List(elements))
+                Ok(Expr::new(
+                    ExprKind::List(elements),
+                    Span {
+                        start: token.start,
+                        end,
+                    },
+                    token.line,
+                    token.col,
+                ))
             }
             TokenKind::RParen => {
                 self.next();

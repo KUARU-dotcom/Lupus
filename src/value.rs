@@ -5,7 +5,10 @@
 
 use crate::ast::Expr;
 use crate::environment::Environment;
+use crate::error::Error;
+use crate::interpreter::Interpreter;
 use std::cell::RefCell;
+use std::fmt;
 use std::rc::Rc;
 
 /// Замыкание — пользовательская функция, захватившая окружающее окружение.
@@ -19,13 +22,112 @@ pub struct Closure {
     pub env: Rc<RefCell<Environment>>,
 }
 
-/// Нативная функция из стандартной библиотеки (`senko/*`, `kaltsit/*`, `w/*`).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NativeFn {
-    /// Имя пакета: `senko`, `kaltsit` или `w`.
-    pub module: String,
-    /// Имя функции внутри пакета (без префикса).
-    pub name: String,
+/// Арность нативной функции.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Arity {
+    /// Ровно N аргументов.
+    Exact(usize),
+    /// Не меньше N аргументов.
+    AtLeast(usize),
+    /// Любое число аргументов, включая ноль.
+    Any,
+}
+
+impl Arity {
+    /// Проверяет число аргументов; единственная точка проверки арности
+    /// нативных функций.
+    #[inline]
+    pub fn check(self, name: &str, got: usize) -> Result<(), Error> {
+        // Квалифицированные имена сохраняют прежний формат сообщений пакетов.
+        if name.contains('/') {
+            if let Arity::Exact(expected) = self {
+                if got != expected {
+                    return Err(Error::arity(format!(
+                        "{name} ожидает {expected} аргумент(ов), получено {got}"
+                    )));
+                }
+            }
+        }
+        let error = match self {
+            Arity::Exact(expected) if got != expected => Some(format!(
+                "({name} ...) требует ровно {expected} {}, получено {got}",
+                arguments_word(expected)
+            )),
+            Arity::AtLeast(minimum) if got < minimum => Some(format!(
+                "({name} ...) требует минимум {minimum} {}, получено {got}",
+                arguments_word(minimum)
+            )),
+            _ => None,
+        };
+        match error {
+            Some(message) => Err(Error::arity(message)),
+            None => Ok(()),
+        }
+    }
+}
+
+/// Склонение слова «аргумент» для сообщений об арности.
+fn arguments_word(count: usize) -> &'static str {
+    let tail = count % 100;
+    if (11..=14).contains(&tail) {
+        return "аргументов";
+    }
+    match count % 10 {
+        1 => "аргумент",
+        2..=4 => "аргумента",
+        _ => "аргументов",
+    }
+}
+
+/// Функция ядра без доступа к интерпретатору.
+pub type PureBuiltinFn = fn(&[Value]) -> Result<Value, Error>;
+
+/// Функция ядра, которой нужен интерпретатор (например, `list-map`).
+pub type ContextBuiltinFn = fn(&Interpreter, &[Value]) -> Result<Value, Error>;
+
+/// Реализация встроенной функции ядра.
+#[derive(Clone, Copy)]
+pub enum BuiltinImpl {
+    /// Чистая функция над значениями.
+    Pure(PureBuiltinFn),
+    /// Функция, вызывающая замыкания или печатающая значения.
+    Context(ContextBuiltinFn),
+}
+
+impl fmt::Debug for BuiltinImpl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BuiltinImpl::Pure(_) => f.write_str("Pure(..)"),
+            BuiltinImpl::Context(_) => f.write_str("Context(..)"),
+        }
+    }
+}
+
+/// Реализация нативной функции: ядро или функция пакета `senko`/`kaltsit`/`w`.
+#[derive(Clone)]
+pub enum NativeImpl {
+    /// Встроенная функция ядра.
+    Builtin(BuiltinImpl),
+    /// Функция нативного пакета.
+    Module {
+        /// Имя пакета.
+        package: String,
+        /// Имя функции внутри пакета.
+        symbol: String,
+    },
+}
+
+impl fmt::Debug for NativeImpl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NativeImpl::Builtin(_) => f.write_str("Builtin(..)"),
+            NativeImpl::Module { package, symbol } => f
+                .debug_struct("Module")
+                .field("package", package)
+                .field("symbol", symbol)
+                .finish(),
+        }
+    }
 }
 
 /// Runtime-значение языка Lupus.
@@ -60,8 +162,15 @@ pub enum Value {
     Failure(Box<Value>),
     /// Замыкание (пользовательская функция).
     Closure(Closure),
-    /// Нативная функция стандартной библиотеки.
-    Native(NativeFn),
+    /// Нативная функция: встроенная или из пакета стандартной библиотеки.
+    Native {
+        /// Полное имя функции (например, `abs` или `senko/sqrt`).
+        name: String,
+        /// Арность.
+        arity: Arity,
+        /// Реализация.
+        func: NativeImpl,
+    },
 }
 
 /// Равенство значений для оператора `=`.
@@ -122,7 +231,7 @@ pub fn is_truthy(value: &Value) -> bool {
         Value::Some(_) => true,
         Value::Success(_) => true,
         Value::Closure(_) => true,
-        Value::Native(_) => true,
+        Value::Native { .. } => true,
     }
 }
 
@@ -199,7 +308,7 @@ fn value_to_string_inner(value: &Value, in_container: bool) -> String {
         Value::Success(v) => format!("(success {})", value_to_string_inner(v, true)),
         Value::Failure(v) => format!("(failure {})", value_to_string_inner(v, true)),
         Value::Closure(_) => "function".to_string(),
-        Value::Native(_) => "function".to_string(),
+        Value::Native { .. } => "function".to_string(),
     }
 }
 

@@ -11,11 +11,5 @@ use crate::value::{is_truthy, Value};
 /// Возвращает булево значение, обратное «истинности» аргумента
 /// (см. [`is_truthy`]).
 pub fn not(args: &[Value]) -> Result<Value, Error> {
-    if args.len() != 1 {
-        return Err(Error::new(format!(
-            "(not ...) требует ровно 1 аргумент, получено {}",
-            args.len()
-        )));
-    }
     Ok(Value::Bool(!is_truthy(&args[0])))
 }

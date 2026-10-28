@@ -3,7 +3,7 @@
 //! Порядок поиска (ERRATA §1): нативный реестр → `stdlib/<имя>.lupus` →
 //! каталоги из `LUPUS_PATH`. Нативные пакеты V0.5: `senko`, `kaltsit`, `w`.
 
-use crate::ast::Expr;
+use crate::ast::{Expr, ExprKind};
 use crate::error::Error;
 use crate::native;
 use std::path::{Path, PathBuf};
@@ -38,7 +38,7 @@ impl ImportSpec {
 
 /// Проверяет, является ли форма формой импорта.
 pub fn is_import_form(expr: &Expr) -> bool {
-    matches!(expr, Expr::List(items) if matches!(items.first(), Some(Expr::Symbol(name)) if name == "import"))
+    matches!(&expr.kind, ExprKind::List(items) if matches!(items.first(), Some(Expr { kind: ExprKind::Symbol(name), .. }) if name == "import"))
 }
 
 /// Разбирает `rest` формы `(import ...)` в [`ImportSpec`].
@@ -50,17 +50,17 @@ pub fn parse_import(rest: &[Expr]) -> Result<ImportSpec, Error> {
         ));
     }
 
-    let (package, module) = match &rest[0] {
-        Expr::Symbol(package) => (package.clone(), None),
-        Expr::List(items) => {
+    let (package, module) = match &rest[0].kind {
+        ExprKind::Symbol(package) => (package.clone(), None),
+        ExprKind::List(items) => {
             if items.len() != 2 {
                 return Err(Error::lint(
                     "unexpected-token",
                     "(import (пакет модуль)) требует ровно два имени",
                 ));
             }
-            let package = match &items[0] {
-                Expr::Symbol(name) => name.clone(),
+            let package = match &items[0].kind {
+                ExprKind::Symbol(name) => name.clone(),
                 _ => {
                     return Err(Error::lint(
                         "unexpected-token",
@@ -68,8 +68,8 @@ pub fn parse_import(rest: &[Expr]) -> Result<ImportSpec, Error> {
                     ))
                 }
             };
-            let module = match &items[1] {
-                Expr::Symbol(name) => name.clone(),
+            let module = match &items[1].kind {
+                ExprKind::Symbol(name) => name.clone(),
                 _ => {
                     return Err(Error::lint(
                         "unexpected-token",
@@ -91,9 +91,13 @@ pub fn parse_import(rest: &[Expr]) -> Result<ImportSpec, Error> {
     let mut import_all = false;
     let mut index = 1;
     while index < rest.len() {
-        match &rest[index] {
-            Expr::Symbol(modifier) if modifier == ":as" => {
-                let Some(Expr::Symbol(name)) = rest.get(index + 1) else {
+        match &rest[index].kind {
+            ExprKind::Symbol(modifier) if modifier == ":as" => {
+                let Some(Expr {
+                    kind: ExprKind::Symbol(name),
+                    ..
+                }) = rest.get(index + 1)
+                else {
                     return Err(Error::lint(
                         "unexpected-token",
                         "После :as ожидалось имя префикса",
@@ -102,7 +106,7 @@ pub fn parse_import(rest: &[Expr]) -> Result<ImportSpec, Error> {
                 alias = Some(name.clone());
                 index += 2;
             }
-            Expr::Symbol(modifier) if modifier == ":all" => {
+            ExprKind::Symbol(modifier) if modifier == ":all" => {
                 import_all = true;
                 index += 1;
             }
