@@ -1,0 +1,8 @@
+(define (make-cycle)
+  (define-mutable box (list))
+  (set! box (cons (lambda () box) box))
+  box)
+(define-mutable c (make-cycle))
+(set! c none)
+(gc-collect)
+(print "gc-ok")

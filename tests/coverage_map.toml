@@ -41,6 +41,7 @@
 ">=" = { positive = ["arithmetic"], negative = ["ge_mix_int_float"] }
 "int->str" = { positive = ["strings"], negative = ["int_to_str_type"] }
 "float->str" = { positive = ["float"], negative = ["float_to_str_type"] }
+"gc-collect" = { positive = ["v06_gc"], negative = ["v06_gc_arity"] }
 "int->float" = { positive = ["float", "v05_float_precision_loss"], negative = ["int_to_float_type"] }
 "float->int" = { positive = ["float"], negative = ["float_to_int_type"] }
 "str->float" = { positive = ["float"], negative = ["str_to_float_type"] }

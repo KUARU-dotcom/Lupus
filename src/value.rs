@@ -173,6 +173,118 @@ pub enum Value {
     },
 }
 
+/// Объект, умеющий перечислять ссылки на другие GC-объекты.
+///
+/// Значения обходят вложенные значения (элементы списков, пары `Map`, поля
+/// структур, `some`/`success`/`failure`), а замыкания сообщают своё
+/// окружение. `Environment` переопределяет оба метода: значения из `bindings`
+/// и родительское окружение.
+pub trait Traversable {
+    /// Перечисляет значения, на которые ссылается объект.
+    fn visit_values(&self, _visitor: &mut dyn FnMut(&Value)) {}
+
+    /// Перечисляет окружения, на которые ссылается объект.
+    fn visit_envs(&self, _visitor: &mut dyn FnMut(&Rc<RefCell<Environment>>)) {}
+}
+
+impl Traversable for Value {
+    fn visit_values(&self, visitor: &mut dyn FnMut(&Value)) {
+        match self {
+            Value::List(items) | Value::Tuple(items) => {
+                for item in items {
+                    visitor(item);
+                }
+            }
+            Value::Map(pairs) => {
+                for (key, value) in pairs {
+                    visitor(key);
+                    visitor(value);
+                }
+            }
+            Value::Struct { fields, .. } => {
+                for field in fields {
+                    visitor(field);
+                }
+            }
+            Value::Some(value) | Value::Success(value) | Value::Failure(value) => {
+                visitor(value);
+            }
+            Value::Int(_)
+            | Value::Float(_)
+            | Value::Bool(_)
+            | Value::Str(_)
+            | Value::None
+            | Value::Closure(_)
+            | Value::Native { .. } => {}
+        }
+    }
+
+    fn visit_envs(&self, visitor: &mut dyn FnMut(&Rc<RefCell<Environment>>)) {
+        if let Value::Closure(closure) = self {
+            closure.visit_envs(visitor);
+        }
+    }
+}
+
+impl Traversable for Closure {
+    fn visit_envs(&self, visitor: &mut dyn FnMut(&Rc<RefCell<Environment>>)) {
+        visitor(&self.env);
+    }
+}
+
+impl Traversable for Vec<Value> {
+    fn visit_values(&self, visitor: &mut dyn FnMut(&Value)) {
+        for value in self {
+            visitor(value);
+        }
+    }
+}
+
+impl Value {
+    /// Приблизительный размер значения в байтах для отчёта GC.
+    ///
+    /// Окружения замыканий не учитываются здесь: они считаются отдельными
+    /// объектами в реестре GC.
+    pub fn estimated_size(&self) -> usize {
+        use std::mem::size_of;
+
+        let base = size_of::<Value>();
+        match self {
+            Value::Int(_) | Value::Float(_) | Value::Bool(_) | Value::None => base,
+            Value::Str(text) => base + text.capacity(),
+            Value::List(items) | Value::Tuple(items) => {
+                base + items.capacity() * size_of::<Value>()
+                    + items.iter().map(Value::estimated_size).sum::<usize>()
+            }
+            Value::Map(pairs) => {
+                base + pairs.capacity() * size_of::<(Value, Value)>()
+                    + pairs
+                        .iter()
+                        .map(|(key, value)| key.estimated_size() + value.estimated_size())
+                        .sum::<usize>()
+            }
+            Value::Struct { name, fields } => {
+                base + name.capacity()
+                    + fields.capacity() * size_of::<Value>()
+                    + fields.iter().map(Value::estimated_size).sum::<usize>()
+            }
+            Value::Some(value) | Value::Success(value) | Value::Failure(value) => {
+                base + value.estimated_size()
+            }
+            Value::Closure(closure) => {
+                base + size_of::<Closure>()
+                    + closure.params.capacity() * size_of::<String>()
+                    + closure
+                        .params
+                        .iter()
+                        .map(|param| param.capacity())
+                        .sum::<usize>()
+            }
+            Value::Native { name, .. } => base + name.capacity(),
+        }
+    }
+}
+
 /// Равенство значений для оператора `=`.
 ///
 /// Замыкания не сравниваются между собой (всегда `false`).

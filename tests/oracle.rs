@@ -300,6 +300,9 @@ fn skip_reason(source: &str) -> Option<&'static str> {
     if source.contains("V0.6: and/or") {
         return Some("and/or возвращают значение (V0.6)");
     }
+    if source.contains("(gc-collect") {
+        return Some("gc-collect (V0.6)");
+    }
     None
 }
 

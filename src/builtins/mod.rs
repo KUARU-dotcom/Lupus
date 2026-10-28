@@ -97,6 +97,11 @@ pub const BUILTINS: &[Builtin] = &[
         Arity::Exact(1),
         BuiltinImpl::Pure(strings::float_to_str)
     ),
+    builtin!(
+        "gc-collect",
+        Arity::Exact(0),
+        BuiltinImpl::Context(gc_collect)
+    ),
     builtin!("head", Arity::Exact(1), BuiltinImpl::Pure(lists::head)),
     builtin!(
         "int->float",
@@ -239,6 +244,11 @@ fn print_value(interpreter: &Interpreter, args: &[Value]) -> Result<Value, Error
     Ok(Value::None)
 }
 
+fn gc_collect(interpreter: &Interpreter, _args: &[Value]) -> Result<Value, Error> {
+    interpreter.gc_collect_verbose();
+    Ok(Value::None)
+}
+
 /// Имена, занятые ядром языка (операторы, специальные формы и встроенные
 /// функции). Используются линтом `core-shadowing` и проверкой `:all`.
 pub const CORE_NAMES: &[&str] = &[
@@ -290,6 +300,7 @@ pub const CORE_NAMES: &[&str] = &[
     "float->int",
     "str->int",
     "str->float",
+    "gc-collect",
     "string-append",
     "string-length",
     "string-split",

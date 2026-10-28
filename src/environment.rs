@@ -7,7 +7,8 @@
 
 use crate::ast::Expr;
 use crate::error::Error;
-use crate::value::{Closure, Value};
+use crate::gc;
+use crate::value::{Closure, Traversable, Value};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -75,6 +76,20 @@ impl StoredValue {
             }
         }
     }
+
+    /// Приблизительный размер связи для отчёта GC.
+    fn estimated_bytes(&self) -> usize {
+        match self {
+            Self::Value(value) => value.estimated_size(),
+            Self::WeakClosure { params, body, env } => {
+                std::mem::size_of::<Self>()
+                    + std::mem::size_of_val(body)
+                    + std::mem::size_of_val(env)
+                    + params.capacity() * std::mem::size_of::<String>()
+                    + params.iter().map(|param| param.capacity()).sum::<usize>()
+            }
+        }
+    }
 }
 
 /// Окружение переменных.
@@ -86,21 +101,73 @@ pub struct Environment {
     bindings: HashMap<String, (StoredValue, bool)>,
 }
 
+impl Traversable for Environment {
+    fn visit_values(&self, visitor: &mut dyn FnMut(&Value)) {
+        for (stored, _) in self.bindings.values() {
+            if let StoredValue::Value(value) = stored {
+                visitor(value);
+            }
+        }
+    }
+
+    fn visit_envs(&self, visitor: &mut dyn FnMut(&Rc<RefCell<Environment>>)) {
+        if let Some(parent) = &self.parent {
+            visitor(parent);
+        }
+    }
+}
+
 impl Environment {
     /// Создаёт корневое (глобальное) окружение без родителя.
     pub fn new() -> Rc<RefCell<Self>> {
+        let env = Rc::new(RefCell::new(Environment {
+            parent: None,
+            bindings: HashMap::new(),
+        }));
+        gc::register(&env);
+        env
+    }
+
+    /// Создаёт дочернее окружение с заданным родителем.
+    pub fn new_child(parent: Rc<RefCell<Environment>>) -> Rc<RefCell<Self>> {
+        let env = Rc::new(RefCell::new(Environment {
+            parent: Some(parent),
+            bindings: HashMap::new(),
+        }));
+        gc::register(&env);
+        env
+    }
+
+    /// Создаёт окружение, не попадающее в реестр GC.
+    ///
+    /// Нужно только для временной замены `global` в `Drop` интерпретатора.
+    pub(crate) fn new_unregistered() -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(Environment {
             parent: None,
             bindings: HashMap::new(),
         }))
     }
 
-    /// Создаёт дочернее окружение с заданным родителем.
-    pub fn new_child(parent: Rc<RefCell<Environment>>) -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(Environment {
-            parent: Some(parent),
-            bindings: HashMap::new(),
-        }))
+    /// Очищает окружение в sweep-фазе и возвращает (объекты, байты).
+    ///
+    /// Удаление `bindings` и `parent` разрывает сильные циклы, после чего
+    /// обычный `Rc` освобождает недостижимый граф.
+    pub(crate) fn gc_clear(&mut self) -> (usize, usize) {
+        let mut objects = 1;
+        let mut bytes = std::mem::size_of::<Environment>();
+
+        for (name, (stored, _)) in self.bindings.drain() {
+            objects += 1;
+            bytes += name.capacity()
+                + std::mem::size_of::<String>()
+                + stored.estimated_bytes()
+                + std::mem::size_of::<bool>();
+        }
+        if self.parent.take().is_some() {
+            bytes += std::mem::size_of::<Option<Rc<RefCell<Environment>>>>();
+        }
+
+        (objects, bytes)
     }
 
     /// Определяет новую (или перезаписывает) переменную в текущем окружении.

@@ -8,6 +8,7 @@ use crate::ast::{Expr, ExprKind};
 use crate::builtins;
 use crate::environment::Environment;
 use crate::error::Error;
+use crate::gc;
 use crate::lexer::{Token, TokenKind};
 use crate::modules;
 use crate::native;
@@ -264,6 +265,26 @@ impl Interpreter {
     /// Возвращает копию shared-ссылки на глобальное окружение.
     fn global_env(&self) -> Rc<RefCell<Environment>> {
         self.global.clone()
+    }
+
+    /// Запускает сборку мусора вручную и возвращает статистику.
+    pub fn gc_collect(&self) -> gc::GcStats {
+        gc::collect()
+    }
+
+    /// Запускает сборку с обязательной строкой лога (для `gc-collect`).
+    pub fn gc_collect_verbose(&self) -> gc::GcStats {
+        gc::collect_verbose()
+    }
+
+    /// Текущее число аллокаций с прошлой сборки.
+    pub fn gc_allocations(&self) -> usize {
+        gc::allocations()
+    }
+
+    /// Псевдоним для API встраивания.
+    pub fn collect_garbage(&self) -> gc::GcStats {
+        gc::collect()
     }
 
     /// Выполняет AST-программу (список форм верхнего уровня).
@@ -583,6 +604,7 @@ impl Interpreter {
                     body: body_expr,
                     env: env.clone(),
                 };
+                gc::record_allocation();
                 (fn_name, Value::Closure(closure))
             }
             _ => {
@@ -1118,6 +1140,7 @@ impl Interpreter {
         }
         let body_expr = body_from_forms(&rest[body_start..]);
 
+        gc::record_allocation();
         Ok(Value::Closure(Closure {
             params: param_names,
             body: body_expr,
@@ -1798,6 +1821,23 @@ impl Interpreter {
 impl Default for Interpreter {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Drop for Interpreter {
+    fn drop(&mut self) {
+        // Сначала убираем принадлежащие интерпретатору корни, чтобы цикл,
+        // замкнутый на global/модуль, не считался внешне достижимым.
+        self.imports.borrow_mut().clear();
+        self.module_cache.borrow_mut().clear();
+        *self.exports.borrow_mut() = None;
+        *self.test_base_env.borrow_mut() = None;
+
+        // `global` — сильный корень, пока поле живо. Освобождаем поле до
+        // сборки; если снаружи остался closure, он удержит окружение сам.
+        let global = std::mem::replace(&mut self.global, Environment::new_unregistered());
+        drop(global);
+        let _ = gc::collect();
     }
 }
 

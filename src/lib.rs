@@ -8,6 +8,7 @@ pub mod ast_json;
 pub mod builtins;
 pub mod environment;
 pub mod error;
+pub mod gc;
 pub mod interpreter;
 pub mod json;
 pub mod lexer;
