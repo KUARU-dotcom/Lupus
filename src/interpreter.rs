@@ -147,6 +147,33 @@ pub struct TestDef {
 /// Максимальная глубина вызовов пользовательских функций.
 const MAX_CALL_DEPTH: u32 = 10_000;
 
+/// Начальное состояние ГПСЧ `lappland/malice`.
+///
+/// `LUPUS_MALICE_SEED` принимает целое `u64` или произвольную строку
+/// (хешируется FNV-1a); отсутствующая переменная заменяется энтропией
+/// (время + pid). Ноль запрещён: xorshift с нулевым состоянием остаётся нулевым.
+fn malice_seed() -> u64 {
+    if let Ok(value) = std::env::var("LUPUS_MALICE_SEED") {
+        return value
+            .parse::<u64>()
+            .map(|seed| seed.max(1))
+            .unwrap_or_else(|_| {
+                let mut hash = 0xcbf2_9ce4_8422_2325u64;
+                for byte in value.as_bytes() {
+                    hash ^= u64::from(*byte);
+                    hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+                }
+                hash.max(1)
+            });
+    }
+
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_nanos() as u64)
+        .unwrap_or(0);
+    (nanos ^ (std::process::id() as u64).rotate_left(32)).max(1)
+}
+
 /// Результат выполнения одного теста.
 #[derive(Debug, Clone)]
 pub struct TestOutcome {
@@ -203,6 +230,8 @@ pub struct Interpreter {
     running_tests: RefCell<Vec<String>>,
     /// Текущая глубина вызовов пользовательских функций/замыканий.
     depth: Rc<Cell<u32>>,
+    /// Детерминированный ГПСЧ для `lappland/malice`.
+    malice_rng: RefCell<u64>,
 }
 
 /// Уменьшает счётчик глубины при выходе из вызова (в том числе по ошибке).
@@ -234,6 +263,7 @@ impl Interpreter {
             test_base_env: RefCell::new(None),
             running_tests: RefCell::new(Vec::new()),
             depth: Rc::new(Cell::new(0)),
+            malice_rng: RefCell::new(malice_seed()),
         }
     }
 
@@ -285,6 +315,28 @@ impl Interpreter {
     /// Псевдоним для API встраивания.
     pub fn collect_garbage(&self) -> gc::GcStats {
         gc::collect()
+    }
+
+    /// Бросает «монетку» для `lappland/malice`.
+    ///
+    /// При `probability <= 0.0` и `>= 1.0` генератор не расходуется: результат
+    /// детерминирован без обращения к ГПСЧ. Иначе используется xorshift64*,
+    /// инициализированный из `LUPUS_MALICE_SEED` или энтропии.
+    pub(crate) fn net_malice_hits(&self, probability: f64) -> bool {
+        if probability <= 0.0 {
+            return false;
+        }
+        if probability >= 1.0 {
+            return true;
+        }
+        let mut state = self.malice_rng.borrow_mut();
+        let mut x = *state;
+        x ^= x >> 12;
+        x ^= x << 25;
+        x ^= x >> 27;
+        *state = x;
+        let sample = x.wrapping_mul(0x2545_F491_4F6C_DD1D);
+        (sample as f64 / u64::MAX as f64) < probability
     }
 
     /// Выполняет AST-программу (список форм верхнего уровня).
@@ -381,7 +433,7 @@ impl Interpreter {
             if let Some(builtin) = builtins::lookup(name) {
                 builtin.arity.check(builtin.name, rest.len())?;
                 let args = self.eval_all(rest, &env)?;
-                return self.invoke_native(&NativeImpl::Builtin(builtin.func), &args);
+                return self.invoke_native(&NativeImpl::Builtin(builtin.func), &args, &env);
             }
 
             // Конструкторы и аксессоры структур (ЭТАП 3 V0.4).
@@ -415,7 +467,7 @@ impl Interpreter {
             Value::Native { name, arity, func } => {
                 arity.check(&name, actual_args.len())?;
                 let args = self.eval_all(actual_args, &env)?;
-                self.invoke_native(&func, &args)
+                self.invoke_native(&func, &args, &env)
             }
             _ => Err(Error::type_mismatch("Не могу вызвать не-функцию")),
         }
@@ -428,17 +480,25 @@ impl Interpreter {
         arity: Arity,
         func: &NativeImpl,
         args: &[Value],
+        env: &Rc<RefCell<Environment>>,
     ) -> Result<Value, Error> {
         arity.check(name, args.len())?;
-        self.invoke_native(func, args)
+        self.invoke_native(func, args, env)
     }
 
     /// Вызывает нативную функцию; арность уже проверена вызывающим кодом.
-    fn invoke_native(&self, func: &NativeImpl, args: &[Value]) -> Result<Value, Error> {
+    fn invoke_native(
+        &self,
+        func: &NativeImpl,
+        args: &[Value],
+        env: &Rc<RefCell<Environment>>,
+    ) -> Result<Value, Error> {
         match func {
             NativeImpl::Builtin(BuiltinImpl::Pure(function)) => function(args),
-            NativeImpl::Builtin(BuiltinImpl::Context(function)) => function(self, args),
-            NativeImpl::Module { package, symbol } => native::call(self, package, symbol, args),
+            NativeImpl::Builtin(BuiltinImpl::Context(function)) => function(self, env, args),
+            NativeImpl::Module { package, symbol } => {
+                native::call(self, env, package, symbol, args)
+            }
         }
     }
 
@@ -450,10 +510,11 @@ impl Interpreter {
         &self,
         callable: &Value,
         args: Vec<Value>,
+        env: &Rc<RefCell<Environment>>,
     ) -> Result<Value, Error> {
         match callable {
             Value::Closure(closure) => self.call_closure_with_values(closure, args),
-            Value::Native { name, arity, func } => self.call_native(name, *arity, func, &args),
+            Value::Native { name, arity, func } => self.call_native(name, *arity, func, &args, env),
             _ => Err(Error::type_mismatch("Не могу вызвать не-функцию")),
         }
     }
@@ -892,7 +953,7 @@ impl Interpreter {
                 ),
             )
             .with_hint(format!(
-                "Доступные нативные пакеты V0.5: {}",
+                "Доступные нативные пакеты V0.6: {}",
                 native::PACKAGES.join(", ")
             )));
         };

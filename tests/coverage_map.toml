@@ -125,6 +125,26 @@
 "combining-marks" = { positive = ["v052_combining_marks"], negative = ["v052_combining_mark_start"] }
 "number-token-boundary" = { positive = ["v052_numeric_tokens"], negative = ["v052_number_letter_tail", "v052_number_space_tail"] }
 
+# --- V0.6 этап D: texas (net) и lappland (инъекция отказов) ---
+"texas/tcp-connect" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/tcp-listen" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/accept" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/send" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/recv" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/recv-line" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/close" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/udp-bind" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/udp-send-to" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/udp-recv-from" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/tcp-accept" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/tcp-send" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/tcp-recv" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/udp-socket" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/udp-send" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"texas/udp-recv" = { positive = ["v06_net"], negative = ["v06_texas_type"] }
+"lappland/malice" = { positive = ["v06_net"], negative = ["v06_malice_range"] }
+"lappland/delay" = { positive = ["v06_net"], negative = ["v06_delay_range"] }
+
 # --- V0.5.1: CLI-коды (проверяются Rust-тестами tests/cli.rs) ---
 [cli_codes]
 "no-tests-found" = { positive = ["cli_test_file_without_tests_reports_no_tests"], negative = ["cli_test_empty_directory_reports_no_tests"] }

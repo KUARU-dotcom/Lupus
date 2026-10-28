@@ -1,7 +1,8 @@
 //! Разрешение модулей и разбор формы `import`.
 //!
 //! Порядок поиска (ERRATA §1): нативный реестр → `stdlib/<имя>.lupus` →
-//! каталоги из `LUPUS_PATH`. Нативные пакеты V0.5: `senko`, `kaltsit`, `w`.
+//! каталоги из `LUPUS_PATH`. Нативные пакеты V0.6: `senko`, `kaltsit`, `w`,
+//! `texas`, `lappland`.
 
 use crate::ast::{Expr, ExprKind};
 use crate::error::Error;
@@ -204,7 +205,7 @@ pub fn resolve(spec: &ImportSpec) -> Result<Option<PathBuf>, Error> {
             ),
         )
         .with_hint(format!(
-            "Доступные нативные пакеты V0.5: {}",
+            "Доступные нативные пакеты V0.6: {}",
             native::PACKAGES.join(", ")
         ))),
     }

@@ -4,6 +4,7 @@
 //! булевы значения, строки, списки, литерал `none` и замыкания.
 
 use crate::ast::Expr;
+use crate::builtins::texas::{Listener, Socket};
 use crate::environment::Environment;
 use crate::error::Error;
 use crate::interpreter::Interpreter;
@@ -82,8 +83,10 @@ fn arguments_word(count: usize) -> &'static str {
 /// Функция ядра без доступа к интерпретатору.
 pub type PureBuiltinFn = fn(&[Value]) -> Result<Value, Error>;
 
-/// Функция ядра, которой нужен интерпретатор (например, `list-map`).
-pub type ContextBuiltinFn = fn(&Interpreter, &[Value]) -> Result<Value, Error>;
+/// Функция ядра, которой нужен интерпретатор и текущее окружение
+/// (например, `list-map`, `print`, `gc-collect`).
+pub type ContextBuiltinFn =
+    fn(&Interpreter, &Rc<RefCell<Environment>>, &[Value]) -> Result<Value, Error>;
 
 /// Реализация встроенной функции ядра.
 #[derive(Clone, Copy)]
@@ -152,6 +155,10 @@ pub enum Value {
     /// Структура, созданная через `defstruct` (ЭТАП 3 V0.4 / V0.5).
     /// Поля хранятся позиционно; имя типа — для аксессоров и равенства.
     Struct { name: String, fields: Vec<Value> },
+    /// Opaque сетевой сокет (`texas`). Не сериализуется в `SendValue`.
+    Socket(Rc<Socket>),
+    /// Opaque TCP-слушатель (`texas`). Не сериализуется в `SendValue`.
+    Listener(Rc<Listener>),
     /// Литерал `none` (отсутствие значения / пустой Option).
     None,
     /// Значение Option: (some v).
@@ -214,6 +221,8 @@ impl Traversable for Value {
             | Value::Bool(_)
             | Value::Str(_)
             | Value::None
+            | Value::Socket(_)
+            | Value::Listener(_)
             | Value::Closure(_)
             | Value::Native { .. } => {}
         }
@@ -268,6 +277,8 @@ impl Value {
                     + fields.capacity() * size_of::<Value>()
                     + fields.iter().map(Value::estimated_size).sum::<usize>()
             }
+            Value::Socket(_) => base + size_of::<Socket>(),
+            Value::Listener(_) => base + size_of::<Listener>(),
             Value::Some(value) | Value::Success(value) | Value::Failure(value) => {
                 base + value.estimated_size()
             }
@@ -315,6 +326,8 @@ impl PartialEq for Value {
                     fields: bf,
                 },
             ) => an == bn && af == bf,
+            (Value::Socket(a), Value::Socket(b)) => Rc::ptr_eq(a, b),
+            (Value::Listener(a), Value::Listener(b)) => Rc::ptr_eq(a, b),
             (Value::None, Value::None) => true,
             (Value::Some(a), Value::Some(b)) => *a == *b,
             (Value::Success(a), Value::Success(b)) => *a == *b,
@@ -403,6 +416,8 @@ fn value_to_string_inner(value: &Value, in_container: bool) -> String {
                 .join(" ");
             format!("({} {})", name, inner)
         }
+        Value::Socket(_) => "socket".to_string(),
+        Value::Listener(_) => "listener".to_string(),
         Value::Some(v) => format!("(some {})", value_to_string_inner(v, true)),
         Value::Success(v) => format!("(success {})", value_to_string_inner(v, true)),
         Value::Failure(v) => format!("(failure {})", value_to_string_inner(v, true)),

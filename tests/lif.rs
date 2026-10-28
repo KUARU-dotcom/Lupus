@@ -35,6 +35,8 @@ fn run_bin(file: &Path) -> RunResult {
     std::thread::spawn(move || {
         let out = Command::new(env!("CARGO_BIN_EXE_lupus"))
             .arg(&file)
+            // Детерминированная инъекция lappland в golden-тестах V0.6.
+            .env("LUPUS_MALICE_SEED", "42")
             .output()
             .expect("не удалось запустить интерпретатор");
         let _ = tx.send(RunResult {

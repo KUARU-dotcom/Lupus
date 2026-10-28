@@ -8,10 +8,12 @@
 pub mod arithmetic;
 pub mod comparison;
 pub mod higher_order;
+pub mod lappland;
 pub mod lists;
 pub mod logic;
 pub mod map;
 pub mod strings;
+pub mod texas;
 
 pub use arithmetic::{abs, add, div, float_to_int, int_to_float, max, min, mul, pow, rem, sub};
 pub use comparison::{eq, ge, gt, le, lt, neq};
@@ -22,9 +24,12 @@ pub use strings::{
     string_reverse, string_split,
 };
 
+use crate::environment::Environment;
 use crate::error::Error;
 use crate::interpreter::Interpreter;
 use crate::value::{Arity, BuiltinImpl, NativeImpl, Value};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 /// Описание встроенной функции ядра.
 #[derive(Clone, Copy)]
@@ -239,12 +244,20 @@ fn tuple(args: &[Value]) -> Result<Value, Error> {
     Ok(Value::Tuple(args.to_vec()))
 }
 
-fn print_value(interpreter: &Interpreter, args: &[Value]) -> Result<Value, Error> {
+fn print_value(
+    interpreter: &Interpreter,
+    _env: &Rc<RefCell<Environment>>,
+    args: &[Value],
+) -> Result<Value, Error> {
     interpreter.print_value(&args[0])?;
     Ok(Value::None)
 }
 
-fn gc_collect(interpreter: &Interpreter, _args: &[Value]) -> Result<Value, Error> {
+fn gc_collect(
+    interpreter: &Interpreter,
+    _env: &Rc<RefCell<Environment>>,
+    _args: &[Value],
+) -> Result<Value, Error> {
     interpreter.gc_collect_verbose();
     Ok(Value::None)
 }

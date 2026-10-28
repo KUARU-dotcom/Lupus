@@ -99,6 +99,10 @@ pub struct Environment {
     parent: Option<Rc<RefCell<Environment>>>,
     /// Связи имя → (значение, изменяемость).
     bindings: HashMap<String, (StoredValue, bool)>,
+    /// Локальная настройка `lappland/malice`; `None` — наследовать/0.0.
+    net_malice: Option<f64>,
+    /// Локальная настройка `lappland/delay`; `None` — наследовать/1.0.
+    net_delay: Option<f64>,
 }
 
 impl Traversable for Environment {
@@ -123,6 +127,8 @@ impl Environment {
         let env = Rc::new(RefCell::new(Environment {
             parent: None,
             bindings: HashMap::new(),
+            net_malice: None,
+            net_delay: None,
         }));
         gc::register(&env);
         env
@@ -133,6 +139,8 @@ impl Environment {
         let env = Rc::new(RefCell::new(Environment {
             parent: Some(parent),
             bindings: HashMap::new(),
+            net_malice: None,
+            net_delay: None,
         }));
         gc::register(&env);
         env
@@ -145,6 +153,8 @@ impl Environment {
         Rc::new(RefCell::new(Environment {
             parent: None,
             bindings: HashMap::new(),
+            net_malice: None,
+            net_delay: None,
         }))
     }
 
@@ -168,6 +178,44 @@ impl Environment {
         }
 
         (objects, bytes)
+    }
+
+    /// Устанавливает вероятность инъекции сетевого отказа в этом окружении.
+    pub(crate) fn set_net_malice(env: &Rc<RefCell<Environment>>, value: f64) {
+        env.borrow_mut().net_malice = Some(value);
+    }
+
+    /// Устанавливает множитель задержки сетевых вызовов в этом окружении.
+    pub(crate) fn set_net_delay(env: &Rc<RefCell<Environment>>, value: f64) {
+        env.borrow_mut().net_delay = Some(value);
+    }
+
+    /// Возвращает эффективную политику `(malice, delay)`.
+    ///
+    /// Поиск идёт по лексической цепочке: ближайшая явная настройка
+    /// перекрывает родительскую. По умолчанию `malice = 0.0`, `delay = 1.0`.
+    pub(crate) fn net_policy(env: &Rc<RefCell<Environment>>) -> (f64, f64) {
+        let mut malice = None;
+        let mut delay = None;
+        let mut current = Some(env.clone());
+
+        while let Some(item) = current {
+            let borrowed = item.borrow();
+            if malice.is_none() {
+                malice = borrowed.net_malice;
+            }
+            if delay.is_none() {
+                delay = borrowed.net_delay;
+            }
+            let parent = borrowed.parent.clone();
+            drop(borrowed);
+            if malice.is_some() && delay.is_some() {
+                break;
+            }
+            current = parent;
+        }
+
+        (malice.unwrap_or(0.0), delay.unwrap_or(1.0))
     }
 
     /// Определяет новую (или перезаписывает) переменную в текущем окружении.

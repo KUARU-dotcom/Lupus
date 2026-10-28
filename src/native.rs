@@ -1,15 +1,21 @@
-//! Нативная стандартная библиотека V0.5: пакеты `senko`, `kaltsit`, `w`.
+//! Нативная стандартная библиотека V0.6: пакеты `senko`, `kaltsit`, `w`,
+//! `texas` (сеть) и `lappland` (инъекция сетевых отказов).
 //!
 //! Все функции реализованы средствами `std` (внешних зависимостей нет):
 //! `senko` — математика на `f64`, `kaltsit` — файловые операции через
-//! `std::fs`, `w` — утверждения тестовой системы.
+//! `std::fs`, `w` — утверждения тестовой системы, `texas` — TCP/UDP через
+//! `std::net`, `lappland` — управляемые отказы/задержки net-вызовов.
 
+use crate::builtins::{lappland, texas};
+use crate::environment::Environment;
 use crate::error::Error;
 use crate::interpreter::Interpreter;
 use crate::value::{value_to_string, Arity, NativeImpl, Value};
+use std::cell::RefCell;
+use std::rc::Rc;
 
-/// Нативные пакеты, доступные в V0.5.
-pub const PACKAGES: &[&str] = &["senko", "kaltsit", "w"];
+/// Нативные пакеты, доступные в V0.6.
+pub const PACKAGES: &[&str] = &["senko", "kaltsit", "w", "texas", "lappland"];
 
 /// Проверяет, является ли имя нативным пакетом.
 pub fn is_native(package: &str) -> bool {
@@ -35,6 +41,8 @@ pub fn names(package: &str) -> &'static [&'static str] {
             "size",
         ],
         "w" => &["assert-eq", "assert-true", "assert-false", "run", "run-all"],
+        "texas" => texas::names(),
+        "lappland" => lappland::names(),
         _ => &[],
     }
 }
@@ -77,6 +85,8 @@ fn function_arity(package: &str, name: &str) -> Arity {
         ("w", "assert-eq") => Arity::Exact(2),
         ("w", "run-all") => Arity::Exact(0),
         ("w", "assert-true" | "assert-false" | "run") => Arity::Exact(1),
+        ("texas", name) => texas::arity(name).unwrap_or(Arity::Exact(1)),
+        ("lappland", name) => lappland::arity(name).unwrap_or(Arity::Exact(1)),
         _ => Arity::Exact(1),
     }
 }
@@ -114,6 +124,7 @@ fn domain_error(name: &str, message: &str) -> Error {
 /// Вызывает нативную функцию пакета.
 pub fn call(
     interpreter: &Interpreter,
+    env: &Rc<RefCell<Environment>>,
     package: &str,
     symbol: &str,
     args: &[Value],
@@ -122,6 +133,8 @@ pub fn call(
         "senko" => call_senko(symbol, args),
         "kaltsit" => call_kaltsit(symbol, args),
         "w" => call_w(interpreter, symbol, args),
+        "texas" => texas::call(interpreter, env, symbol, args),
+        "lappland" => lappland::call(interpreter, env, symbol, args),
         other => Err(Error::runtime(
             "unknown-module-symbol",
             format!("Неизвестный нативный пакет: {}", other),

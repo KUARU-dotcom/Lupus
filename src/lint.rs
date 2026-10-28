@@ -414,7 +414,7 @@ fn check_imports_in(
                             ),
                         )
                         .with_hint(format!(
-                            "Доступные нативные пакеты V0.5: {}",
+                            "Доступные нативные пакеты V0.6: {}",
                             native::PACKAGES.join(", ")
                         )),
                     );
