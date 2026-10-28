@@ -6,6 +6,7 @@
 
 use lupus::error::Error;
 use lupus::json::Json;
+use lupus::kennel::{Config, Host};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process;
@@ -30,6 +31,7 @@ struct Args {
     no_lint: bool,
     json: bool,
     lenient: bool,
+    imports: Vec<String>,
 }
 
 fn usage_text() -> String {
@@ -40,7 +42,7 @@ fn usage_text() -> String {
         "  lupus test [--verbose] файл_или_каталог...",
         "  lupus check [--no-lint] файл.lupus",
         "  lupus ast файл.lupus",
-        "  lupus eval \"<выражение>\"",
+        "  lupus eval [--import пакет,...] \"<выражение>\"",
         "Флаги: --pretty, --json, --no-lint, --lenient-parens, --verbose, --version",
     ]
     .join("\n")
@@ -75,6 +77,19 @@ fn one_positional<'a>(args: &'a Args, form: &str) -> &'a str {
     &args.positional[0]
 }
 
+fn parse_import_list(value: &str) -> Result<Vec<String>, String> {
+    let packages: Vec<String> = value
+        .split(',')
+        .map(str::trim)
+        .filter(|package| !package.is_empty())
+        .map(str::to_string)
+        .collect();
+    if packages.is_empty() {
+        return Err("--import: ожидается хотя бы один пакет".to_string());
+    }
+    Ok(packages)
+}
+
 fn parse_args(args: &[String]) -> Result<Args, String> {
     let mut parsed = Args::default();
     let mut index = 0;
@@ -101,6 +116,17 @@ fn parse_args(args: &[String]) -> Result<Args, String> {
             "--no-lint" => parsed.no_lint = true,
             "--json" => parsed.json = true,
             "--lenient-parens" => parsed.lenient = true,
+            "--import" => {
+                index += 1;
+                let Some(value) = args.get(index) else {
+                    return Err("--import: ожидается список пакетов".to_string());
+                };
+                parsed.imports.extend(parse_import_list(value)?);
+            }
+            other if other.starts_with("--import=") => {
+                let value = other.trim_start_matches("--import=");
+                parsed.imports.extend(parse_import_list(value)?);
+            }
             "--help" | "-h" => {
                 print_usage();
                 process::exit(0);
@@ -151,20 +177,43 @@ fn read_source(path: &Path) -> Result<String, Error> {
     })
 }
 
-fn parse_file(path: &Path, args: &Args) -> Result<Vec<lupus::ast::Expr>, Error> {
-    let source = read_source(path)?;
-    lupus::parse_source_lenient(&source, args.lenient)
-        .map_err(|error| error.with_file_if_located(path.display().to_string()))
+/// Конфигурация CLI: профиль Full и необязательный fuel из окружения.
+///
+/// `LUPUS_FUEL` принимает только целое `u64 > 0`; невалидное значение или
+/// ноль означают отсутствие лимита и не являются ошибкой.
+fn cli_config() -> Config {
+    let fuel = std::env::var("LUPUS_FUEL")
+        .ok()
+        .and_then(|value| value.trim().parse::<u64>().ok())
+        .filter(|value| *value > 0);
+    Config {
+        fuel,
+        ..Config::default()
+    }
 }
 
 fn run_file(path: &Path, args: &Args) -> Result<(), Error> {
     let source = read_source(path)?;
+    let forms = lupus::parse_source_lenient(&source, args.lenient)
+        .map_err(|error| error.with_file_if_located(path.display().to_string()))?;
     if !args.no_lint {
-        let forms = lupus::parse_source_lenient(&source, args.lenient)
-            .map_err(|error| error.with_file_if_located(path.display().to_string()))?;
         lupus::lint::check(&forms, Some(path))?;
     }
-    lupus::run_source_named(&source, args.lenient, Some(path))
+
+    let mut interpreter = lupus::Interpreter::with_lenient_parens(args.lenient);
+    if let Some(parent) = path.parent() {
+        interpreter.set_program_dir(parent.to_path_buf());
+    }
+    interpreter.apply_config(&cli_config(), &Host::new());
+    interpreter
+        .run(forms)
+        .map_err(|error| error.with_file_if_located(path.display().to_string()))
+}
+
+fn parse_file(path: &Path, args: &Args) -> Result<Vec<lupus::ast::Expr>, Error> {
+    let source = read_source(path)?;
+    lupus::parse_source_lenient(&source, args.lenient)
+        .map_err(|error| error.with_file_if_located(path.display().to_string()))
 }
 
 fn check_file(path: &Path, args: &Args) -> Result<(), Error> {
@@ -183,6 +232,10 @@ fn ast_file(path: &Path, args: &Args) -> Result<(), Error> {
 
 fn eval_expression(expression: &str, args: &Args) -> Result<(), Error> {
     let mut interpreter = lupus::Interpreter::with_lenient_parens(args.lenient);
+    interpreter.apply_config(&cli_config(), &Host::new());
+    for package in &args.imports {
+        interpreter.eval_source(&format!("(import {})", package))?;
+    }
     let value = interpreter.eval_source(expression)?;
     println!("{}", lupus::value::value_to_string(&value));
     Ok(())
@@ -317,6 +370,7 @@ fn run_test_file(path: &Path, args: &Args) -> bool {
     if let Some(parent) = path.parent() {
         interpreter.set_program_dir(parent.to_path_buf());
     }
+    interpreter.apply_config(&cli_config(), &Host::new());
 
     let outcomes = match interpreter.run_tests(&forms, args.verbose) {
         Ok(outcomes) => outcomes,
@@ -430,6 +484,9 @@ fn run_cli(raw: Vec<String>) {
     };
 
     let command = args.command.unwrap_or(Command::Run);
+    if !args.imports.is_empty() && command != Command::Eval {
+        usage_error("--import допустим только для lupus eval");
+    }
     let result = match command {
         Command::Run => {
             let path = one_positional(&args, "lupus run");

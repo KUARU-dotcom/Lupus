@@ -10,6 +10,7 @@ use crate::builtins::amiya::TaskHandle;
 use crate::environment::Environment;
 use crate::error::Error;
 use crate::gc;
+use crate::kennel::{Config, Host, Profile};
 use crate::lexer::{Token, TokenKind};
 use crate::marshal::{Marshaler, SendImport, SendValue, Unmarshaler};
 use crate::modules;
@@ -19,6 +20,8 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicU64, Ordering as AtomicOrdering};
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 /// Тип поля структуры, используемый конструктором для проверки аргументов.
@@ -214,6 +217,93 @@ struct TaskSnapshot {
     structs: HashMap<String, StructDef>,
     program_dir: Option<PathBuf>,
     suppress_print: bool,
+    profile: Profile,
+    host: Host,
+    max_call_depth: u32,
+    max_memory_values: Option<u64>,
+    fuel: Option<Arc<FuelBudget>>,
+    capture_output: bool,
+    output: Arc<Mutex<String>>,
+}
+
+/// Общий бюджет шагов: остаток и исходный потолок.
+///
+/// Потолок нужен, чтобы `(set-fuel! n)` мог повторить исходное значение,
+/// но не мог поднять лимит выше когда-либо установленного. Остаток никогда
+/// не увеличивается.
+struct FuelBudget {
+    remaining: AtomicU64,
+    ceiling: AtomicU64,
+}
+
+impl FuelBudget {
+    fn new(limit: u64) -> Self {
+        FuelBudget {
+            remaining: AtomicU64::new(limit),
+            ceiling: AtomicU64::new(limit),
+        }
+    }
+
+    /// Списывает один шаг; `exhausted` при нулевом остатке.
+    fn consume(&self) -> Result<(), Error> {
+        let mut current = self.remaining.load(AtomicOrdering::Relaxed);
+        loop {
+            if current == 0 {
+                return Err(Error::runtime(
+                    "exhausted",
+                    "Исчерпан лимит шагов выполнения (fuel)",
+                ));
+            }
+            match self.remaining.compare_exchange_weak(
+                current,
+                current - 1,
+                AtomicOrdering::Relaxed,
+                AtomicOrdering::Relaxed,
+            ) {
+                Ok(_) => return Ok(()),
+                Err(actual) => current = actual,
+            }
+        }
+    }
+
+    /// Понижает потолок и (при необходимости) остаток; повышение запрещено.
+    fn lower(&self, requested: u64) -> Result<(), Error> {
+        let mut ceiling = self.ceiling.load(AtomicOrdering::Relaxed);
+        loop {
+            if requested > ceiling {
+                return Err(Error::runtime(
+                    "fuel-raise-denied",
+                    format!(
+                        "set-fuel!: нельзя поднять лимит с {} до {}; форма допускает только уменьшение",
+                        ceiling, requested
+                    ),
+                ));
+            }
+            match self.ceiling.compare_exchange_weak(
+                ceiling,
+                requested,
+                AtomicOrdering::Relaxed,
+                AtomicOrdering::Relaxed,
+            ) {
+                Ok(_) => break,
+                Err(actual) => ceiling = actual,
+            }
+        }
+
+        let mut remaining = self.remaining.load(AtomicOrdering::Relaxed);
+        while requested < remaining {
+            match self.remaining.compare_exchange_weak(
+                remaining,
+                requested,
+                AtomicOrdering::Relaxed,
+                AtomicOrdering::Relaxed,
+            ) {
+                Ok(_) => break,
+                Err(actual) => remaining = actual,
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Интерпретатор с глобальным окружением.
@@ -236,6 +326,14 @@ pub struct Interpreter {
     exports: RefCell<Option<HashMap<String, Value>>>,
     /// Подавление `print` (режим `lupus test` без `--verbose`).
     suppress_print: Cell<bool>,
+    /// Захват вывода `print` в буфер (режим `kennel::run_program`).
+    capture_output: Cell<bool>,
+    /// Буфер захваченного вывода; общий для фоновых задач.
+    output: Arc<Mutex<String>>,
+    /// Профиль возможностей.
+    profile: Cell<Profile>,
+    /// Реестр host-нативов.
+    host: RefCell<Host>,
     /// Зарегистрированные тесты текущего файла.
     tests: RefCell<Vec<TestDef>>,
     /// Базовое окружение для запуска тестов (`w/run`, `w/run-all`).
@@ -244,6 +342,18 @@ pub struct Interpreter {
     running_tests: RefCell<Vec<String>>,
     /// Текущая глубина вызовов пользовательских функций/замыканий.
     depth: Rc<Cell<u32>>,
+    /// Максимальная глубина вызовов (настраивается через kennel).
+    max_call_depth: Cell<u32>,
+    /// Приблизительный лимит созданных значений (kennel).
+    max_memory_values: Cell<Option<u64>>,
+    /// Накопленный приблизительный счётчик значений.
+    memory_values: Cell<u64>,
+    /// Общий бюджет шагов; `None` — без лимита.
+    fuel: RefCell<Option<Arc<FuelBudget>>>,
+    /// Быстрый флаг наличия бюджета (избегает RefCell на каждом шаге).
+    fuel_active: Cell<bool>,
+    /// Быстрый флаг любого активного лимита (fuel или памяти).
+    limits_active: Cell<bool>,
     /// Детерминированный ГПСЧ для `lappland/malice`.
     malice_rng: RefCell<u64>,
 }
@@ -273,12 +383,52 @@ impl Interpreter {
             program_dir: RefCell::new(None),
             exports: RefCell::new(None),
             suppress_print: Cell::new(false),
+            capture_output: Cell::new(false),
+            output: Arc::new(Mutex::new(String::new())),
+            profile: Cell::new(Profile::default()),
+            host: RefCell::new(Host::new()),
             tests: RefCell::new(Vec::new()),
             test_base_env: RefCell::new(None),
             running_tests: RefCell::new(Vec::new()),
             depth: Rc::new(Cell::new(0)),
+            max_call_depth: Cell::new(MAX_CALL_DEPTH),
+            max_memory_values: Cell::new(None),
+            memory_values: Cell::new(0),
+            fuel: RefCell::new(None),
+            fuel_active: Cell::new(false),
+            limits_active: Cell::new(false),
             malice_rng: RefCell::new(malice_seed()),
         }
+    }
+
+    /// Применяет настройки kennel: профиль, host-нативы и лимиты.
+    pub fn apply_config(&mut self, config: &Config, host: &Host) {
+        self.profile.set(config.profile);
+        self.host.borrow_mut().clone_from(host);
+        self.max_call_depth
+            .set(config.max_depth.unwrap_or(MAX_CALL_DEPTH));
+        self.max_memory_values.set(config.max_memory_values);
+        self.memory_values.set(0);
+        let fuel = config
+            .effective_fuel()
+            .map(|limit| Arc::new(FuelBudget::new(limit)));
+        self.fuel_active.set(fuel.is_some());
+        self.limits_active
+            .set(fuel.is_some() || config.max_memory_values.is_some());
+        *self.fuel.borrow_mut() = fuel;
+    }
+
+    /// Включает/выключает захват вывода `print` в буфер.
+    pub fn set_capture_output(&mut self, capture: bool) {
+        self.capture_output.set(capture);
+    }
+
+    /// Возвращает захваченный вывод `print`.
+    pub fn captured_output(&self) -> String {
+        self.output
+            .lock()
+            .map(|output| output.clone())
+            .unwrap_or_default()
     }
 
     /// Создаёт интерпретатор с явно заданным lenient-режимом.
@@ -332,6 +482,13 @@ impl Interpreter {
             structs,
             program_dir,
             suppress_print,
+            profile: self.profile.get(),
+            host: self.host.borrow().clone(),
+            max_call_depth: self.max_call_depth.get(),
+            max_memory_values: self.max_memory_values.get(),
+            fuel: self.fuel.borrow().clone(),
+            capture_output: self.capture_output.get(),
+            output: self.output.clone(),
         };
 
         let join = std::thread::Builder::new()
@@ -383,6 +540,13 @@ impl Interpreter {
             structs,
             program_dir,
             suppress_print,
+            profile,
+            host,
+            max_call_depth,
+            max_memory_values,
+            fuel,
+            capture_output,
+            output,
         } = snapshot;
 
         let mut unmarshaler = Unmarshaler::new();
@@ -414,6 +578,17 @@ impl Interpreter {
         *interpreter.structs.borrow_mut() = structs;
         *interpreter.program_dir.borrow_mut() = program_dir;
         interpreter.set_suppress_print(suppress_print);
+        interpreter.profile.set(profile);
+        *interpreter.host.borrow_mut() = host;
+        interpreter.max_call_depth.set(max_call_depth);
+        interpreter.max_memory_values.set(max_memory_values);
+        interpreter.fuel_active.set(fuel.is_some());
+        interpreter
+            .limits_active
+            .set(fuel.is_some() || max_memory_values.is_some());
+        *interpreter.fuel.borrow_mut() = fuel;
+        interpreter.capture_output.set(capture_output);
+        interpreter.output = output;
 
         // Снимок больше не нужен; рвём Arc-циклы замыканий.
         unmarshaler.break_cycles();
@@ -522,11 +697,104 @@ impl Interpreter {
         };
         result.map_err(|error| attach_node_location(expr, error))
     }
+
+    /// Списывает один шаг из общего бюджета (если лимит задан).
+    #[inline]
+    fn consume_step(&self) -> Result<(), Error> {
+        if !self.fuel_active.get() {
+            return Ok(());
+        }
+        let budget = self.fuel.borrow().clone();
+        let Some(budget) = budget else {
+            return Ok(());
+        };
+        budget.consume()
+    }
+
+    /// Приблизительно учитывает созданные heap-значения.
+    ///
+    /// Счётчик накопительный и не уменьшается при сборке мусора: это
+    /// консервативная оценка, достаточная для песочницы встраивания.
+    #[inline]
+    fn record_memory(&self, value: &Value) -> Result<(), Error> {
+        let Some(limit) = self.max_memory_values.get() else {
+            return Ok(());
+        };
+        let next = self.memory_values.get().saturating_add(value_weight(value));
+        self.memory_values.set(next);
+        if next > limit {
+            return Err(Error::runtime(
+                "exhausted",
+                format!(
+                    "Исчерпан лимит значений выполнения (max_memory_values={})",
+                    limit
+                ),
+            ));
+        }
+        Ok(())
+    }
+
+    /// `(set-fuel! n)` — уменьшает текущий бюджет шагов.
+    fn do_set_fuel(&self, rest: &[Expr], env: &Rc<RefCell<Environment>>) -> Result<Value, Error> {
+        if rest.len() != 1 {
+            return Err(Error::arity(format!(
+                "(set-fuel! ...) требует ровно 1 аргумент, получено {}",
+                rest.len()
+            )));
+        }
+        let requested = match self.eval(&rest[0], env.clone())? {
+            Value::Int(value) if value >= 0 => value as u64,
+            Value::Int(_) => {
+                return Err(Error::type_mismatch(
+                    "set-fuel!: лимит должен быть неотрицательным целым",
+                ))
+            }
+            other => {
+                return Err(Error::type_mismatch(format!(
+                    "set-fuel! ожидает целое число, получено {}",
+                    value_to_string(&other)
+                )))
+            }
+        };
+        self.set_fuel_from_program(requested)?;
+        Ok(Value::None)
+    }
+
+    /// Уменьшает бюджет из программы; повышение потолка запрещено.
+    fn set_fuel_from_program(&self, requested: u64) -> Result<(), Error> {
+        let mut slot = self.fuel.borrow_mut();
+        let Some(budget) = slot.as_ref() else {
+            *slot = Some(Arc::new(FuelBudget::new(requested)));
+            self.fuel_active.set(true);
+            self.limits_active.set(true);
+            return Ok(());
+        };
+        budget.lower(requested)
+    }
 }
 
 impl Interpreter {
-    /// Обработка списков (вызовов форм).
+    /// Обработка списков (вызовов форм) с учётом лимитов kennel.
     fn eval_list(&self, elems: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
+        let limits_active = self.limits_active.get();
+        if limits_active {
+            self.consume_step()?;
+        }
+        let result = self.eval_list_inner(elems, env);
+        if limits_active {
+            if let Ok(value) = &result {
+                self.record_memory(value)?;
+            }
+        }
+        result
+    }
+
+    /// Непосредственная обработка списков (вызовов форм).
+    fn eval_list_inner(
+        &self,
+        elems: &[Expr],
+        env: Rc<RefCell<Environment>>,
+    ) -> Result<Value, Error> {
         if elems.is_empty() {
             // `()` — литерал пустого списка (как и `(list)`).
             return Ok(Value::List(Vec::new()));
@@ -545,6 +813,7 @@ impl Interpreter {
                 "defstruct" => return self.do_defstruct(rest, &env),
                 "define-mutable" => return self.do_define_mutable(rest, &env),
                 "set!" => return self.do_set(rest, &env),
+                "set-fuel!" => return self.do_set_fuel(rest, &env),
                 "lambda" => return self.do_lambda(rest, env),
                 "#lupus" => return self.do_directive(rest),
                 "if" => return self.do_if(rest, env),
@@ -635,6 +904,9 @@ impl Interpreter {
             NativeImpl::Module { package, symbol } => {
                 native::call(self, env, package, symbol, args)
             }
+            NativeImpl::Host(function) => {
+                function(args).map_err(|message| Error::runtime("host-error", message))
+            }
         }
     }
 
@@ -658,10 +930,14 @@ impl Interpreter {
     /// Проверяет и увеличивает глубину вызова пользовательской функции.
     fn enter_call(&self) -> Result<DepthGuard<'_>, Error> {
         let current = self.depth.get();
-        if current >= MAX_CALL_DEPTH {
+        let limit = self.max_call_depth.get();
+        if current >= limit {
             return Err(Error::runtime(
                 "stack-depth-exceeded",
-                "Превышена максимальная глубина рекурсии (10000). Проверьте условие выхода.",
+                format!(
+                    "Превышена максимальная глубина рекурсии ({}). Проверьте условие выхода.",
+                    limit
+                ),
             ));
         }
         self.depth.set(current + 1);
@@ -1064,6 +1340,10 @@ impl Interpreter {
     /// / (import (пакет модуль) ...).
     fn do_import(&self, rest: &[Expr], env: &Rc<RefCell<Environment>>) -> Result<Value, Error> {
         let spec = modules::parse_import(rest)?;
+        let profile = self.profile.get();
+        if !profile.allows_import(&spec.package, spec.is_native()) {
+            return Err(profile_denied(&spec.package, profile));
+        }
         let prefix = spec.prefix();
 
         let imported = if let Some(path) = modules::resolve_file_from(
@@ -1380,6 +1660,7 @@ impl Interpreter {
         let mut result = Value::None;
 
         loop {
+            self.consume_step()?;
             let cond_val = self.eval(cond_form, env.clone())?;
             if !is_truthy(&cond_val) {
                 break;
@@ -1395,6 +1676,7 @@ impl Interpreter {
     /// (loop тело...) — бесконечный цикл. Выход — только через `(exit n)`.
     fn do_loop(&self, rest: &[Expr], env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
         loop {
+            self.consume_step()?;
             for form in rest {
                 self.eval(form, env.clone())?;
             }
@@ -1467,10 +1749,19 @@ impl Interpreter {
     /// (print строка).
     /// Печатает значение с учётом подавления вывода в тестах.
     pub(crate) fn print_value(&self, value: &Value) -> Result<(), Error> {
-        if !self.suppress_print.get() {
-            builtins::print_arg(value)?;
+        if self.suppress_print.get() {
+            return Ok(());
         }
-        Ok(())
+        if self.capture_output.get() {
+            let mut output = match self.output.lock() {
+                Ok(output) => output,
+                Err(poisoned) => poisoned.into_inner(),
+            };
+            output.push_str(&value_to_string(value));
+            output.push('\n');
+            return Ok(());
+        }
+        builtins::print_arg(value)
     }
 
     /// (cond (условие тело...) ... (else тело...))
@@ -2062,8 +2353,31 @@ impl Interpreter {
 
     /// Вычисляет квалифицированное имя импортированного модуля.
     fn eval_qualified(&self, prefix: &str, symbol: &str) -> Result<Value, Error> {
+        if prefix == "host" {
+            let profile = self.profile.get();
+            if !profile.allows_host() {
+                return Err(profile_denied("host", profile));
+            }
+            let resolved = self.host.borrow().resolve(symbol);
+            return resolved
+                .map(|(arity, function)| Value::Native {
+                    name: format!("host/{}", symbol),
+                    arity,
+                    func: NativeImpl::Host(function),
+                })
+                .ok_or_else(|| {
+                    Error::runtime(
+                        "unknown-module-symbol",
+                        format!("host/{}: неизвестный символ модуля", symbol),
+                    )
+                });
+        }
+
         let module = self.imports.borrow().get(prefix).cloned();
         let Some(module) = module else {
+            if native::is_native(prefix) && !self.profile.get().allows_import(prefix, true) {
+                return Err(profile_denied(prefix, self.profile.get()));
+            }
             return Err(Error::unknown_identifier(format!(
                 "Префикс модуля '{}' не импортирован",
                 prefix
@@ -2182,6 +2496,46 @@ fn body_from_forms(forms: &[Expr]) -> Expr {
                 .chain(forms.iter().cloned())
                 .collect(),
         ))
+    }
+}
+
+/// Ошибка профиля kennel: пакет/возможность запрещены.
+fn profile_denied(package: &str, profile: Profile) -> Error {
+    Error::runtime(
+        "profile-denied",
+        format!(
+            "Профиль '{}' запрещает пакет '{}'",
+            profile.as_str(),
+            package
+        ),
+    )
+}
+
+/// Приблизительный вес значения для `Config::max_memory_values`.
+fn value_weight(value: &Value) -> u64 {
+    match value {
+        Value::List(items) | Value::Tuple(items) => 1 + items.iter().map(value_weight).sum::<u64>(),
+        Value::Map(pairs) => {
+            1 + pairs
+                .iter()
+                .map(|(key, value)| value_weight(key) + value_weight(value))
+                .sum::<u64>()
+        }
+        Value::Struct { fields, .. } => 1 + fields.iter().map(value_weight).sum::<u64>(),
+        Value::Some(value) | Value::Success(value) | Value::Failure(value) => {
+            1 + value_weight(value)
+        }
+        Value::Str(_) | Value::Closure(_) => 1,
+        Value::Int(_)
+        | Value::Float(_)
+        | Value::Bool(_)
+        | Value::None
+        | Value::Socket(_)
+        | Value::Listener(_)
+        | Value::Task(_)
+        | Value::Sender(_)
+        | Value::Receiver(_)
+        | Value::Native { .. } => 0,
     }
 }
 

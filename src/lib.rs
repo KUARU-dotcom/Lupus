@@ -11,6 +11,7 @@ pub mod error;
 pub mod gc;
 pub mod interpreter;
 pub mod json;
+pub mod kennel;
 pub mod lexer;
 pub mod lint;
 pub mod marshal;

@@ -1,0 +1,7 @@
+;; set-fuel! только уменьшает бюджет; конечный цикл успевает завершиться.
+(define-mutable i 0)
+(set-fuel! 10000)
+(while (< i 3)
+    (print i)
+    (set! i (+ i 1)))
+(print "done")

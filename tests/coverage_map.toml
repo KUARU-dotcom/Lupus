@@ -1,4 +1,4 @@
-# Карта покрытия V0.4/V0.5 (LiF).
+# Карта покрытия V0.4–V0.6 (LiF).
 # Каждый символ: positive = golden-тесты, negative = negative-тесты.
 [symbols]
 "define" = { positive = ["functions"], negative = ["define_arity"] }
@@ -156,8 +156,29 @@
 "amiya/wait-all" = { positive = ["v06_async"], negative = ["v06_async_wait_type"] }
 "amiya/marshal" = { positive = ["v06_async"], negative = ["v06_async_marshal"] }
 
+# --- V0.6 этап F: fuel и форма set-fuel! ---
+"set-fuel!" = { positive = ["v06_fuel"], negative = ["v06_fuel_raise"] }
+"fuel" = { positive = ["v06_fuel"], negative = ["v06_fuel_exhausted", "v06_fuel_raise"] }
+
 # --- V0.5.1: CLI-коды (проверяются Rust-тестами tests/cli.rs) ---
 [cli_codes]
 "no-tests-found" = { positive = ["cli_test_file_without_tests_reports_no_tests"], negative = ["cli_test_empty_directory_reports_no_tests"] }
 "cli-usage-exit-2" = { positive = ["cli_help_prints_usage"], negative = ["cli_unknown_flag_exits_2_with_plain_usage", "cli_usage_run_without_file_exits_2", "cli_usage_check_without_file_exits_2", "cli_usage_eval_without_expression_exits_2", "cli_usage_flag_without_command_exits_2", "cli_usage_run_extra_positional_exits_2", "cli_usage_no_args_exits_2", "cli_usage_ast_without_file_exits_2", "cli_usage_test_without_path_exits_2"] }
 "cli-single-dash-flag" = { positive = ["cli_negative_number_is_positional"], negative = ["cli_single_dash_flag_exits_2"] }
+
+# --- V0.6 этап F: kennel (проверяется tests/kennel.rs) ---
+[kennel]
+"profile/pure" = { positive = ["kennel_pure_allows_core"], negative = ["kennel_pure_denies_kaltsit"] }
+"profile/core" = { positive = ["kennel_core_allows_kaltsit"], negative = ["kennel_core_denies_texas"] }
+"profile/full" = { positive = ["kennel_full_host_native_double"], negative = ["kennel_host_denied_outside_full"] }
+"host/double" = { positive = ["kennel_full_host_native_double"], negative = ["kennel_full_host_without_registration"] }
+"host-error" = { positive = ["kennel_full_host_native_double"], negative = ["kennel_host_error_code"] }
+"fuel" = { positive = ["kennel_no_limits_preserve_output"], negative = ["kennel_max_steps_exhausts_loop"] }
+"max-steps" = { positive = ["kennel_no_limits_preserve_output"], negative = ["kennel_max_steps_exhausts_loop", "kennel_max_steps_exhausts_recursion"] }
+"max-depth" = { positive = ["kennel_no_limits_preserve_output"], negative = ["kennel_max_depth_exceeded"] }
+"max-memory-values" = { positive = ["kennel_no_limits_preserve_output"], negative = ["kennel_max_memory_values_exhausts"] }
+"LUPUS_FUEL" = { positive = ["cli_fuel_env_invalid_is_ignored"], negative = ["cli_fuel_env_exhausts_loop"] }
+"eval --import" = { positive = ["kennel_eval_import_senko"], negative = ["kennel_eval_without_import_fails"] }
+"profile-denied" = { positive = ["kennel_pure_allows_core"], negative = ["kennel_pure_denies_kaltsit", "kennel_core_denies_texas"] }
+"fuel-raise-denied" = { positive = ["kennel_set_fuel_equal_limit_allowed", "kennel_set_fuel_can_decrease"], negative = ["kennel_set_fuel_raise_denied"] }
+"exhausted" = { positive = ["kennel_no_limits_preserve_output"], negative = ["kennel_max_steps_exhausts_loop", "kennel_max_memory_values_exhausts"] }

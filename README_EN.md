@@ -53,17 +53,58 @@ lupus run --no-lint file.lupus    # run without lint
 lupus check file.lupus            # lexer/parser/lint only
 lupus ast file.lupus              # JSON AST on stdout
 lupus eval "(+ 2 3)"              # 5
+lupus eval --import senko "(senko/sqrt 16.0)"  # 4.0
 lupus test examples/v05_tests.lupus
+LUPUS_FUEL=100000 lupus run file.lupus          # step limit
 ```
 
-`lupus eval` uses a core-only environment; use `lupus run` for modules
-(see [ERRATA §12](./docs/ERRATA.md)).
+Without `--import`, `lupus eval` uses a core-only environment; the flag
+pre-imports a comma-separated list of packages. See
+[ERRATA §17](./docs/ERRATA.md) for details. The CLI runs with the `full`
+profile and no limits unless `LUPUS_FUEL` is set.
 
 Exit codes: `0` — success, `1` — program/lint/test failure, `2` — CLI usage
 error (missing argument, extra positional arguments, unknown flag; plain-text
 usage on stderr). Diagnostics always go to
 stderr; stdout stays clean program output. `--pretty` enables a human-readable
 rendering, `--json` (the default) emits strict JSON.
+
+## Embedding (kennel)
+
+The public `lupus::kennel` host API runs Lupus code inside a Rust process,
+captures `print`, and restricts what the program can do:
+
+```rust
+use lupus::kennel::{self, Config, Host, Profile};
+use lupus::value::{Arity, Value};
+
+fn main() -> Result<(), kennel::JsonError> {
+    let mut host = Host::new();
+    host.register_native("double", Arity::Exact(1), |args| match &args[0] {
+        Value::Int(n) => Ok(Value::Int(n * 2)),
+        _ => Err("host/double expects int".to_string()),
+    });
+
+    let config = Config {
+        profile: Profile::Full,
+        fuel: Some(10_000),
+        ..Config::default()
+    };
+    let output = kennel::run_program("(print (host/double 21))", &config, &host)?;
+    assert_eq!(output, "42\n");
+    Ok(())
+}
+```
+
+- `Profile::Pure` — core bindings only; imports are denied.
+- `Profile::Core` — core + `kaltsit` and file modules.
+- `Profile::Full` — all native packages plus `host/<name>`; the CLI profile.
+
+`Config` also sets `max_steps`/`fuel`, `max_memory_values`, and `max_depth`.
+Exhaustion returns a `JsonError` with code `exhausted`; host functions are called
+as `(host/<name> ...)` without an `import`, and `Err(String)` becomes
+`host-error`. `(set-fuel! n)` can only lower the remaining budget. The full
+profile table and limit semantics are in [ERRATA §17](./docs/ERRATA.md).
 
 ## Loops and variable capture
 
@@ -106,14 +147,14 @@ Layout:
 - `tests/golden/<name>.lupus` + `<name>.expected` — exact stdout match, exit 0.
 - `tests/negative/<name>.lupus` + `<name>.error` — expected error code; the
   harness extracts `code` from the JSON on stderr and requires a non-zero exit.
-- `tests/coverage_map.toml` — V0.4/V0.5 coverage map: every symbol has positive
+- `tests/coverage_map.toml` — V0.4–V0.6 coverage map: every symbol has positive
   and negative checks.
 - `tests/fuzz.rs` — fuzz smoke: 10 000 deterministic programs, 2 s timeout.
 - `tests/oracle.rs` — differential test against Lupus v0.4.0. The binary is
   fetched by `scripts/fetch-oracle.sh` into `oracles/` (gitignored); without it
   the test is marked SKIP.
 - `tests/modules.rs`, `tests/stdlib.rs`, `tests/types.rs`, `tests/errors.rs`,
-  `tests/cli.rs` — integration tests for stages A–E.
+  `tests/cli.rs`, `tests/kennel.rs` — integration tests for stages A–F.
 
 ## Benchmark
 

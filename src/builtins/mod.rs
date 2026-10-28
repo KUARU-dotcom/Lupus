@@ -271,6 +271,7 @@ pub const CORE_NAMES: &[&str] = &[
     "define-const",
     "define-mutable",
     "set!",
+    "set-fuel!",
     "lambda",
     "if",
     "cond",

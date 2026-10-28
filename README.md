@@ -53,17 +53,59 @@ lupus run --no-lint file.lupus    # запуск без линта
 lupus check file.lupus            # только лексер/парсер/линт
 lupus ast file.lupus              # JSON AST в stdout
 lupus eval "(+ 2 3)"              # 5
+lupus eval --import senko "(senko/sqrt 16.0)"  # 4.0
 lupus test examples/v05_tests.lupus
+LUPUS_FUEL=100000 lupus run file.lupus          # лимит шагов
 ```
 
-`lupus eval` работает в окружении только core; модули — через `lupus run`
-(см. [ERRATA §12](./docs/ERRATA.md)).
+`lupus eval` без `--import` работает в окружении только core; флаг
+пре-импортирует перечисленные через запятую пакеты. Подробности —
+в [ERRATA §17](./docs/ERRATA.md). CLI работает на профиле `full` и без
+лимитов, если не задан `LUPUS_FUEL`.
 
 Коды выхода: `0` — успех, `1` — ошибка программы/линта/теста, `2` — ошибка
 использования CLI (нет аргумента, лишние позиционные, неизвестный флаг;
 plain-text usage в stderr). Диагностика
 всегда пишется в stderr; stdout остаётся чистым выводом программы. `--pretty`
 включает человекочитаемый рендер, `--json` (по умолчанию) — строгий JSON.
+
+## Встраивание (kennel)
+
+Публичный host-API `lupus::kennel` запускает код Lupus внутри Rust-процесса,
+захватывает `print` и позволяет ограничить возможности программы:
+
+```rust
+use lupus::kennel::{self, Config, Host, Profile};
+use lupus::value::{Arity, Value};
+
+fn main() -> Result<(), kennel::JsonError> {
+    let mut host = Host::new();
+    host.register_native("double", Arity::Exact(1), |args| match &args[0] {
+        Value::Int(n) => Ok(Value::Int(n * 2)),
+        _ => Err("host/double ожидает int".to_string()),
+    });
+
+    let config = Config {
+        profile: Profile::Full,
+        fuel: Some(10_000),
+        ..Config::default()
+    };
+    let output = kennel::run_program("(print (host/double 21))", &config, &host)?;
+    assert_eq!(output, "42\n");
+    Ok(())
+}
+```
+
+- `Profile::Pure` — только core-биндинги; импорты запрещены.
+- `Profile::Core` — core + `kaltsit` и файловые модули.
+- `Profile::Full` — все нативные пакеты и `host/<имя>`; профиль CLI.
+
+`Config` также задаёт `max_steps`/`fuel`, `max_memory_values` и `max_depth`.
+Исчерпание лимита возвращает `JsonError` с кодом `exhausted`; `Host`-функция
+вызывается как `(host/<имя> ...)` без `import`, а её `Err(String)` становится
+кодом `host-error`. Форма `(set-fuel! n)` может только уменьшать остаток.
+Полная таблица профилей и семантика лимитов — в
+[ERRATA §17](./docs/ERRATA.md).
 
 ## Циклы и захват переменных
 
@@ -107,14 +149,14 @@ python3 validate_tasks.py      # PASSED: 100/100
   код выхода 0.
 - `tests/negative/<имя>.lupus` + `<имя>.error` — ожидаемый код ошибки; харнес
   извлекает `code` из JSON в stderr и требует ненулевой код выхода.
-- `tests/coverage_map.toml` — карта покрытия V0.4/V0.5: у каждого символа есть
+- `tests/coverage_map.toml` — карта покрытия V0.4–V0.6: у каждого символа есть
   positive- и negative-проверки.
 - `tests/fuzz.rs` — fuzz-smoke: 10 000 детерминированных программ, таймаут 2 с.
 - `tests/oracle.rs` — дифференциальный тест против Lupus v0.4.0. Бинарник
   скачивается скриптом `scripts/fetch-oracle.sh` в `oracles/` (каталог в
   `.gitignore`); без него тест помечается SKIP.
 - `tests/modules.rs`, `tests/stdlib.rs`, `tests/types.rs`, `tests/errors.rs`,
-  `tests/cli.rs` — интеграционные тесты этапов A–E.
+  `tests/cli.rs`, `tests/kennel.rs` — интеграционные тесты этапов A–F.
 
 ## Бенчмарк
 

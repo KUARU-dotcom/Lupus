@@ -303,6 +303,9 @@ fn skip_reason(source: &str) -> Option<&'static str> {
     if source.contains("(gc-collect") {
         return Some("gc-collect (V0.6)");
     }
+    if source.contains("(set-fuel!") {
+        return Some("set-fuel! (V0.6 F)");
+    }
     None
 }
 

@@ -193,13 +193,17 @@ fn lif_coverage_map() {
     let text = std::fs::read_to_string(&path).expect("отсутствует tests/coverage_map.toml");
     let cli_source = std::fs::read_to_string(test_root().join("cli.rs"))
         .expect("отсутствует tests/cli.rs для [cli_codes]");
+    let kennel_source = std::fs::read_to_string(test_root().join("kennel.rs"))
+        .expect("отсутствует tests/kennel.rs для [kennel]");
 
     let mut errors = Vec::new();
     let mut symbol_count = 0usize;
     let mut cli_count = 0usize;
+    let mut kennel_count = 0usize;
 
     let mut in_symbols = false;
     let mut in_cli = false;
+    let mut in_kennel = false;
     for raw in text.lines() {
         let line = raw.trim();
         if line.is_empty() || line.starts_with('#') {
@@ -208,6 +212,37 @@ fn lif_coverage_map() {
         if line.starts_with('[') {
             in_symbols = line == "[symbols]";
             in_cli = line == "[cli_codes]";
+            in_kennel = line == "[kennel]";
+            continue;
+        }
+
+        if in_kennel {
+            let (symbol, pos, neg) = parse_coverage_line(line);
+            if symbol.is_empty() {
+                errors.push(format!("строка [kennel] не разобрана: {}", line));
+                continue;
+            }
+            kennel_count += 1;
+            if pos.is_empty() {
+                errors.push(format!(
+                    "[kennel:{}] нет ни одной positive-проверки",
+                    symbol
+                ));
+            }
+            if neg.is_empty() {
+                errors.push(format!(
+                    "[kennel:{}] нет ни одной negative-проверки",
+                    symbol
+                ));
+            }
+            for name in pos.iter().chain(neg.iter()) {
+                if !kennel_source.contains(&format!("fn {}(", name)) {
+                    errors.push(format!(
+                        "[kennel:{}] Rust-тест отсутствует в tests/kennel.rs: {}",
+                        symbol, name
+                    ));
+                }
+            }
             continue;
         }
 
@@ -299,10 +334,15 @@ fn lif_coverage_map() {
         "секция [cli_codes] пуста или отсутствует в coverage_map.toml"
     );
     assert!(
+        kennel_count >= 1,
+        "секция [kennel] пуста или отсутствует в coverage_map.toml"
+    );
+    assert!(
         errors.is_empty(),
-        "Ошибки карты покрытия (символов: {}, CLI-кодов: {}):\n{}",
+        "Ошибки карты покрытия (символов: {}, CLI-кодов: {}, kennel-символов: {}):\n{}",
         symbol_count,
         cli_count,
+        kennel_count,
         errors.join("\n")
     );
 }

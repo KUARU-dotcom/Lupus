@@ -89,6 +89,11 @@ pub type PureBuiltinFn = fn(&[Value]) -> Result<Value, Error>;
 pub type ContextBuiltinFn =
     fn(&Interpreter, &Rc<RefCell<Environment>>, &[Value]) -> Result<Value, Error>;
 
+/// Нативная функция, зарегистрированная встраивающим приложением.
+///
+/// Ошибка `Err(String)` превращается в runtime-диагностику `host-error`.
+pub type HostFn = fn(&[Value]) -> Result<Value, String>;
+
 /// Реализация встроенной функции ядра.
 #[derive(Clone, Copy)]
 pub enum BuiltinImpl {
@@ -119,6 +124,8 @@ pub enum NativeImpl {
         /// Имя функции внутри пакета.
         symbol: String,
     },
+    /// Функция, предоставленная хостом через `kennel::Host`.
+    Host(HostFn),
 }
 
 impl fmt::Debug for NativeImpl {
@@ -130,6 +137,7 @@ impl fmt::Debug for NativeImpl {
                 .field("package", package)
                 .field("symbol", symbol)
                 .finish(),
+            NativeImpl::Host(_) => f.write_str("Host(..)"),
         }
     }
 }
