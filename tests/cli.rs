@@ -253,7 +253,11 @@ fn cli_test_empty_directory_reports_no_tests() {
         "stderr: {}",
         result.stderr
     );
-    assert!(result.stderr.contains(&dir.display().to_string()));
+    // Путь в JSON-диагностике экранируется: на Windows разделитель `\`
+    // кодируется как `\\`, поэтому сравниваем с JSON-представлением пути.
+    // На Unix замена ничего не меняет.
+    let expected_path = dir.display().to_string().replace('\\', "\\\\");
+    assert!(result.stderr.contains(&expected_path));
 }
 
 #[cfg(unix)]
