@@ -29,3 +29,21 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
       - name: Format check
         run: cargo fmt --check
+
+  release-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build (release)
+        run: cargo build --release --locked
+      - name: Release tests
+        run: >
+          cargo test --release --locked --no-fail-fast
+          --test memory
+          --test gc_performance
+          --test property
+          --test differential
+          --test shrinker
+      - name: GC pause limit check
+        run: cargo test --release --locked --test memory memory_leak_containers -- --nocapture
