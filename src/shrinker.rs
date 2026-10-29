@@ -21,6 +21,25 @@ use crate::error::Error;
 /// Максимальное число проверок кандидатов по умолчанию.
 pub const DEFAULT_MAX_ATTEMPTS: usize = 4_000;
 
+/// Разбирает значение `LUPUS_SHRINK_ATTEMPTS`.
+///
+/// Допустимо только целое `N > 0`; ноль, мусор и отрицательные числа означают
+/// значение по умолчанию.
+fn parse_attempts(raw: Option<&str>) -> usize {
+    raw.and_then(|value| value.trim().parse::<usize>().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(DEFAULT_MAX_ATTEMPTS)
+}
+
+/// Действующий лимит проверок кандидатов shrink-цикла.
+///
+/// По умолчанию [`DEFAULT_MAX_ATTEMPTS`]; переопределяется переменной
+/// окружения `LUPUS_SHRINK_ATTEMPTS`. Невалидное значение (`0`, мусор,
+/// отрицательное число) возвращает дефолт, а не понижает порог.
+pub fn effective_max_attempts() -> usize {
+    parse_attempts(std::env::var("LUPUS_SHRINK_ATTEMPTS").ok().as_deref())
+}
+
 /// Настройки shrink-цикла.
 #[derive(Debug, Clone, Copy)]
 pub struct ShrinkConfig {
@@ -31,7 +50,7 @@ pub struct ShrinkConfig {
 impl Default for ShrinkConfig {
     fn default() -> Self {
         ShrinkConfig {
-            max_attempts: DEFAULT_MAX_ATTEMPTS,
+            max_attempts: effective_max_attempts(),
         }
     }
 }
@@ -469,5 +488,26 @@ mod tests {
             Expr::unspanned(ExprKind::Number(7))
         ));
         assert_eq!(render_program(&forms), "(print 7)\n");
+    }
+
+    #[test]
+    fn parse_attempts_defaults() {
+        assert_eq!(parse_attempts(None), DEFAULT_MAX_ATTEMPTS);
+        assert_eq!(parse_attempts(Some("")), DEFAULT_MAX_ATTEMPTS);
+        assert_eq!(parse_attempts(Some("мусор")), DEFAULT_MAX_ATTEMPTS);
+        assert_eq!(parse_attempts(Some("0")), DEFAULT_MAX_ATTEMPTS);
+        assert_eq!(parse_attempts(Some("-5")), DEFAULT_MAX_ATTEMPTS);
+        assert_eq!(parse_attempts(Some("1.5")), DEFAULT_MAX_ATTEMPTS);
+        assert_eq!(
+            parse_attempts(Some("99999999999999999999999")),
+            DEFAULT_MAX_ATTEMPTS
+        );
+    }
+
+    #[test]
+    fn parse_attempts_accepts_positive_integer() {
+        assert_eq!(parse_attempts(Some("100")), 100);
+        assert_eq!(parse_attempts(Some(" 250 ")), 250);
+        assert_eq!(parse_attempts(Some("10000")), 10000);
     }
 }

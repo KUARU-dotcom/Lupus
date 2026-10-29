@@ -1,14 +1,15 @@
-//! Differential-тесты V0.5.2 → V0.6 (V0.7 этап 4).
+//! Differential-тесты: эталон V0.5.2 против текущей версии (V0.7 этап 4).
 //!
 //! Базовая версия берётся из `dist/lupus-v0.5.2-linux-x86_64.tar.gz` и
 //! распаковывается в `target/differential/v0.5.2/lupus`. Путь можно
-//! переопределить через `LUPUS_DIFF_BASELINE`.
+//! переопределить через `LUPUS_DIFF_BASELINE`. Таймаут запуска одной
+//! программы — `LUPUS_DIFF_TIMEOUT_MS` (по умолчанию 5000 мс).
 //!
 //! Если базовый бинарник недоступен, тесты помечаются как SKIP. При
 //! `LUPUS_DIFF_REQUIRED=1` отсутствие бинарника — ошибка гейта.
 
 use lupus::differential::{
-    compare_binaries, BreakingChange, DiffOutcome, DiffReport, DEFAULT_TIMEOUT,
+    compare_binaries, effective_timeout, BreakingChange, DiffOutcome, DiffReport,
 };
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -99,7 +100,7 @@ fn temp_program(source: &str) -> PathBuf {
 
 fn compare_source(baseline: &Path, source: &str) -> DiffReport {
     let path = temp_program(source);
-    compare_binaries(&path, baseline, &current_binary(), DEFAULT_TIMEOUT)
+    compare_binaries(&path, baseline, &current_binary(), effective_timeout())
         .unwrap_or_else(|error| panic!("не удалось сравнить программу:\n{source}\n{error}"))
 }
 
@@ -224,7 +225,7 @@ fn test_diff_no_regression() {
             continue;
         }
 
-        let report = compare_binaries(file, &baseline, &current, DEFAULT_TIMEOUT)
+        let report = compare_binaries(file, &baseline, &current, effective_timeout())
             .unwrap_or_else(|error| panic!("не удалось сравнить {}: {error}", file.display()));
         compared += 1;
 

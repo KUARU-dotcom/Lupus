@@ -1,17 +1,23 @@
 //! Differential fuzzing: сравнение двух версий интерпретатора.
 //!
-//! Одна и та же программа запускается на двух бинарниках (например, V0.5 и
-//! V0.6). Сравниваются:
+//! Одна и та же программа запускается на двух бинарниках: эталон — релиз
+//! V0.5.2, текущая версия — собираемая (сейчас V0.7.0). Сравниваются:
 //!
 //! - код выхода;
 //! - stdout (байт-в-байт);
-//! - stderr **только по полю `code`** — в V0.6 добавился `location`, поэтому
-//!   сравнение полного текста давало бы ложные расхождения.
+//! - stderr **только по полю `code`** — с V0.6 в диагностику добавился
+//!   `location`, поэтому сравнение полного текста давало бы ложные
+//!   расхождения.
 //!
-//! Известные breaking changes V0.6 (`and`/`or` возвращают значение, строгая
-//! проверка типов `head`/`tail`/…, `()` как пустой список, проверка полей
-//! `defstruct`) классифицируются как [`DiffOutcome::Expected`] и не считаются
-//! регрессией.
+//! Известные breaking changes V0.5.2 → V0.6 (`and`/`or` возвращают значение,
+//! строгая проверка типов `head`/`tail`/…, `()` как пустой список, проверка
+//! полей `defstruct`) классифицируются как [`DiffOutcome::Expected`] и не
+//! считаются регрессией.
+//!
+//! Таймаут запуска одной программы по умолчанию — [`DEFAULT_TIMEOUT`] (5 с);
+//! на медленном CPU дефолт может давать ложные `timeout`, которые классифицируются
+//! как неожиданное расхождение. Таймаут переопределяется переменной окружения
+//! `LUPUS_DIFF_TIMEOUT_MS` (миллисекунды; невалидное значение — дефолт).
 
 use std::io;
 use std::path::Path;
@@ -21,6 +27,25 @@ use std::time::Duration;
 
 /// Таймаут запуска одной программы по умолчанию.
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Разбирает значение `LUPUS_DIFF_TIMEOUT_MS` (миллисекунды).
+///
+/// Допустимо только целое `N > 0`; ноль, мусор и отрицательные числа означают
+/// таймаут по умолчанию.
+fn parse_timeout_ms(raw: Option<&str>) -> Duration {
+    raw.and_then(|value| value.trim().parse::<u64>().ok())
+        .filter(|value| *value > 0)
+        .map(Duration::from_millis)
+        .unwrap_or(DEFAULT_TIMEOUT)
+}
+
+/// Действующий таймаут запуска одной программы.
+///
+/// По умолчанию [`DEFAULT_TIMEOUT`]; переопределяется переменной окружения
+/// `LUPUS_DIFF_TIMEOUT_MS`. Невалидное значение возвращает дефолт.
+pub fn effective_timeout() -> Duration {
+    parse_timeout_ms(std::env::var("LUPUS_DIFF_TIMEOUT_MS").ok().as_deref())
+}
 
 /// Результат запуска программы на одном бинарнике.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -69,7 +94,7 @@ impl RunOutcome {
     }
 }
 
-/// Известное ожидаемое расхождение V0.5 → V0.6.
+/// Известное ожидаемое расхождение V0.5.2 → V0.6.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BreakingChange {
     /// `and`/`or` возвращают значение, а не только булево.
@@ -115,9 +140,9 @@ pub enum DiffOutcome {
 /// Подробный отчёт о сравнении.
 #[derive(Debug, Clone)]
 pub struct DiffReport {
-    /// Запуск на базовой версии (V0.5).
+    /// Запуск на базовой версии (эталон V0.5.2).
     pub baseline: RunOutcome,
-    /// Запуск на текущей версии (V0.6).
+    /// Запуск на текущей версии (сейчас V0.7.0).
     pub current: RunOutcome,
     /// Классификация расхождения.
     pub outcome: DiffOutcome,
@@ -518,5 +543,29 @@ mod tests {
             Some("type-mismatch".to_string())
         );
         assert_eq!(extract_error_code("not json"), None);
+    }
+
+    #[test]
+    fn parse_timeout_defaults() {
+        assert_eq!(parse_timeout_ms(None), DEFAULT_TIMEOUT);
+        assert_eq!(parse_timeout_ms(Some("")), DEFAULT_TIMEOUT);
+        assert_eq!(parse_timeout_ms(Some("мусор")), DEFAULT_TIMEOUT);
+        assert_eq!(parse_timeout_ms(Some("0")), DEFAULT_TIMEOUT);
+        assert_eq!(parse_timeout_ms(Some("-5")), DEFAULT_TIMEOUT);
+        assert_eq!(parse_timeout_ms(Some("1.5")), DEFAULT_TIMEOUT);
+        assert_eq!(
+            parse_timeout_ms(Some("99999999999999999999999")),
+            DEFAULT_TIMEOUT
+        );
+    }
+
+    #[test]
+    fn parse_timeout_accepts_positive_integer() {
+        assert_eq!(parse_timeout_ms(Some("1000")), Duration::from_secs(1));
+        assert_eq!(
+            parse_timeout_ms(Some(" 15000 ")),
+            Duration::from_millis(15000)
+        );
+        assert_eq!(parse_timeout_ms(Some("60000")), Duration::from_secs(60));
     }
 }

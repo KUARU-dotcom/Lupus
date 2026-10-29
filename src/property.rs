@@ -16,6 +16,25 @@ pub const DEFAULT_CASES: usize = 1000;
 /// Детерминированный seed по умолчанию.
 pub const DEFAULT_SEED: u64 = 0x5052_4F50_4552_5459;
 
+/// Разбирает значение `LUPUS_PROPERTY_CASES`.
+///
+/// Допустимо только целое `N > 0`; ноль, мусор и отрицательные числа означают
+/// значение по умолчанию.
+fn parse_cases(raw: Option<&str>) -> usize {
+    raw.and_then(|value| value.trim().parse::<usize>().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(DEFAULT_CASES)
+}
+
+/// Действующее количество прогонов свойства.
+///
+/// По умолчанию [`DEFAULT_CASES`]; переопределяется переменной окружения
+/// `LUPUS_PROPERTY_CASES`. Невалидное значение (`0`, мусор, отрицательное
+/// число) возвращает дефолт, а не понижает порог.
+pub fn effective_cases() -> usize {
+    parse_cases(std::env::var("LUPUS_PROPERTY_CASES").ok().as_deref())
+}
+
 /// Описание нарушенного свойства и минимального контрпримера.
 #[derive(Debug, Clone)]
 pub struct Failure {
@@ -704,5 +723,23 @@ mod tests {
         let failure = check("always-false", 1, 1, |_| Failing(100)).unwrap_err();
         assert_eq!(failure.counterexample, "value = 1");
         assert!(failure.expression.contains("(= 1 0)"));
+    }
+
+    #[test]
+    fn parse_cases_defaults() {
+        assert_eq!(parse_cases(None), DEFAULT_CASES);
+        assert_eq!(parse_cases(Some("")), DEFAULT_CASES);
+        assert_eq!(parse_cases(Some("мусор")), DEFAULT_CASES);
+        assert_eq!(parse_cases(Some("0")), DEFAULT_CASES);
+        assert_eq!(parse_cases(Some("-5")), DEFAULT_CASES);
+        assert_eq!(parse_cases(Some("1.5")), DEFAULT_CASES);
+        assert_eq!(parse_cases(Some("99999999999999999999999")), DEFAULT_CASES);
+    }
+
+    #[test]
+    fn parse_cases_accepts_positive_integer() {
+        assert_eq!(parse_cases(Some("100")), 100);
+        assert_eq!(parse_cases(Some(" 250 ")), 250);
+        assert_eq!(parse_cases(Some("5000")), 5000);
     }
 }
