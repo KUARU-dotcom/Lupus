@@ -84,6 +84,10 @@ fn list_lupus_files(dir: &Path) -> Vec<PathBuf> {
 /// Golden-тесты: точное совпадение stdout и код выхода 0.
 #[test]
 fn lif_golden() {
+    // Сравнение с нормализацией переводов строк: на Windows-раннере git
+    // выгружает .expected с CRLF (autocrlf), а stdout интерпретатора всегда
+    // содержит '\n'. Нормализация идентична на Unix.
+    let normalize = |text: &str| text.replace("\r\n", "\n");
     let dir = test_root().join("golden");
     let files = list_lupus_files(&dir);
     assert!(!files.is_empty(), "каталог golden пуст — нет golden-тестов");
@@ -101,7 +105,7 @@ fn lif_golden() {
                 name, result.code, result.stderr
             ));
         }
-        if result.stdout != expected {
+        if normalize(&result.stdout) != normalize(&expected) {
             errors.push(format!(
                 "[{}] stdout не совпадает (ожидалось {}/байт, получено {}/байт)",
                 name,

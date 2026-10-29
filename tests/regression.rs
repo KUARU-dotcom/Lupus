@@ -70,6 +70,13 @@ fn assert_negative(name: &str, code: &str) {
     );
 }
 
+/// Сравнение golden-stdout с нормализацией переводов строк: на Windows-раннере
+/// git выгружает .expected с CRLF (autocrlf), а stdout интерпретатора всегда
+/// содержит '\n'. Нормализация идентична на Unix.
+fn normalize_eol(text: &str) -> String {
+    text.replace("\r\n", "\n")
+}
+
 fn assert_golden(name: &str) {
     let base = root().join("tests/golden");
     let output = run_file(&base.join(format!("{name}.lupus")));
@@ -81,7 +88,11 @@ fn assert_golden(name: &str) {
         "[{name}] stderr: {}",
         output.stderr
     );
-    assert_eq!(output.stdout, expected, "[{name}] stdout не совпал");
+    assert_eq!(
+        normalize_eol(&output.stdout),
+        normalize_eol(&expected),
+        "[{name}] stdout не совпал"
+    );
 }
 
 #[test]
@@ -177,7 +188,11 @@ fn v05_determinism_is_stable() {
     for _ in 0..3 {
         let output = run_file(&path);
         assert_eq!(output.code, 0, "stderr: {}", output.stderr);
-        assert_eq!(output.stdout, expected);
+        assert_eq!(
+            normalize_eol(&output.stdout),
+            normalize_eol(&expected),
+            "stdout не совпал с .expected"
+        );
         if let Some(previous) = &first {
             assert_eq!(&output.stdout, previous, "недетерминированный stdout");
         } else {
