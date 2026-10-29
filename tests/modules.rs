@@ -6,9 +6,16 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
+/// Каталоги модулей создаются под `target/`, а в `LUPUS_PATH` передаётся путь
+/// относительно корня пакета: разделитель `LUPUS_PATH` — `:`, а абсолютные
+/// пути Windows содержат `:` (буква диска), что ломало бы разбор. Относительный
+/// путь не содержит `:` и работает одинаково на Unix и Windows.
 fn temp_dir(tag: &str) -> PathBuf {
     let n = COUNTER.fetch_add(1, Ordering::SeqCst);
-    let dir = std::env::temp_dir().join(format!("lupus_mod_{}_{}_{}", std::process::id(), tag, n));
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("target")
+        .join(format!("lupus_mod_{}_{}_{}", std::process::id(), tag, n));
+    let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("temp dir");
     dir
 }
@@ -24,7 +31,14 @@ fn run_with_path(path: &Path, lupus_path: Option<&Path>) -> (String, String, i32
     let mut command = Command::new(env!("CARGO_BIN_EXE_lupus"));
     command.arg(path);
     if let Some(dir) = lupus_path {
-        command.env("LUPUS_PATH", dir);
+        // LUPUS_PATH использует ':' как разделитель, а абсолютные пути Windows
+        // содержат ':' (буква диска), поэтому в переменную передаётся путь
+        // относительно корня пакета — это текущий каталог процесса-наследника.
+        let value = dir
+            .strip_prefix(std::env::current_dir().expect("cwd"))
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|_| dir.to_path_buf());
+        command.env("LUPUS_PATH", value);
     }
     let output = command.output().expect("run lupus");
     (
