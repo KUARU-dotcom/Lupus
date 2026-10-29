@@ -6,6 +6,7 @@
 pub mod ast;
 pub mod ast_json;
 pub mod builtins;
+pub mod differential;
 pub mod environment;
 pub mod error;
 pub mod gc;
