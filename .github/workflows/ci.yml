@@ -47,3 +47,19 @@ jobs:
           --test shrinker
       - name: GC pause limit check
         run: cargo test --release --locked --test memory memory_leak_containers -- --nocapture
+
+  # Job проверяет компилируемость и тесты на настоящей Windows (host MSVC).
+  # Это НЕ источник релизного артефакта: релизный .zip собирается на машине
+  # мейнтейнера (CachyOS) через ./build_release.sh <version> (mingw-w64) или
+  # через Dockerfile.release.
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build (release)
+        run: cargo build --release --locked
+      - name: Version
+        run: ./target/release/lupus.exe --version
+      - name: Test
+        run: cargo test --locked
