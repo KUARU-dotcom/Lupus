@@ -1,11 +1,15 @@
-//! LiF фаза 2: fuzz-smoke интерпретатора (этап F1).
+//! LiF фаза 2: fuzz-smoke интерпретатора (этап F1, V0.7 этап 1).
 //!
-//! Генерирует структурированные программы (random, edge_cases, type_mix,
-//! modules, strings) и запускает каждую с таймаутом 2 секунды. Количество
-//! программ задаётся `LUPUS_FUZZ_N` (по умолчанию 10 000). Допустимые исходы:
-//! код 0 или 1 с JSON-ошибкой в stderr. Panic, сигнал, код 101 или зависание —
-//! провал.
+//! Программы строит grammar-based генератор [`lupus::generator`]: он соблюдает
+//! БНФ спеки, баланс скобок и лимит вложенности, а также использует только
+//! реально существующий API ядра. Количество программ задаётся
+//! `LUPUS_FUZZ_N` (по умолчанию 10 000). Допустимые исходы: код 0 или 1 с
+//! JSON-ошибкой в stderr. Panic, сигнал, код 101 или зависание — провал.
+//!
+//! Дополнительно проверяются валидность (≥ 90% exit 0), баланс скобок и
+//! соблюдение лимита глубины.
 
+use lupus::generator::{is_balanced, max_nesting_depth, Generator};
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -16,7 +20,8 @@ static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 const DEFAULT_ITERATIONS: usize = 10_000;
 const TIMEOUT: Duration = Duration::from_secs(2);
-const GENERATORS: [&str; 5] = ["random", "edge_cases", "type_mix", "modules", "strings"];
+const GENERATORS: [&str; 1] = ["grammar"];
+const MIN_VALID_PERCENT: usize = 90;
 
 fn temp_file() -> PathBuf {
     let n = COUNTER.fetch_add(1, Ordering::SeqCst);
@@ -34,392 +39,11 @@ fn iterations() -> usize {
         .unwrap_or(DEFAULT_ITERATIONS)
 }
 
-/// Детерминированный xorshift64* — без внешних зависимостей.
-struct Rng(u64);
-
-impl Rng {
-    fn new(seed: u64) -> Self {
-        Rng(seed.max(1))
-    }
-
-    fn next(&mut self) -> u64 {
-        let mut x = self.0;
-        x ^= x >> 12;
-        x ^= x << 25;
-        x ^= x >> 27;
-        self.0 = x;
-        x.wrapping_mul(0x2545_F491_4F6C_DD1D)
-    }
-
-    fn below(&mut self, bound: usize) -> usize {
-        (self.next() % bound as u64) as usize
-    }
-
-    fn chance(&mut self, percent: u64) -> bool {
-        self.next() % 100 < percent
-    }
-}
-
-fn atom(rng: &mut Rng) -> String {
-    match rng.below(10) {
-        0 => format!("{}", rng.below(41) as i64 - 20),
-        1 => format!("{}.{}", rng.below(10), rng.below(10)),
-        2 => {
-            let strings = [
-                "\"\"",
-                "\"abc\"",
-                "\"привет\"",
-                "\"🐺\"",
-                "\"a b c\"",
-                "\"line\\nbreak\"",
-            ];
-            strings[rng.below(strings.len())].to_string()
-        }
-        3 => ["true", "false"][rng.below(2)].to_string(),
-        4 => "none".to_string(),
-        5 => ["x", "y", "z"][rng.below(3)].to_string(),
-        6 => ["+", "-", "*", "/", "%", "=", "<", ">"][rng.below(8)].to_string(),
-        7 => ["list", "tuple", "length", "not", "int->str"][rng.below(5)].to_string(),
-        8 => "senko/sqrt".to_string(),
-        _ => ["(list 1 2)", "(tuple 1 2)", "(map (tuple \"k\" 1))"][rng.below(3)].to_string(),
-    }
-}
-
-fn call(rng: &mut Rng, depth: usize) -> String {
-    let operators = [
-        "+",
-        "-",
-        "*",
-        "/",
-        "%",
-        "=",
-        "!=",
-        "<",
-        ">",
-        "<=",
-        ">=",
-        "min",
-        "max",
-        "abs",
-        "pow",
-        "not",
-        "list",
-        "tuple",
-        "length",
-        "nth",
-        "contains?",
-        "string-append",
-        "string-length",
-        "string-split",
-        "string-reverse",
-        "int->str",
-        "float->str",
-        "int->float",
-        "float->int",
-    ];
-    let operator = operators[rng.below(operators.len())];
-    let count = rng.below(4);
-    let mut args = Vec::new();
-    for _ in 0..count {
-        args.push(form(rng, depth.saturating_sub(1)));
-    }
-    format!("({} {})", operator, args.join(" "))
-}
-
-fn form(rng: &mut Rng, depth: usize) -> String {
-    if depth == 0 || rng.chance(45) {
-        return atom(rng);
-    }
-    match rng.below(12) {
-        0 | 1 => call(rng, depth),
-        2 => format!("(print {})", form(rng, depth - 1)),
-        3 => format!(
-            "(if {} {} {})",
-            form(rng, depth - 1),
-            form(rng, depth - 1),
-            form(rng, depth - 1)
-        ),
-        4 => format!(
-            "(define {} {})",
-            ["x", "y", "z"][rng.below(3)],
-            form(rng, depth - 1)
-        ),
-        5 => format!(
-            "(let ((x {}) (y {})) {})",
-            form(rng, depth - 1),
-            form(rng, depth - 1),
-            form(rng, depth - 1)
-        ),
-        6 => format!(
-            "(match {} ((some v) v) (none 0) (_ -1))",
-            form(rng, depth - 1)
-        ),
-        7 => format!(
-            "(map (tuple {} {}) (tuple {} {}))",
-            form(rng, depth - 1),
-            form(rng, depth - 1),
-            form(rng, depth - 1),
-            form(rng, depth - 1)
-        ),
-        8 => [
-            "(import senko)",
-            "(import kaltsit)",
-            "(import w)",
-            "(import util)",
-        ][rng.below(4)]
-        .to_string(),
-        9 => format!(
-            "(defstruct Point{} (x int) (y int))",
-            if rng.chance(50) { " (a)" } else { "" }
-        ),
-        10 => format!("(test \"t{}\" {})", rng.below(5), form(rng, depth - 1)),
-        _ => format!(
-            "(defstruct Pair (first int) (second int))\n(print (Pair {} {}))",
-            form(rng, depth - 1),
-            form(rng, depth - 1)
-        ),
-    }
-}
-
-fn token_soup(rng: &mut Rng) -> String {
-    let tokens = [
-        "(",
-        ")",
-        "print",
-        "define",
-        "if",
-        "let",
-        "lambda",
-        "senko/sqrt",
-        "1",
-        "2.5",
-        "\"s\"",
-        "none",
-        "true",
-        "+",
-        "=",
-        "@",
-        "#",
-        "$",
-        "%",
-        ":",
-        "\\",
-        "unterminated",
-        "#|",
-        "senko",
-        "w",
-        "util",
-        "match",
-        "some",
-    ];
-    let count = 1 + rng.below(30);
-    let mut parts = Vec::with_capacity(count);
-    for _ in 0..count {
-        parts.push(tokens[rng.below(tokens.len())]);
-    }
-    parts.join(" ")
-}
-
-fn generate_random(rng: &mut Rng) -> String {
-    if rng.chance(30) {
-        return token_soup(rng);
-    }
-    let count = 1 + rng.below(12);
-    let mut forms = Vec::with_capacity(count);
-    for _ in 0..count {
-        forms.push(form(rng, 3));
-    }
-    forms.join("\n")
-}
-
-/// Граничные литералы, глубокая вложенность, смешение типов и рекурсия.
-fn generate_edge_cases(rng: &mut Rng) -> String {
-    if rng.chance(2) {
-        return generate_recursion(rng);
-    }
-    match rng.below(5) {
-        0 => {
-            let max = "9223372036854775807";
-            let min = "-9223372036854775808";
-            match rng.below(6) {
-                0 => format!("(print {max})\n(print {min})\n"),
-                1 => format!("(+ {max} 1)\n"),
-                2 => format!("(- {min} 1)\n"),
-                3 => format!("(* {max} 2)\n"),
-                4 => format!("(- {min})\n"),
-                _ => format!("(pow {max} 2)\n"),
-            }
-        }
-        1 => {
-            let forms = [
-                "(print 1e308)",
-                "(print -1e308)",
-                "(print (* 1e308 10.0))",
-                "(print (/ 1e308 1e-308))",
-                "(print (+ 1e308 1e308))",
-                "(print (int->float 9223372036854775807))",
-            ];
-            forms[rng.below(forms.len())].to_string() + "\n"
-        }
-        2 => {
-            let depth = 990 + rng.below(16);
-            format!(
-                "{}{}{}\n",
-                "(".repeat(depth),
-                "(print 1)",
-                ")".repeat(depth)
-            )
-        }
-        3 => {
-            let values = [
-                "1",
-                "1.5",
-                "\"str\"",
-                "(list 1 2)",
-                "true",
-                "none",
-                "9223372036854775807",
-                "-9223372036854775808",
-            ];
-            let ops = [
-                "+",
-                "-",
-                "*",
-                "/",
-                "%",
-                "=",
-                "string-append",
-                "list",
-                "nth",
-                "contains?",
-            ];
-            let op = ops[rng.below(ops.len())];
-            let a = values[rng.below(values.len())];
-            let b = values[rng.below(values.len())];
-            format!("(print ({op} {a} {b}))\n")
-        }
-        _ => format!(
-            "(print (list {} {} {}))\n",
-            rng.below(1000),
-            rng.below(1000) as f64 / 10.0,
-            ["\"x\"", "true", "none"][rng.below(3)]
-        ),
-    }
-}
-
-fn generate_recursion(rng: &mut Rng) -> String {
-    match rng.below(3) {
-        0 => "(define (f n) (f (+ n 1)))\n(f 0)\n".to_string(),
-        1 => "(define (f n) (if (= n 0) 0 (f (- n 1))))\n(f 10001)\n".to_string(),
-        _ => "(define (f n) (g n))\n(define (g n) (f n))\n(f 0)\n".to_string(),
-    }
-}
-
-/// Намеренное смешивание int/float/str/list для type-mismatch.
-fn generate_type_mix(rng: &mut Rng) -> String {
-    let values = [
-        "1",
-        "1.5",
-        "\"str\"",
-        "(list 1 2)",
-        "true",
-        "none",
-        "9223372036854775807",
-        "-9223372036854775808",
-    ];
-    let ops = [
-        "+",
-        "-",
-        "*",
-        "/",
-        "%",
-        "<",
-        "=",
-        "string-append",
-        "string-length",
-        "list",
-        "nth",
-        "contains?",
-        "not",
-    ];
-    let mut forms = vec![
-        "(print (+ 1 1.5))".to_string(),
-        "(print (string-append \"a\" (list 1 2)))".to_string(),
-    ];
-    let extra = 1 + rng.below(3);
-    for _ in 0..extra {
-        let op = ops[rng.below(ops.len())];
-        let a = values[rng.below(values.len())];
-        let b = values[rng.below(values.len())];
-        if op == "string-length" || op == "not" {
-            forms.push(format!("(print ({op} {a}))"));
-        } else {
-            forms.push(format!("(print ({op} {a} {b}))"));
-        }
-    }
-    forms.join("\n")
-}
-
-/// `(import senko)` и вызовы с граничными значениями.
-fn generate_modules(rng: &mut Rng) -> String {
-    let calls = [
-        "(print (senko/sqrt 16.0))",
-        "(print (senko/sqrt -1.0))",
-        "(print (senko/sqrt 1e308))",
-        "(print (senko/sqrt 1e-308))",
-        "(print (senko/pow 2.0 8.0))",
-        "(print (senko/pow 1e308 2.0))",
-        "(print (senko/pow 1e308 0.5))",
-        "(print (senko/pow -1e308 0.5))",
-        "(print (senko/pow 0.0 -1.0))",
-        "(print (senko/sqrt 1))",
-    ];
-    let mut forms = vec!["(import senko)".to_string()];
-    let count = 1 + rng.below(3);
-    for _ in 0..count {
-        forms.push(calls[rng.below(calls.len())].to_string());
-    }
-    forms.join("\n")
-}
-
-/// Строки с emoji, кириллицей и escape-последовательностями.
-fn generate_strings(rng: &mut Rng) -> String {
-    let strings = [
-        "\"\"",
-        "\"🐺 Волк\"",
-        "\"Привет, мир!\"",
-        "\"a\\nb\"",
-        "\"tab\\there\"",
-        "\"quote\\\"x\\\"\"",
-        "\"backslash\\\\\"",
-        "\"тест\"",
-        "\"hello🐺\"",
-        "\"\\u0432\\u043e\\u043b\\u043a\"",
-    ];
-    let value = strings[rng.below(strings.len())];
-    let mut forms = Vec::new();
-    let count = 1 + rng.below(3);
-    for _ in 0..count {
-        let expr = match rng.below(5) {
-            0 => format!("(print {value})"),
-            1 => format!("(print (string-length {value}))"),
-            2 => format!("(print (string-reverse {value}))"),
-            3 => format!("(print (string-append {value} {value}))"),
-            _ => format!("(print (string-split {value} \" \"))"),
-        };
-        forms.push(expr);
-    }
-    forms.join("\n")
-}
-
-fn generate_for(index: usize, rng: &mut Rng) -> String {
-    match index {
-        0 => generate_random(rng),
-        1 => generate_edge_cases(rng),
-        2 => generate_type_mix(rng),
-        3 => generate_modules(rng),
-        _ => generate_strings(rng),
-    }
+/// Запускает программу так же, как CLI: парсинг, линт, интерпретация.
+fn run_in_process(source: &str) -> Result<(), String> {
+    let forms = lupus::parse_source(source).map_err(|error| error.to_json())?;
+    lupus::lint::check(&forms, None).map_err(|error| error.to_json())?;
+    lupus::run_source(source).map_err(|error| error.to_json())
 }
 
 enum Outcome {
@@ -800,19 +424,19 @@ impl FuzzStats {
 fn fuzz_smoke_structured_generators() {
     let total = iterations();
     let path = temp_file();
-    let mut rng = Rng::new(0x5EED_0F00_D1D1_u64);
+    let mut generator = Generator::new(0x5EED_0F00_D1D1_u64);
     let mut stats = FuzzStats::default();
     let started = Instant::now();
 
     for iteration in 0..total {
         let index = iteration % GENERATORS.len();
-        let generator = GENERATORS[index];
-        let source = generate_for(index, &mut rng);
+        let name = GENERATORS[index];
+        let source = generator.generate();
         stats.programs += 1;
         stats.per_generator[index] += 1;
         std::fs::write(&path, &source).expect("write fuzz program");
         let outcome = run_with_timeout(&path);
-        stats.record(&source, generator, outcome);
+        stats.record(&source, name, outcome);
     }
 
     let elapsed = started.elapsed();
@@ -822,13 +446,15 @@ fn fuzz_smoke_structured_generators() {
         .map(|(name, count)| format!("{name}:{count}"))
         .collect::<Vec<_>>()
         .join(",");
+    let valid_percent = stats.exit0 * 100 / stats.programs;
     println!(
-        "FUZZ_REPORT programs={} elapsed_ms={} generators={} exit0={} exit1={} panics={} abnormal={} timeouts={} invalid_json={}",
+        "FUZZ_REPORT programs={} elapsed_ms={} generators={} exit0={} exit1={} valid_percent={} panics={} abnormal={} timeouts={} invalid_json={}",
         stats.programs,
         elapsed.as_millis(),
         distribution,
         stats.exit0,
         stats.exit1,
+        valid_percent,
         stats.panics,
         stats.abnormal,
         stats.timeouts,
@@ -848,6 +474,74 @@ fn fuzz_smoke_structured_generators() {
             stats.failures.len(),
             shown
         );
+    }
+
+    assert!(
+        valid_percent >= MIN_VALID_PERCENT,
+        "fuzz: валидных программ {valid_percent}% < {MIN_VALID_PERCENT}%"
+    );
+}
+
+#[test]
+fn test_generator_validity() {
+    let total = iterations();
+    let mut generator = Generator::new(0x0BAD_C0DE_5EED_u64);
+    let mut valid = 0usize;
+    let mut failures = Vec::new();
+
+    for iteration in 0..total {
+        let source = generator.generate();
+        match run_in_process(&source) {
+            Ok(()) => valid += 1,
+            Err(error) => {
+                if failures.len() < 10 {
+                    failures.push(format!(
+                        "#{iteration}: {error}\nprogram:\n{}",
+                        short_source(&source)
+                    ));
+                }
+            }
+        }
+    }
+
+    let valid_percent = valid * 100 / total;
+    println!(
+        "GENERATOR_VALIDITY programs={total} exit0={valid} exit1={} valid_percent={valid_percent}",
+        total - valid
+    );
+    assert!(
+        valid_percent >= MIN_VALID_PERCENT,
+        "генератор: валидных программ {valid_percent}% < {MIN_VALID_PERCENT}%\n{}",
+        failures.join("\n\n")
+    );
+}
+
+#[test]
+fn test_generator_balance() {
+    let mut generator = Generator::new(0xBA1A_5CED_u64);
+    for iteration in 0..2_000 {
+        let source = generator.generate();
+        assert!(
+            is_balanced(&source),
+            "программа #{iteration}: несбалансированные скобки:\n{}",
+            short_source(&source)
+        );
+    }
+}
+
+#[test]
+fn test_generator_depth() {
+    for depth in 1..=lupus::generator::MAX_DEPTH {
+        let mut generator = Generator::with_depth(0xDEEB_0000 + depth as u64, depth);
+        for iteration in 0..500 {
+            let source = generator.generate();
+            let actual = max_nesting_depth(&source);
+            assert!(
+                actual <= depth,
+                "программа #{iteration} при лимите {depth}: глубина {actual}\n{}",
+                short_source(&source)
+            );
+        }
     }
 }
 
