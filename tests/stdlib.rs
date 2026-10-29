@@ -69,6 +69,14 @@ fn error_code(stderr: &str) -> Option<String> {
     Some(rest[..rest.find('"')?].to_string())
 }
 
+/// Путь для интерполяции в Lupus-строковый литерал: с прямыми слешами.
+/// Обратные слеши Windows-путей ловились бы лексером как escape-последовательности
+/// (`\a` в `D:\a\...` даёт `invalid-escape`). На Unix замена тождественна;
+/// файловые API Windows принимают прямые слеши.
+fn to_source_path(path: &Path) -> String {
+    path.display().to_string().replace('\\', "/")
+}
+
 fn assert_close(actual: f64, expected: f64) {
     assert!(
         (actual - expected).abs() < 1e-9,
@@ -122,7 +130,7 @@ fn senko_floor_ceil_abs_log10() {
 fn kaltsit_file_round_trip() {
     let dir = temp_dir("kaltsit");
     let file = dir.join("данные.txt");
-    let display = file.display().to_string();
+    let display = to_source_path(&file);
     let source = format!(
         "(import (kaltsit file))\n\
          (print (file/exists? \"{path}\"))\n\
@@ -148,8 +156,8 @@ fn kaltsit_directories_and_delete() {
     let dir = temp_dir("kaltsit-dir");
     let sub = dir.join("sub");
     let file = sub.join("a.txt");
-    let sub_path = sub.display().to_string();
-    let file_path = file.display().to_string();
+    let sub_path = to_source_path(&sub);
+    let file_path = to_source_path(&file);
     let source = format!(
         "(import (kaltsit file))\n\
          (match (file/mkdir \"{sub}\")\n\
@@ -180,7 +188,7 @@ fn kaltsit_missing_file_returns_failure() {
          (print (match (file/read-file \"{path}\")\n\
             ((failure m) (string-append \"io:\" (string-append m \"\")))\n\
             ((success _) \"unexpected\")))",
-        path = missing.display()
+        path = to_source_path(&missing)
     );
     let out = run_ok(&source);
     assert!(out.starts_with("io:"), "{out}");
