@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.7.0
+
+Релиз V0.7.0 — «инструментальная» итерация: ядро интерпретатора не менялось,
+появились инфраструктура проверки качества и release-гейты.
+
+### Тесты
+
+- Grammar-based генератор `src/generator.rs`: валидность программ
+  **43.79% → 100%**.
+- Property-based тесты `src/property.rs`: **9 свойств** семантики.
+- Shrinking на уровне AST `src/shrinker.rs`: 500 строк → **1 строка**.
+- Differential fuzzing `src/differential.rs`: **165** сравнений с V0.5.2,
+  **0 unexpected**.
+- Порог паузы GC в `tests/memory.rs::memory_leak_containers` поднят до
+  **20 000 µs**; проверка утечки не менялась.
+
+### CI
+
+- Новый `release-gates` job в CI: release-прогон по `memory`,
+  `gc_performance`, `property`, `differential` и `shrinker`.
+- Проверка паузы GC выполняется только в release-сборке и раньше не
+  покрывалась CI (см. ERRATA §18).
+
 ## 0.6.0
 
 Релиз V0.6: новая семантика логики и типов, консервативный GC, сеть,

@@ -1,7 +1,18 @@
-# Lupus V0.6.0
+# Lupus V0.7.0
 
 Prototype interpreter repository for [Lupus](https://github.com/KUARU-dotcom/Lupus)
-(V0.6 phase). Release artifacts are published on the [Releases](https://github.com/KUARU-dotcom/Lupus/releases) page.
+(V0.7 phase). Release artifacts are published on the [Releases](https://github.com/KUARU-dotcom/Lupus/releases) page.
+
+## What's new in V0.7.0
+
+- **Quality tooling:** grammar-based generator, property-based tests,
+  AST shrinker, and differential fuzzing.
+- **Release gates:** a separate `release-gates` job in CI for the release
+  profile.
+- **GC:** the GC-pause threshold in the release test is 20 ms, with headroom
+  for slow CPUs.
+
+See the [CHANGELOG](./CHANGELOG.md) for the full list and the breaking changes.
 
 ## What's new in V0.6.0
 

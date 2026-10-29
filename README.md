@@ -1,7 +1,16 @@
-# Lupus V0.6.0
+# Lupus V0.7.0
 
 Репозиторий прототипа интерпретатора [Lupus](https://github.com/KUARU-dotcom/Lupus)
-(фаза V0.6). Дистрибутивы и релизные артефакты публикуются в [Releases](https://github.com/KUARU-dotcom/Lupus/releases).
+(фаза V0.7). Дистрибутивы и релизные артефакты публикуются в [Releases](https://github.com/KUARU-dotcom/Lupus/releases).
+
+## Что нового в V0.7.0
+
+- **Инструментарий качества:** grammar-based генератор, property-based тесты,
+  AST-shrinker и differential fuzzing.
+- **Release-гейты:** отдельный `release-gates` job в CI для release-прогона.
+- **GC:** порог паузы GC в release-тесте — 20 мс, с запасом на медленный CPU.
+
+Полный список изменений и BREAKING — в [CHANGELOG](./CHANGELOG.md).
 
 ## Что нового в V0.6.0
 
