@@ -236,6 +236,14 @@ python3 validate_tasks.py      # PASSED: 100/100
 - `tests/oracle.rs` — дифференциальный тест против Lupus v0.4.0. Бинарник
   скачивается скриптом `scripts/fetch-oracle.sh` в `oracles/` (каталог в
   `.gitignore`); без него тест помечается SKIP.
+- `tests/property.rs` — property-based тесты семантики: 9 свойств на
+  детерминированных входах; при нарушении — минимальный контрпример
+  через shrink (V0.7).
+- `tests/differential.rs` — differential-тесты против эталона V0.5.2:
+  сравнение exit/stdout/stderr.code, известные breaking changes
+  классифицируются как ожидаемые (V0.7).
+- `tests/shrinker.rs` — минимизация воспроизводителя бага на уровне AST:
+  500 строк → 1 (V0.7).
 - `tests/modules.rs`, `tests/stdlib.rs`, `tests/types.rs`, `tests/errors.rs`,
   `tests/cli.rs`, `tests/kennel.rs` — интеграционные тесты этапов A–F.
 
@@ -247,9 +255,13 @@ JSON-файл с ответами и статусами по задачам.
 
 | Модель | Результат | Данные |
 |--------|-----------|--------|
+| `underdog-saluki-27b-1.0` | 86/100 | [`results/results_underdog-saluki-27b-1.0.json`](./results/results_underdog-saluki-27b-1.0.json) |
 | `merged-lupus-2bv2` | 81/100 | [`results/results_merged-lupus-2bv2_v051.json`](./results/results_merged-lupus-2bv2_v051.json) |
 | Qwen3.5 2B (базовая) | 35/100 | [`results/results_Qwen3.5_2B_base_v051.json`](./results/results_Qwen3.5_2B_base_v051.json) |
 | Qwen2.5-Coder 14B (базовая) | прогон не сохранён в репозитории; для воспроизведения запустите `run_experiment.py` | [`results/`](./results/) |
+
+В таблице приведены только сохранённые прогоны из `results/` — не все
+запускавшиеся модели, а те, чьи JSON-файлы лежат в репозитории.
 
 Базовая линия V0.5.1 (новых замеров в V0.5.3 не делалось) — `merged-lupus-2bv2` (81/100). Воспроизведение:
 `python3 run_experiment.py --model merged-lupus-2bv2`. Для проверки самого

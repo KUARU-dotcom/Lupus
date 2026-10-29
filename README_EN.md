@@ -236,6 +236,14 @@ Layout:
 - `tests/oracle.rs` — differential test against Lupus v0.4.0. The binary is
   fetched by `scripts/fetch-oracle.sh` into `oracles/` (gitignored); without it
   the test is marked SKIP.
+- `tests/property.rs` — property-based semantic tests: 9 properties on
+  deterministic inputs; on violation a minimal counterexample is reported
+  via shrink (V0.7).
+- `tests/differential.rs` — differential tests against the V0.5.2 baseline:
+  exit/stdout/stderr.code comparison, known breaking changes classified as
+  expected (V0.7).
+- `tests/shrinker.rs` — minimization of the bug reproducer at the AST level:
+  500 lines → 1 (V0.7).
 - `tests/modules.rs`, `tests/stdlib.rs`, `tests/types.rs`, `tests/errors.rs`,
   `tests/cli.rs`, `tests/kennel.rs` — integration tests for stages A–F.
 
@@ -247,9 +255,13 @@ per-task answers and statuses.
 
 | Model | Result | Data |
 |-------|--------|------|
+| `underdog-saluki-27b-1.0` | 86/100 | [`results/results_underdog-saluki-27b-1.0.json`](./results/results_underdog-saluki-27b-1.0.json) |
 | `merged-lupus-2bv2` | 81/100 | [`results/results_merged-lupus-2bv2_v051.json`](./results/results_merged-lupus-2bv2_v051.json) |
 | Qwen3.5 2B (base) | 35/100 | [`results/results_Qwen3.5_2B_base_v051.json`](./results/results_Qwen3.5_2B_base_v051.json) |
 | Qwen2.5-Coder 14B (base) | run not stored in the repository; to reproduce, run `run_experiment.py` | [`results/`](./results/) |
+
+The table lists only runs stored under `results/` — not every model that was
+ever run, only those whose JSON files are in the repository.
 
 The V0.5.1 baseline is `merged-lupus-2bv2` (81/100). Reproduce:
 `python3 run_experiment.py --model merged-lupus-2bv2`. To validate the

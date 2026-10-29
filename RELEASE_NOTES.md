@@ -25,8 +25,9 @@ V0.7.0 — релиз «инструментальной» итерации: я�
   (`LUPUS_GC_PAUSE_LIMIT_US` можно поднять на медленном CPU). Проверку утечки
   не трогали — она проходит.
 - **CI:** отдельный `release-gates` job для release-прогона по `memory`,
-  `gc_performance`, `property`, `differential` и `shrinker`. Debug-джоб
-  остался без изменений.
+  `gc_performance`, `property`, `differential` и `shrinker`; job
+  `windows-build` — сборка и тесты на настоящей Windows (`windows-latest`,
+  host MSVC). Debug-джоб остался без изменений.
 
 ## Почему V0.7.0, а не 0.6.1
 
@@ -43,6 +44,11 @@ V0.7.0 — релиз «инструментальной» итерации: я�
 - HM-тайпчекер не реализован (V1.0). Аннотации типов проверяются
   синтаксически.
 - Tensor (`exusiai`) отложен в V2.0.
+- **Windows.** Релизный `.zip` собирается на машине мейнтейнера (CachyOS)
+  через `./build_release.sh <version>` (кросс-компиляция mingw-w64) или через
+  `Dockerfile.release`. Job `windows-build` в CI проверяет сборку и тесты на
+  настоящей Windows, но не производит релизный артефакт. До V0.7.0
+  Windows-сборка в CI не проверялась вообще.
 - macOS-сборка не поставляется (нужен Apple SDK).
 
 ## Метрики
