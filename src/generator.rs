@@ -61,6 +61,26 @@ const STRINGS: &[&str] = &[
     "\"tab\\there\"",
 ];
 
+/// Сырые строковые значения для property-based тестов (без кавычек).
+const RAW_STRINGS: &[&str] = &[
+    "",
+    "a",
+    "abc",
+    "привет",
+    "🐺",
+    "a b c",
+    "line\nbreak",
+    "tab\there",
+    "quote\"x",
+    "back\\slash",
+    "hello🐺",
+    "тест",
+];
+
+/// Точные двоичные float-значения: ассоциативность сложения на них выполняется
+/// без погрешности округления.
+const EXACT_FLOATS: &[f64] = &[-8.0, -4.0, -2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0, 4.0, 8.0];
+
 /// Сцена генерации. `required_depth` — минимальная глубина, при которой
 /// максимальная скобочная вложенность сцены гарантированно помещается в лимит.
 #[derive(Clone, Copy)]
@@ -182,6 +202,48 @@ impl Generator {
     /// Текущий лимит глубины.
     pub fn max_depth(&self) -> usize {
         self.max_depth
+    }
+
+    /// Случайное целое в замкнутом диапазоне `[min, max]`.
+    pub fn next_int(&mut self, min: i64, max: i64) -> i64 {
+        if max <= min {
+            return min;
+        }
+        let span = (max as i128 - min as i128 + 1) as u128;
+        let offset = (self.rng.next() as u128) % span;
+        (min as i128 + offset as i128) as i64
+    }
+
+    /// Случайный float из набора точных двоичных значений.
+    ///
+    /// Такой набор нужен property-тестам: ассоциативность `+` для float
+    /// выполняется только при отсутствии погрешности округления.
+    pub fn next_exact_float(&mut self) -> f64 {
+        *self.rng.choose(EXACT_FLOATS)
+    }
+
+    /// Случайное булево значение.
+    pub fn next_bool(&mut self) -> bool {
+        self.rng.below(2) == 1
+    }
+
+    /// Случайная сырая строка (без кавычек).
+    pub fn next_string(&mut self) -> String {
+        (*self.rng.choose(RAW_STRINGS)).to_string()
+    }
+
+    /// Случайный список длины `0..=max_len`.
+    pub fn next_list<T>(
+        &mut self,
+        max_len: usize,
+        mut element: impl FnMut(&mut Self) -> T,
+    ) -> Vec<T> {
+        let len = self.rng.below(max_len.saturating_add(1));
+        let mut items = Vec::with_capacity(len);
+        for _ in 0..len {
+            items.push(element(self));
+        }
+        items
     }
 
     /// Генерирует одну программу.
