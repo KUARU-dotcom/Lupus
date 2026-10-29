@@ -10,8 +10,9 @@
 //! соблюдение лимита глубины.
 
 use lupus::generator::{is_balanced, max_nesting_depth, Generator};
+use lupus::shrinker::{shrink_source_with_config, ShrinkConfig};
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
@@ -22,6 +23,10 @@ const DEFAULT_ITERATIONS: usize = 10_000;
 const TIMEOUT: Duration = Duration::from_secs(2);
 const GENERATORS: [&str; 1] = ["grammar"];
 const MIN_VALID_PERCENT: usize = 90;
+/// Сколько первых падений минимизировать за один fuzz-прогон.
+const MAX_SHRINKS: usize = 8;
+/// Лимит проверок для одного shrink-цикла (каждая — запуск CLI).
+const SHRINK_ATTEMPTS: usize = 1_500;
 
 fn temp_file() -> PathBuf {
     let n = COUNTER.fetch_add(1, Ordering::SeqCst);
@@ -51,7 +56,7 @@ enum Outcome {
     TimedOut,
 }
 
-fn run_with_timeout(path: &PathBuf) -> Outcome {
+fn run_with_timeout(path: &Path) -> Outcome {
     let mut child = Command::new(env!("CARGO_BIN_EXE_lupus"))
         .arg(path)
         .stdin(Stdio::null())
@@ -81,6 +86,106 @@ fn run_with_timeout(path: &PathBuf) -> Outcome {
                 }
                 std::thread::sleep(Duration::from_millis(2));
             }
+        }
+    }
+}
+
+/// Класс отказа, который нужно сохранить при минимизации.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FailureClass {
+    /// Rust panic (CLI завершился с кодом 101).
+    Panic,
+    /// Иной аварийный код, не 0/1.
+    Abnormal(i32),
+}
+
+impl FailureClass {
+    fn label(self) -> String {
+        match self {
+            FailureClass::Panic => "panic".to_string(),
+            FailureClass::Abnormal(code) => format!("abnormal-{code}"),
+        }
+    }
+}
+
+fn classify_failure(outcome: &Outcome) -> Option<FailureClass> {
+    match outcome {
+        Outcome::Exited { code: 101, .. } => Some(FailureClass::Panic),
+        Outcome::Exited { code, .. } if *code != 0 && *code != 1 => {
+            Some(FailureClass::Abnormal(*code))
+        }
+        _ => None,
+    }
+}
+
+/// Запускает кандидата и проверяет, что класс отказа сохранился.
+fn reproduces_class(path: &Path, source: &str, class: FailureClass) -> bool {
+    if std::fs::write(path, source).is_err() {
+        return false;
+    }
+    match run_with_timeout(path) {
+        Outcome::Exited { code, .. } => match class {
+            FailureClass::Panic => code == 101,
+            FailureClass::Abnormal(expected) => code == expected,
+        },
+        Outcome::TimedOut => false,
+    }
+}
+
+fn artifacts_dir() -> PathBuf {
+    std::env::var("LUPUS_ARTIFACTS_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("target/fuzz-artifacts"))
+}
+
+/// Минимизирует упавшую программу и сохраняет репро в артефакт.
+fn shrink_failure(source: &str, class: FailureClass, iteration: usize) {
+    let work = temp_file();
+    let result = shrink_source_with_config(
+        source,
+        ShrinkConfig {
+            max_attempts: SHRINK_ATTEMPTS,
+        },
+        |candidate| reproduces_class(&work, candidate, class),
+    );
+
+    let dir = artifacts_dir();
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+
+    let stem = format!("{}-{iteration:06}", class.label());
+    match result {
+        Ok(report) => {
+            let repro = dir.join(format!("{stem}.lupus"));
+            let _ = std::fs::write(&repro, &report.minimized_source);
+            let meta = dir.join(format!("{stem}.json"));
+            let metadata = format!(
+                "{{\"class\":{:?},\"original_lines\":{},\"minimized_lines\":{},\"attempts\":{},\"accepted\":{},\"artifact\":{:?}}}\n",
+                class.label(),
+                report.original_lines,
+                report.minimized_lines,
+                report.attempts,
+                report.accepted,
+                repro.display().to_string()
+            );
+            let _ = std::fs::write(&meta, metadata);
+            println!(
+                "SHRINK_REPORT class={} original_lines={} minimized_lines={} attempts={} accepted={} artifact={}",
+                class.label(),
+                report.original_lines,
+                report.minimized_lines,
+                report.attempts,
+                report.accepted,
+                repro.display()
+            );
+        }
+        Err(error) => {
+            eprintln!(
+                "SHRINK_FAILED class={} error={}",
+                class.label(),
+                error.to_json()
+            );
         }
     }
 }
@@ -426,6 +531,7 @@ fn fuzz_smoke_structured_generators() {
     let path = temp_file();
     let mut generator = Generator::new(0x5EED_0F00_D1D1_u64);
     let mut stats = FuzzStats::default();
+    let mut shrunk = 0usize;
     let started = Instant::now();
 
     for iteration in 0..total {
@@ -436,7 +542,15 @@ fn fuzz_smoke_structured_generators() {
         stats.per_generator[index] += 1;
         std::fs::write(&path, &source).expect("write fuzz program");
         let outcome = run_with_timeout(&path);
+        let failure = classify_failure(&outcome);
         stats.record(&source, name, outcome);
+
+        if let Some(class) = failure {
+            if shrunk < MAX_SHRINKS {
+                shrink_failure(&source, class, iteration);
+                shrunk += 1;
+            }
+        }
     }
 
     let elapsed = started.elapsed();

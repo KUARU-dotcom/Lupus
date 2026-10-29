@@ -20,6 +20,7 @@ pub mod modules;
 pub mod native;
 pub mod parser;
 pub mod property;
+pub mod shrinker;
 pub mod unicode_marks;
 pub mod value;
 
