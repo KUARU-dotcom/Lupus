@@ -37,6 +37,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Build (release)
         run: cargo build --release --locked
+      - name: Fetch differential baseline v0.5.2
+        run: gh release download v0.5.2 --pattern 'lupus-v0.5.2-linux-x86_64.tar.gz' --dir dist
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Release tests
         run: >
           cargo test --release --locked --no-fail-fast
@@ -45,6 +49,8 @@ jobs:
           --test property
           --test differential
           --test shrinker
+        env:
+          LUPUS_DIFF_REQUIRED: "1"
       - name: GC pause limit check
         run: cargo test --release --locked --test memory memory_leak_containers -- --nocapture
 
