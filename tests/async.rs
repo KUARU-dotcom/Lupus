@@ -103,7 +103,23 @@ fn channel_round_trip_values() {
 
 #[test]
 fn parallel_sleep_is_faster_than_sequential() {
-    let result = run_with_env(
+    // Обе программы запускаются в отдельных процессах: разница во времени
+    // между ними сокращает накладные расходы на старт интерпретатора, которые
+    // на нагруженном раннере сильнее абсолютного порога в миллисекундах.
+    let sequential = run_with_env(
+        r#"
+(import (amiya async) :as async)
+(define worker
+  (async/spawn (lambda ()
+    (begin
+      (async/sleep 100)
+      (async/sleep 100)))))
+(async/wait worker)
+"#,
+        &[],
+        Duration::from_secs(10),
+    );
+    let parallel = run_with_env(
         r#"
 (import (amiya async) :as async)
 (define first (async/spawn (lambda () (async/sleep 100))))
@@ -111,14 +127,37 @@ fn parallel_sleep_is_faster_than_sequential() {
 (async/wait-all (list first second))
 "#,
         &[],
-        Duration::from_secs(5),
+        Duration::from_secs(10),
     );
-    assert!(!result.timed_out, "stderr: {}", result.stderr);
-    assert_eq!(result.code, 0, "stderr: {}", result.stderr);
+
     assert!(
-        result.elapsed < Duration::from_millis(300),
-        "две задачи по 100 мс заняли {:?}",
-        result.elapsed
+        !sequential.timed_out,
+        "последовательный прогон завис: {}",
+        sequential.stderr
+    );
+    assert_eq!(
+        sequential.code, 0,
+        "последовательный прогон завершился с кодом {}: {}",
+        sequential.code, sequential.stderr
+    );
+    assert!(
+        !parallel.timed_out,
+        "параллельный прогон завис: {}",
+        parallel.stderr
+    );
+    assert_eq!(
+        parallel.code, 0,
+        "параллельный прогон завершился с кодом {}: {}",
+        parallel.code, parallel.stderr
+    );
+
+    let saved = sequential.elapsed.saturating_sub(parallel.elapsed);
+    assert!(
+        saved >= Duration::from_millis(60),
+        "параллельный прогон не быстрее последовательного минимум на 60 мс: \
+         последовательный {:?}, параллельный {:?}",
+        sequential.elapsed,
+        parallel.elapsed
     );
 }
 
