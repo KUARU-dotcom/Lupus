@@ -80,7 +80,7 @@ jobs:
       # На windows-latest debug-сборка без оптимизаций шумит сильнее,
       # поэтому запас поднят только в этом job'е.
       - name: Test
-        run: cargo test --locked
+        run: cargo test --locked -- --nocapture
         env:
           LUPUS_GC_PERF_REGRESSION_PCT: "15"
           LUPUS_GC_PAUSE_LIMIT_US: "40000"
