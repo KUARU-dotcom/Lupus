@@ -49,3 +49,6 @@ Thumbs.db
 
 # Скачиваемые эталонные бинарники (scripts/fetch-oracle.sh)
 oracles/
+
+# локальные запуски
+nohup.out
