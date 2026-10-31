@@ -15,6 +15,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::OnceLock;
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -27,7 +28,7 @@ fn current_binary() -> PathBuf {
 }
 
 /// Возвращает путь к V0.5.2 или `None`, если бинарник недоступен.
-fn baseline_binary() -> Option<PathBuf> {
+fn resolve_baseline() -> Option<PathBuf> {
     if let Ok(path) = std::env::var("LUPUS_DIFF_BASELINE") {
         let path = PathBuf::from(path);
         if path.is_file() {
@@ -52,27 +53,51 @@ fn baseline_binary() -> Option<PathBuf> {
     }
 
     std::fs::create_dir_all(&dest_dir).ok()?;
+    // Распаковываем в отдельный каталог и переносим атомарно: недописанный
+    // бинарник не должен быть виден ни другому потоку, ни другому процессу.
+    let staging = dest_dir.join(format!("staging-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&staging);
+    std::fs::create_dir_all(&staging).ok()?;
     let status = Command::new("tar")
         .arg("-xzf")
         .arg(&archive)
         .arg("-C")
-        .arg(&dest_dir)
+        .arg(&staging)
         .arg("lupus")
         .status()
         .ok()?;
     if !status.success() {
+        let _ = std::fs::remove_dir_all(&staging);
         return None;
     }
 
+    let staged = staging.join("lupus");
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut permissions = std::fs::metadata(&dest).ok()?.permissions();
+        let mut permissions = std::fs::metadata(&staged).ok()?.permissions();
         permissions.set_mode(0o755);
-        std::fs::set_permissions(&dest, permissions).ok()?;
+        std::fs::set_permissions(&staged, permissions).ok()?;
     }
 
+    let renamed = std::fs::rename(&staged, &dest).is_ok();
+    let _ = std::fs::remove_dir_all(&staging);
+    if !renamed {
+        // Возможно, параллельный процесс уже успел положить бинарник.
+        return dest.is_file().then_some(dest);
+    }
     dest.is_file().then_some(dest)
+}
+
+static BASELINE: OnceLock<Option<PathBuf>> = OnceLock::new();
+
+/// Возвращает путь к V0.5.2 или `None`, если бинарник недоступен.
+///
+/// Распаковка архива выполняется ровно один раз на процесс: тесты в этом
+/// файле идут параллельно, и без синхронизации один поток писал бинарник,
+/// пока другой его запускал (`Text file busy`, ETXTBSY).
+fn baseline_binary() -> Option<PathBuf> {
+    BASELINE.get_or_init(resolve_baseline).clone()
 }
 
 fn require_baseline() -> Option<PathBuf> {
@@ -261,4 +286,18 @@ fn test_diff_no_regression() {
         compared,
         unexpected.join("\n\n")
     );
+}
+
+#[test]
+fn baseline_extraction_is_thread_safe() {
+    let handles: Vec<_> = (0..8)
+        .map(|_| std::thread::spawn(baseline_binary))
+        .collect();
+    let paths: Vec<_> = handles
+        .into_iter()
+        .map(|handle| handle.join().expect("поток распаковки"))
+        .collect();
+    for path in &paths {
+        assert_eq!(path, &paths[0], "все потоки должны видеть один baseline");
+    }
 }
