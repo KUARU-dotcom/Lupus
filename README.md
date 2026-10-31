@@ -255,7 +255,6 @@ JSON-файл с ответами и статусами по задачам.
 
 | Модель | Результат | Данные |
 |--------|-----------|--------|
-| `underdog-saluki-27b-1.0` | 86/100 | [`results/results_underdog-saluki-27b-1.0.json`](./results/results_underdog-saluki-27b-1.0.json) |
 | `merged-lupus-2bv2` | 81/100 | [`results/results_merged-lupus-2bv2_v051.json`](./results/results_merged-lupus-2bv2_v051.json) |
 | Qwen3.5 2B (базовая) | 35/100 | [`results/results_Qwen3.5_2B_base_v051.json`](./results/results_Qwen3.5_2B_base_v051.json) |
 | Qwen2.5-Coder 14B (базовая) | прогон не сохранён в репозитории; для воспроизведения запустите `run_experiment.py` | [`results/`](./results/) |
