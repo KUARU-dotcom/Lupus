@@ -51,6 +51,10 @@ jobs:
           --test shrinker
         env:
           LUPUS_DIFF_REQUIRED: "1"
+      - name: Differential report
+        run: cargo test --release --locked --test differential -- --nocapture
+        env:
+          LUPUS_DIFF_REQUIRED: "1"
       - name: GC pause limit check
         run: cargo test --release --locked --test memory memory_leak_containers -- --nocapture
 
