@@ -20,11 +20,16 @@ jobs:
         run: bash scripts/fetch-oracle.sh
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Fetch differential baseline v0.5.2
+        run: gh release download v0.5.2 --pattern 'lupus-v0.5.2-linux-x86_64.tar.gz' --dir dist
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Test
         run: cargo test --locked
         env:
           LUPUS_ORACLE_REQUIRED: "1"
           LUPUS_FUZZ_N: "20000"
+          LUPUS_DIFF_REQUIRED: "1"
       - name: Clippy (deny warnings)
         run: cargo clippy --all-targets -- -D warnings
       - name: Format check
